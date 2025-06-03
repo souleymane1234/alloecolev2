@@ -1,6 +1,7 @@
 import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import DrawerAppBar from "./DrawerAppBar";
+import { Box, Toolbar } from '@mui/material';
 
 const Layout = () => {
   const location = useLocation();
@@ -8,13 +9,11 @@ const Layout = () => {
 
   return (
     <div className="app">
-      {/* {!isLoginPage && <Sidebar />} */}
       <div className="main-content">
         {!isLoginPage && <DrawerAppBar />}
-        <div className="content">
-          <Outlet /> {/* Affiche la page en cours */}
-        </div>
-        {/* {!isLoginPage && <Footer />} */}
+          <div className="content">
+            <Outlet />
+          </div>
       </div>
     </div>
   );
