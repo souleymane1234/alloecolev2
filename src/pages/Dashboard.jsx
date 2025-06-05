@@ -10,6 +10,10 @@ import CardMedia from '@mui/material/CardMedia';
 import CardActionArea from '@mui/material/CardActionArea';
 import CompetCard from '../components/CompetCard';
 import EmissionCard from '../components/EmissionCard';
+import Partner from '../components/Partner';
+import AlreadyProduced from '../components/AlreadyProduced';
+import Actuality from '../components/Actuality';
+import Footer from '../components/Footer';
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: '#fff',
@@ -164,6 +168,10 @@ const Dashboard = () => {
     </Box>
     <CompetCard />
     <EmissionCard />
+    <Partner />
+    <AlreadyProduced />
+    <Actuality />
+    <Footer />
     </>
   );
 };
