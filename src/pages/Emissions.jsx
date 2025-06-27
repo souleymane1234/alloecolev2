@@ -1,18 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import { styled } from '@mui/material/styles';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardMedia from '@mui/material/CardMedia';
-import CardActionArea from '@mui/material/CardActionArea';
-import CompetCard from '../components/CompetCard';
 import EmissionCard from '../components/EmissionCard';
 import Partner from '../components/Partner';
 import AlreadyProduced from '../components/AlreadyProduced';
-import Actuality from '../components/Actuality';
 import HeadBanner from '../components/HeadBanner';
 
 const Item = styled(Paper)(({ theme }) => ({
@@ -26,17 +19,15 @@ const Item = styled(Paper)(({ theme }) => ({
   }),
 }));
 
-const Dashboard = () => {
+const Emissions = () => {
   return (
     <>
     <HeadBanner />
-    {/* <CompetCard /> */}
-    <EmissionCard titleComponent="Nos émissions"  titleButton="Plus de détails"/>
+    <EmissionCard titleComponent="Toutes nos émissions" titleButton="Participer"/>
     <Partner />
     <AlreadyProduced />
-    <Actuality />
     </>
   );
 };
 
-export default Dashboard;
+export default Emissions;

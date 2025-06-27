@@ -1,5 +1,6 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
+import { Link } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -16,7 +17,14 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 
 const drawerWidth = 240;
-const navItems = ['ACCUEIL', 'ÉMISSIONS ET CONCOURS', 'ACTUALITÉ', 'A PROPOS'];
+
+// Tu peux lier chaque item à un path ici
+const navItems = [
+  { label: 'ACCUEIL', path: '/' },
+  { label: 'ÉMISSIONS ET CONCOURS', path: '/emissions' },
+  { label: 'ACTUALITÉ', path: '/actualities' },
+  { label: 'A PROPOS', path: '/a-propos' }
+];
 
 function DrawerAppBar(props) {
   const { window } = props;
@@ -28,27 +36,42 @@ function DrawerAppBar(props) {
 
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
-    <Box sx={{ my: 2 }}>
-    <img src="/img/logo.png" alt="Logo" style={{ height: 40 }} />
-    </Box>
+      <Box sx={{ my: 2 }}>
+        <img src="/img/logo.png" alt="Logo" style={{ height: 40 }} />
+      </Box>
       <Divider />
       <List>
         {navItems.map((item) => (
-          <ListItem key={item} disablePadding sx={{
-            color: '#000',
-            '&:hover': {
-              backgroundColor: 'rgba(134, 30, 129, 0.1)', // ou une autre couleur de survol
-              color: '#861e81', // couleur au survol
-            },
-          }}>
-            <ListItemButton sx={{ textAlign: 'center' }}>
-              <ListItemText primary={item} />
+          <ListItem key={item.label} disablePadding>
+            <ListItemButton
+              component={Link}
+              to={item.path}
+              sx={{
+                textAlign: 'center',
+                color: '#000',
+                '&:hover': {
+                  backgroundColor: 'rgba(134, 30, 129, 0.1)',
+                  color: '#861e81',
+                },
+              }}
+            >
+              <ListItemText primary={item.label} />
             </ListItemButton>
           </ListItem>
         ))}
-            <Button variant="outlined" sx={{ color: '#fff', backgroundColor: '#861e81', '&:hover': { backgroundColor: '#dc3545', color: '#fff' } }}>
-              Connecter
-            </Button>
+        <Button
+          component={Link}
+          to="/login"
+          variant="outlined"
+          sx={{
+            mt: 2,
+            color: '#fff',
+            backgroundColor: '#861e81',
+            '&:hover': { backgroundColor: '#dc3545', color: '#fff' },
+          }}
+        >
+          Connecter
+        </Button>
       </List>
     </Box>
   );
@@ -60,7 +83,6 @@ function DrawerAppBar(props) {
       <CssBaseline />
       <AppBar component="nav" sx={{ backgroundColor: '#fff', color: '#861e81' }}>
         <Toolbar sx={{ justifyContent: 'space-between' }}>
-          {/* Left: Logo + Menu button (mobile) */}
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <IconButton
               color="inherit"
@@ -71,41 +93,51 @@ function DrawerAppBar(props) {
             >
               <MenuIcon />
             </IconButton>
-            <Box sx={{ my: 2, display: { xs: 'none', sm: 'block' , color: '#861e81'} }}>
-                <img src="/img/logo.png" alt="Logo" style={{ height: 70 }} />
+            <Box sx={{ my: 2, display: { xs: 'none', sm: 'block' } }}>
+              <img src="/img/logo.png" alt="Logo" style={{ height: 70 }} />
             </Box>
           </Box>
 
-          {/* Right: Nav Items + Connect Button */}
           <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 2 }}>
             {navItems.map((item) => (
-              <Button key={item} sx={{
-                color: '#000',
-                '&:hover': {
-                  backgroundColor: 'rgba(134, 30, 129, 0.1)', // ou une autre couleur de survol
-                  color: '#861e81', // couleur au survol
-                },
-              }}>
-                {item}
+              <Button
+                key={item.label}
+                component={Link}
+                to={item.path}
+                sx={{
+                  color: '#000',
+                  '&:hover': {
+                    backgroundColor: 'rgba(134, 30, 129, 0.1)',
+                    color: '#861e81',
+                  },
+                }}
+              >
+                {item.label}
               </Button>
             ))}
-            <Button variant="outlined" sx={{ color: '#fff', backgroundColor: '#861e81', '&:hover': { backgroundColor: '#dc3545', color: '#fff' } }}>
+            <Button
+              component={Link}
+              to="/login"
+              variant="outlined"
+              sx={{
+                color: '#fff',
+                backgroundColor: '#861e81',
+                '&:hover': { backgroundColor: '#dc3545', color: '#fff' },
+              }}
+            >
               Connecter
             </Button>
           </Box>
         </Toolbar>
       </AppBar>
 
-      {/* Mobile Drawer */}
       <nav>
         <Drawer
           container={container}
           variant="temporary"
           open={mobileOpen}
           onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true,
-          }}
+          ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', sm: 'none' },
             '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
@@ -115,9 +147,9 @@ function DrawerAppBar(props) {
         </Drawer>
       </nav>
 
-      <Box component="main" sx={{ p: 3 }}>
+      <Box component="main" >
         <Toolbar />
-        {/* Your page content here */}
+        {/* Page content ici */}
       </Box>
     </Box>
   );

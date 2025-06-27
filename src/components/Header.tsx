@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaLock } from "react-icons/fa";
+import { Link } from 'react-router-dom';
 
 const Header = () => {
 
@@ -19,7 +20,7 @@ const Header = () => {
       {/* Menu */}
       <ul className="flex items-center space-x-10 font-semibold text-white">
         <li className="text-purple-300 hover:text-white transition">ACCUEIL</li>
-        <li className="hover:text-white transition">ÉMISSIONS ET CONCOURS</li>
+        <li className="hover:text-white transition"><Link to="/emissions"> ÉMISSIONS ET CONCOURS </Link></li>
         <li className="hover:text-white transition">ACTUALITÉ</li>
         <li className="hover:text-white transition">A PROPOS</li>
       </ul>
