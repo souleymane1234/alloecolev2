@@ -42,18 +42,24 @@ const competCards = [
   },
 ];
 
-function CompetCard() {
+function CompetCardCours() {
   const { code_emission } = useParams();
   const [selectedCard, setSelectedCard] = useState(0);
   const [emissionsDetails, setEmissionsDetails] = useState([]);
   const [loading, setLoading] = useState(true);
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+  // console.log('user.........', emissionsDetails);
 
 
 
     useEffect(() => {
-      axios.get(`http://localhost:9002/api/emissions/${code_emission}`)
+      axios.get(`http://localhost:9002/api/competitions/ziktalent`)
         .then((response) => {
-          setEmissionsDetails(response.data.competitions);
+          const allCompetitions = response.data.competitions || [];
+          const limitedCompetitions = allCompetitions.slice(0, 4);
+          setEmissionsDetails(limitedCompetitions);
+          console.log('emissionsDetails', limitedCompetitions);
           setLoading(false);
         })
         .catch((error) => {
@@ -63,7 +69,7 @@ function CompetCard() {
     }, [code_emission]);
 
     if (loading) return <p>Chargement...</p>;
-
+    // console.log('emissionsss', emissionsDetails);
 
     function truncateText(text, maxLength = 100) {
       return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
@@ -165,9 +171,10 @@ function CompetCard() {
     </Card>
   ))}
 </Box>
+
 </>
 
   );
 }
 
-export default CompetCard;
+export default CompetCardCours;

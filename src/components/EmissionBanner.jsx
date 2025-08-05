@@ -1,5 +1,7 @@
-import React from 'react';
+import { useParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
+import axios from 'axios';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import { styled } from '@mui/material/styles';
@@ -16,6 +18,29 @@ const Item = styled(Paper)(({ theme }) => ({
 }));
 
 const EmissionBanner = () => {
+    const { code_emission } = useParams();
+    const [selectedCard, setSelectedCard] = useState(0);
+    const [emissionsInfo, setEmissionsInfo] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+        useEffect(() => {
+          axios.get(`http://localhost:9002/api/emissions/${code_emission}`)
+            .then((response) => {
+              setEmissionsInfo(response.data.emission);
+              console.log('Emission Info:', response.data.emission); // Log emission info
+              setLoading(false);
+            })
+            .catch((error) => {
+              console.error('Erreur lors de la récupération des émissions :', error);
+              setLoading(false);
+            });
+        }, [code_emission]);
+    
+        if (loading) return <p>Chargement...</p>;
+
+        function truncateText(text, maxLength = 100) {
+          return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
+        }
   return (
     <>
     <Box     
@@ -42,17 +67,17 @@ const EmissionBanner = () => {
         <Box sx={{ width: { xs: '100%' }, padding: 2 }}>
         <div className="w-full  aspect-video">
         <video
-          className="w-full h-64 object-cover"
-          src="/video/video.mp4"
-          poster='/img/zik.jpg'
-          controls
-        ></video>
+              className="w-full h-64object-cover"
+              src={`http://localhost:9002/${emissionsInfo.url_video_emission}`}
+              poster={`http://localhost:9002/${emissionsInfo.url_photo_emission}`}
+              controls
+            ></video>
       </div>
         </Box>
         <Box sx={{ width: { xs: '100%' }, padding: 2 }}>
         <div className="mt-10">
-            <h1 className="text-white font-semibold font-[Formula_Condensed] mb-8">Titre</h1>
-            <p className="text-white text-[22px] font-semibold font-[Formula_Condensed] mb-8">description</p>
+            <h1 className="text-white font-semibold font-[Formula_Condensed] mb-8">{emissionsInfo.titre_emission}</h1>
+            <p className="text-white text-[22px] font-semibold font-[Formula_Condensed] mb-8">{truncateText(emissionsInfo.description_emission, 80)}</p>
     </div>       
         </Box>
         <Box sx={{ width: { xs: '100%' }, padding: 2 }}> 

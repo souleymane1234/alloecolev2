@@ -7,48 +7,16 @@ import Typography from '@mui/material/Typography';
 import CardActionArea from '@mui/material/CardActionArea';
 import { CalendarDays } from "lucide-react";
 
-const EmissionCards = [
-  {
-    id: 1,
-    title: 'URBAN TALENT',
-    badge: 'Emission',
-    urlVideo: '/video/video.mp4',
-    urlPoster: '/img/zik.jpg',
-    dateDebut: '2025-02-02',
-    dateFin: '2025-07-10',
-    description: '« URBAN TALENT» est un concept qui permet de détecter, révéler et faire la promotion des talents dan...',
-  },
-  {
-    id: 2,
-    title: 'KIDS TALENT',
-    badge: 'Emission',
-    urlVideo: '/video/video.mp4',
-    urlPoster: '/img/zik.jpg',
-    dateDebut: '2025-02-02',
-    dateFin: '2025-07-10',
-    description: '« KIDS TALENT» est un concept qui permet de détecter, révéler et faire la promotion des talents dan...',
-  },
-  {
-    id: 3,
-    title: 'GOSPEL TALENT',
-    badge: 'Emission',
-    urlVideo: '/video/video.mp4',
-    urlPoster: '/img/zik.jpg',
-    dateDebut: '2025-02-02',
-    dateFin: '2025-07-10',
-    description: '« GOSPEL TALENT» est un concept qui permet de détecter, révéler et faire la promotion des talents dan...',
-  },
-];
-
 function EmissionCard({ titleComponent, titleButton }) {
-
   const [emissions, setEmissions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     axios.get('http://localhost:9002/api/emission')
       .then((response) => {
-        setEmissions(response.data.emissions);
+        const allCompetitions = response.data.emissions || [];
+        const limitedCompetitions = allCompetitions.slice(0, 4);
+        setEmissions(limitedCompetitions);
         setLoading(false);
       })
       .catch((error) => {
@@ -57,69 +25,78 @@ function EmissionCard({ titleComponent, titleButton }) {
       });
   }, []);
 
-  if (loading) return <p>Chargement...</p>;
-  console.log('emissionsss', emissions);
+  if (loading) return <p className="text-center mt-4">Chargement...</p>;
 
   return (
-<>
-  <Typography variant="h4" align="center" gutterBottom fontWeight={"bold"} sx={{ mt: 4, mb: 2 }}>
-  { titleComponent }
-  </Typography>
+    <>
+      <Typography
+        variant="h5"
+        align="center"
+        fontWeight="bold"
+        sx={{ mt: 4, mb: 2, fontSize: { xs: '1.5rem', sm: '2rem' } }}
+      >
+        {titleComponent}
+      </Typography>
 
-  <Box
-    sx={{
-      width: '100%',
-      maxWidth: '1200px', // limite la largeur pour éviter que ce soit trop large
-      mx: 'auto',          // centre horizontalement
-      my: 4,               // marge verticale
-      p: 2,                // padding interne
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-      gap: 3,              // espace entre les cartes
-    }}
-  >
-    {emissions.map((card, index) => (
-      <Card key={card.code_emission}>
-        <CardActionArea
-        //   onClick={() => setSelectedCard(index)}
-          sx={{
-            height: '100%',
-          }}
-        >
-          <div className="max-w-sm rounded-xl shadow-lg overflow-hidden bg-white h-full">
-            <div className="relative">
-              <video
-                className="w-full h-48 object-cover"
-                src={`http://localhost:9002/${card.url_video_emission}`}
-                poster={`http://localhost:9002/${card.url_photo_emission}`}
-                controls
-              ></video>
-              <div className="absolute top-0 right-0">
-                <span className="bg-gradient-to-b from-yellow-400 to-orange-500 text-black font-bold px-2 py-1 text-sm rounded-t-lg rounded-bl-lg shadow">
-                  Emission
-                </span>
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: '1200px',
+          backgroundColor: '#f9f9f9',
+          mx: 'auto',
+          my: 4,
+          p: 2,
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',        // mobile
+            sm: 'repeat(2, 1fr)', // tablette
+            md: 'repeat(4, 1fr)'  // desktop
+          },
+          gap: 2,
+        }}
+      >
+        {emissions.map((card, index) => (
+          <Card key={card.code_emission} sx={{ height: '100%' }}>
+            <CardActionArea sx={{ height: '100%' }}>
+              <div className="rounded-xl shadow-md overflow-hidden bg-white h-full">
+                <div className="relative">
+                  <video
+                    className="w-full h-32 sm:h-36 md:h-40 object-cover"
+                    src={`http://localhost:9002/${card.url_video_emission}`}
+                    poster={`http://localhost:9002/${card.url_photo_emission}`}
+                    controls
+                  ></video>
+                  <div className="absolute top-0 right-0">
+                    <span className="bg-gradient-to-b from-yellow-400 to-orange-500 text-black font-bold px-2 py-1 text-xs sm:text-sm rounded-t-lg rounded-bl-lg shadow">
+                      Emission
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-fuchsia-700 to-purple-700 text-white text-center py-1 font-semibold text-base sm:text-lg">
+                  {card.titre_emission}
+                </div>
+
+                <div className="px-2 py-2 text-center">
+                  <p className="line-clamp-3 text-sm leading-snug h-20 sm:h-24">
+                    {card.description_emission}
+                  </p>
+
+                  <button className="mt-2 w-full bg-gradient-to-r from-fuchsia-700 to-purple-700 hover:bg-purple-900 text-white font-medium text-sm py-1.5 px-3 rounded-lg transition duration-300">
+                    <Link
+                      to={`/emissions/detail/${card.code_emission}`}
+                      style={{ color: 'white', textDecoration: 'none' }}
+                    >
+                      {titleButton}
+                    </Link>
+                  </button>
+                </div>
               </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-fuchsia-700 to-purple-700 text-white text-center py-2 font-bold text-xl">
-              {card.titre_emission}
-            </div>
-
-            <div className="px-2 py-2 text-center">
-              <p className='h-36'>{card.description_emission}</p>
-              <button className="mt-4 w-full bg-gradient-to-r from-fuchsia-700 to-purple-700 hover:bg-purple-900 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
-              <Link to={`/emissions/detail/${card.code_emission}`} style={{ color: 'white', textDecoration: 'none' }}>
-              { titleButton }
-              </Link>
-              </button>
-            </div>
-          </div>
-        </CardActionArea>
-      </Card>
-    ))}
-  </Box>
-</>
-
+            </CardActionArea>
+          </Card>
+        ))}
+      </Box>
+    </>
   );
 }
 

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -15,10 +15,12 @@ import MenuIcon from '@mui/icons-material/Menu';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
+import axios from 'axios';
 
 const drawerWidth = 240;
 
-// Tu peux lier chaque item à un path ici
 const navItems = [
   { label: 'ACCUEIL', path: '/' },
   { label: 'ÉMISSIONS ET CONCOURS', path: '/emissions' },
@@ -29,9 +31,49 @@ const navItems = [
 function DrawerAppBar(props) {
   const { window } = props;
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const navigate = useNavigate();
+  const location = useLocation(); // 🔥 pour identifier la route active
+
+  const [user, setUser] = React.useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || 'null');
+    } catch {
+      return null;
+    }
+  });
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
+  };
+
+  const handleLogout = async () => {
+    try {
+      const res = await axios.post('http://localhost:9002/api/logout', {}, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (res.data.success) {
+        localStorage.removeItem('user');
+        setUser(null);
+        navigate('/login');
+      } else {
+        alert(res.data.message || "Erreur lors de la déconnexion");
+      }
+    } catch (error) {
+      console.error('Erreur logout:', error);
+      localStorage.removeItem('user');
+      setUser(null);
+      if (error.response?.data?.message) {
+        alert(error.response.data.message);
+      } else {
+        alert("Erreur réseau. Déconnexion locale effectuée.");
+      }
+      navigate('/login');
+    }
   };
 
   const drawer = (
@@ -48,7 +90,8 @@ function DrawerAppBar(props) {
               to={item.path}
               sx={{
                 textAlign: 'center',
-                color: '#000',
+                color: location.pathname === item.path ? '#861e81' : '#000',
+                backgroundColor: location.pathname === item.path ? 'rgba(134, 30, 129, 0.1)' : 'transparent',
                 '&:hover': {
                   backgroundColor: 'rgba(134, 30, 129, 0.1)',
                   color: '#861e81',
@@ -59,19 +102,36 @@ function DrawerAppBar(props) {
             </ListItemButton>
           </ListItem>
         ))}
-        <Button
-          component={Link}
-          to="/login"
-          variant="outlined"
-          sx={{
-            mt: 2,
-            color: '#fff',
-            backgroundColor: '#861e81',
-            '&:hover': { backgroundColor: '#dc3545', color: '#fff' },
-          }}
-        >
-          Connecter
-        </Button>
+        {user ? (
+          <Button
+            onClick={handleLogout}
+            startIcon={<LogoutIcon />}
+            variant="outlined"
+            sx={{
+              mt: 2,
+              color: '#fff',
+              backgroundColor: '#dc3545',
+              '&:hover': { backgroundColor: '#b52a37', color: '#fff' },
+            }}
+          >
+            Se Déconnecter
+          </Button>
+        ) : (
+          <Button
+            component={Link}
+            to="/login"
+            startIcon={<LoginIcon />}
+            variant="outlined"
+            sx={{
+              mt: 2,
+              color: '#fff',
+              backgroundColor: '#861e81',
+              '&:hover': { backgroundColor: '#dc3545', color: '#fff' },
+            }}
+          >
+            S'AUTHENTIFIER
+          </Button>
+        )}
       </List>
     </Box>
   );
@@ -81,7 +141,7 @@ function DrawerAppBar(props) {
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <AppBar component="nav" sx={{ backgroundColor: '#fff', color: '#861e81' }}>
+      <AppBar component="nav" sx={{ backgroundColor: '#fff', color: '#861e81', height: 80 }}>
         <Toolbar sx={{ justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <IconButton
@@ -105,7 +165,8 @@ function DrawerAppBar(props) {
                 component={Link}
                 to={item.path}
                 sx={{
-                  color: '#000',
+                  color: location.pathname === item.path ? '#861e81' : '#000',
+                  backgroundColor: location.pathname === item.path ? 'rgba(134, 30, 129, 0.1)' : 'transparent',
                   '&:hover': {
                     backgroundColor: 'rgba(134, 30, 129, 0.1)',
                     color: '#861e81',
@@ -115,18 +176,34 @@ function DrawerAppBar(props) {
                 {item.label}
               </Button>
             ))}
-            <Button
-              component={Link}
-              to="/login"
-              variant="outlined"
-              sx={{
-                color: '#fff',
-                backgroundColor: '#861e81',
-                '&:hover': { backgroundColor: '#dc3545', color: '#fff' },
-              }}
-            >
-              Connecter
-            </Button>
+            {user ? (
+              <Button
+                onClick={handleLogout}
+                startIcon={<LogoutIcon />}
+                variant="outlined"
+                sx={{
+                  color: '#fff',
+                  backgroundColor: '#dc3545',
+                  '&:hover': { backgroundColor: '#b52a37', color: '#fff' },
+                }}
+              >
+                Se Déconnecter
+              </Button>
+            ) : (
+              <Button
+                component={Link}
+                to="/login"
+                startIcon={<LoginIcon />}
+                variant="outlined"
+                sx={{
+                  color: '#fff',
+                  backgroundColor: '#861e81',
+                  '&:hover': { backgroundColor: '#dc3545', color: '#fff' },
+                }}
+              >
+                S'AUTHENTIFIER
+              </Button>
+            )}
           </Box>
         </Toolbar>
       </AppBar>
@@ -147,9 +224,8 @@ function DrawerAppBar(props) {
         </Drawer>
       </nav>
 
-      <Box component="main" >
+      <Box component="main">
         <Toolbar />
-        {/* Page content ici */}
       </Box>
     </Box>
   );

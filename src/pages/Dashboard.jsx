@@ -14,6 +14,7 @@ import Partner from '../components/Partner';
 import AlreadyProduced from '../components/AlreadyProduced';
 import Actuality from '../components/Actuality';
 import HeadBanner from '../components/HeadBanner';
+import CompetCardCours from '../components/CompetCardCours';
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: '#fff',
@@ -30,8 +31,8 @@ const Dashboard = () => {
   return (
     <>
     <HeadBanner />
-    {/* <CompetCard /> */}
-    <EmissionCard titleComponent="Nos émissions"  titleButton="Plus de détails"/>
+    <CompetCardCours />
+    <EmissionCard titleComponent="Nos Concepts"  titleButton="Plus de détails"/>
     <Partner />
     <AlreadyProduced />
     <Actuality />

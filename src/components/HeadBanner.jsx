@@ -47,65 +47,66 @@ const HeadBanner = () => {
         ></iframe>
       </div>
         </Box>
-        <Box sx={{ width: { xs: '100%' }, padding: 2 }}>
-        <div className="mt-10">
-      <span className="text-white text-[22px] font-semibold font-[Formula_Condensed] mb-8">
-        Zik'Talent, la plateforme
+
+        <Box sx={{ width: '100%', padding: { xs: 1.5, sm: 2 } }}>
+  <div className="mt-6 sm:mt-10">
+    <span className="text-white text-[18px] sm:text-[22px] font-semibold font-[Formula_Condensed] mb-6 block">
+      Zik'Talent, la plateforme
+    </span>
+
+    <div className="mt-[-10px] font-[Formula_Condensed] mb-2 sm:mb-4">
+      <span className="text-white text-[28px] sm:text-[38px] font-bold block">
+        digitale qui révèle les
       </span>
+    </div>
 
-      <div className="mt-[-15px] font-[Formula_Condensed] mb-4">
-        <span className="text-white text-[38px] font-bold mt-[-10px]">
-          digitale qui révèle les
-        </span>
+    <div className="mt-[-30px] font-[Formula_Condensed]">
+      <span
+        className="text-[70px] sm:text-[90px] font-extrabold drop-shadow-[3px_3px_6px_rgba(0,0,0,0.2)]"
+        style={{
+          WebkitTextStroke: '1px #f5bf53',
+          textShadow: '3px 3px 6px #0000002c',
+          WebkitTextFillColor: '#3a0e66',
+        }}
+      >
+        TALENTS
+      </span>
+    </div>
+
+    <div className="mt-[-25px] sm:mt-[-60px] font-[Formula_Condensed]">
+      <span className="text-[#f5bf53] text-[65px] sm:text-[80px] font-extrabold drop-shadow-[3px_3px_6px_rgba(0,0,0,0.2)]">
+        MUSICAUX
+      </span>
+    </div>
+
+    <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mt-6">
+      <div className="border border-[#f5bf53] text-[#f5bf53] px-3 py-1.5 text-center text-sm font-[Jost]">
+        <span>Artiste confirmé</span>
       </div>
-
-      <div className="mt-[-52px] font-[Formula_Condensed]">
-        <span
-          className="text-[90px] font-extrabold ml-[-6] drop-shadow-[5px_5px_10px_rgba(0,0,0,0.17)]"
-          style={{
-            WebkitTextStroke: '2px #f5bf53',
-            textShadow: '5px 5px 10px #0000002c',
-            WebkitTextFillColor: '#3a0e66',
-          }}
-        >
-          TALENTS
-        </span>
+      <div className="border border-white text-white px-3 py-1.5 text-center text-sm font-[Jost]">
+        <span>Talent en herbe</span>
       </div>
-
-      <div className="mt-[-60px] font-[Formula_Condensed]">
-        <span className="text-[#f5bf53] text-[80px] font-extrabold drop-shadow-[5px_5px_10px_rgba(0,0,0,0.17)]">
-          MUSICAUX
-        </span>
+      <div className="border border-[#f5bf53] text-[#f5bf53] px-3 py-1.5 text-center text-sm font-[Jost]">
+        <span>Chansonnier...</span>
       </div>
+    </div>
 
-      <div className="flex flex-row justify-center gap-4 mt-6">
-  <div className="border-2 border-[#f5bf53] text-[#f5bf53] px-4 py-2 text-center font-[Jost]">
-    <span>Artiste confirmé</span>
+    <div className="mt-8 sm:mt-10 text-left text-sm sm:text-[14px] leading-relaxed">
+      <span className="text-white font-normal">
+        <span className="text-[#f5bf53] font-bold">
+          Inscris-toi, publie une vidéo
+        </span>{' '}
+        de ta prestation{' '}
+        <span className="text-white font-bold">
+          et donnes-toi plus de chances, chaque mois
+        </span>
+        , d'être sélectionné parmi les{' '}
+        <span className="text-[#f5bf53] font-bold">
+          10 talents et être produit.
+        </span>
+      </span>
+    </div>
   </div>
-  <div className="border-2 border-white text-white px-4 py-2 text-center font-[Jost]">
-    <span>Talent en herbe</span>
-  </div>
-  <div className="border-2 border-[#f5bf53] text-[#f5bf53] px-4 py-2 text-center font-[Jost]">
-    <span>Chansonnier...</span>
-  </div>
-</div>
-
-      <div className="mt-10 text-left text-[14px]">
-        <span className="text-white font-normal">
-          <span className="text-[#f5bf53] font-bold">
-            Inscris-toi, publie une vidéo
-          </span>{' '}
-          de ta prestation{' '}
-          <span className="text-white font-bold">
-            et donnes-toi plus de chances, chaque mois
-          </span>
-          , d'être sélectionné parmi les{' '}
-          <span className="text-[#f5bf53] font-bold">
-            10 talents et être produit.
-          </span>
-        </span>
-      </div>
-    </div>       
         </Box>
         <Box sx={{ width: { xs: '100%' }, padding: 2 }}> 
         <div className="max-w-sm rounded-xl shadow-lg overflow-hidden bg-white">

@@ -1,15 +1,26 @@
 import React, { useState } from 'react';
-import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
+import {
+  Box, Stack, Button, Typography, Dialog, DialogTitle, DialogContent
+} from '@mui/material';
 import { styled } from '@mui/material/styles';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
+
+interface Competition {
+  titre_competition: string;
+  description_competition: string;
+  debut_inscription_competition: string;
+  fin_inscription_competition: string;
+  cout_inscription: number;
+  url_video_competition: string;
+  url_photo_competition: string;
+}
+
+type CompetBannerProps = {
+  competition: Competition;
+  onInscriptionClick: () => void;
+};
 
 const StyledButton = styled(Button)(() => ({
   backgroundColor: '#9b2c9b',
@@ -17,7 +28,6 @@ const StyledButton = styled(Button)(() => ({
   borderRadius: '30px',
   border: '2px solid #fff',
   fontWeight: 'bold',
-  marginBottom: '12px',
   textTransform: 'none',
   '&:hover': {
     backgroundColor: '#7c217c',
@@ -31,15 +41,16 @@ const modalContents = {
   sponsors: 'Nos sponsors officiels : MTN, Coca-Cola, Canal+, etc...',
 };
 
-const CompetBanner = ({ onInscriptionClick }: { onInscriptionClick: () => void }) => {
+const CompetBanner: React.FC<CompetBannerProps> = ({ competition, onInscriptionClick }) => {
   const [openModal, setOpenModal] = useState<null | keyof typeof modalContents>(null);
 
-  const handleOpen = (key: keyof typeof modalContents) => {
-    setOpenModal(key);
-  };
+  const handleOpen = (key: keyof typeof modalContents) => setOpenModal(key);
+  const handleClose = () => setOpenModal(null);
 
-  const handleClose = () => {
-    setOpenModal(null);
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '??';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('fr-FR');
   };
 
   return (
@@ -48,7 +59,7 @@ const CompetBanner = ({ onInscriptionClick }: { onInscriptionClick: () => void }
         width="100%"
         display="flex"
         justifyContent="center"
-        padding={4}
+        padding={2}
         sx={{
           backgroundImage: 'url(/img/bg1.jpg)',
           backgroundSize: 'cover',
@@ -56,38 +67,32 @@ const CompetBanner = ({ onInscriptionClick }: { onInscriptionClick: () => void }
           backgroundPosition: 'center',
         }}
       >
-        <Box
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={2}
           sx={{
             backgroundColor: '#1a0e24',
             padding: 3,
             borderRadius: 2,
-            display: 'flex',
-            gap: 4,
             width: '100%',
             maxWidth: '1500px',
-            alignItems: 'center',
           }}
+          alignItems="center"
         >
           {/* Vidéo */}
-          <Box flex={1.2} sx={{ border: '10px solid #351931' }}>
-            <iframe
-              width="100%"
-              height="300"
-              src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-              title="Concours Ivoire Zik Talent"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
+          <Box sx={{ width: { xs: '100%', md: '33%' }, border: '6px solid #351931' }}>
+            <video
+              className="w-full h-48 object-cover"
+              src={`http://localhost:9002/${competition?.url_video_competition}`}
+              poster={`http://localhost:9002/${competition?.url_photo_competition}`}
+              controls
+            />
           </Box>
 
-          {/* Infos */}
-          <Box flex={2}>
-            <Typography
-              variant="h4"
-              sx={{ color: '#FFD700', fontWeight: 'bold', mb: 2 }}
-            >
-              🎵 CONCOURS : IVOIRE ZIK TALENT
+          {/* Infos compétition */}
+          <Box sx={{ width: { xs: '100%', md: '40%' } }}>
+            <Typography variant="h5" sx={{ color: '#FFD700', fontWeight: 'bold', mb: 2 }}>
+              🎵 CONCOURS : {competition?.titre_competition || 'IVOIRE ZIK TALENT'}
             </Typography>
 
             <Box
@@ -97,47 +102,39 @@ const CompetBanner = ({ onInscriptionClick }: { onInscriptionClick: () => void }
                 padding: 2,
                 borderRadius: 1,
                 mb: 2,
-                fontSize: '16px',
-                fontWeight: 400,
               }}
             >
-              «IVOIRE ZIK TALENT» est un concept qui permet de détecter,
-              révéler et faire la promotion des talents dans le domaine de la
-              musique ! Inscrivez-vous, postez vos vidéos et devenez la star du
-              moment.
+              {competition?.description_competition ||
+                '«IVOIRE ZIK TALENT» est un concept qui permet de détecter, révéler et faire la promotion des talents dans le domaine de la musique !'}
             </Box>
 
-            <Typography sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-              <CalendarMonthIcon sx={{ mr: 1, color: '#7f7f7f' }} />
-              <strong style={{ color: '#7f7f7f' }}>Inscription du</strong>
-              <span
-                style={{
-                  background: 'black',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  padding: '2px 6px',
-                  borderRadius: '6px',
-                  marginLeft: '8px',
-                }}
-              >
-                28/01/2025 au 28/05/2025
+            <Typography sx={{ display: 'flex', alignItems: 'center', mb: 1, color: '#7f7f7f' }}>
+              <CalendarMonthIcon sx={{ mr: 1 }} />
+              <strong>Inscription du</strong>
+              <span style={{
+                background: 'black',
+                color: 'white',
+                fontWeight: 'bold',
+                padding: '2px 6px',
+                borderRadius: '6px',
+                marginLeft: '8px',
+              }}>
+                {formatDate(competition?.debut_inscription_competition)} au {formatDate(competition?.fin_inscription_competition)}
               </span>
             </Typography>
 
-            <Typography sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <MonetizationOnIcon sx={{ mr: 1, color: '#7f7f7f' }} />
-              <strong style={{ color: '#7f7f7f' }}>Coût d’inscription</strong>
-              <span
-                style={{
-                  background: '#FFD700',
-                  color: '#000',
-                  padding: '2px 6px',
-                  borderRadius: '6px',
-                  marginLeft: '8px',
-                  fontWeight: 'bold',
-                }}
-              >
-                0 FCFA
+            <Typography sx={{ display: 'flex', alignItems: 'center', mb: 2, color: '#7f7f7f' }}>
+              <MonetizationOnIcon sx={{ mr: 1 }} />
+              <strong>Coût d’inscription</strong>
+              <span style={{
+                background: '#FFD700',
+                color: '#000',
+                padding: '2px 6px',
+                borderRadius: '6px',
+                marginLeft: '8px',
+                fontWeight: 'bold',
+              }}>
+                {competition?.cout_inscription ? `${competition.cout_inscription} FCFA` : 'Gratuit'}
               </span>
             </Typography>
 
@@ -146,7 +143,7 @@ const CompetBanner = ({ onInscriptionClick }: { onInscriptionClick: () => void }
               startIcon={<PersonAddAltIcon />}
               sx={{
                 backgroundColor: '#9b2c9b',
-                paddingX: 4,
+                px: 4,
                 borderRadius: '30px',
                 fontSize: '16px',
                 textTransform: 'none',
@@ -159,7 +156,7 @@ const CompetBanner = ({ onInscriptionClick }: { onInscriptionClick: () => void }
           </Box>
 
           {/* Boutons modaux */}
-          <Box flex={1}>
+          <Box sx={{ width: { xs: '100%', md: '25%' } }}>
             <Stack spacing={2}>
               <StyledButton fullWidth onClick={() => handleOpen('lots')}>Lots</StyledButton>
               <StyledButton fullWidth onClick={() => handleOpen('reglement')}>Règlement du jeu</StyledButton>
@@ -167,7 +164,7 @@ const CompetBanner = ({ onInscriptionClick }: { onInscriptionClick: () => void }
               <StyledButton fullWidth onClick={() => handleOpen('sponsors')}>Sponsors</StyledButton>
             </Stack>
           </Box>
-        </Box>
+        </Stack>
       </Box>
 
       {/* Modal */}

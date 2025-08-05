@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import axios from 'axios';
 import {
   Box,
   Typography,
@@ -6,14 +7,53 @@ import {
   Button,
   Paper,
   Link as MuiLink,
+  Alert,
 } from '@mui/material';
 
 const LoginPage = () => {
+  const [login, setLogin] = useState('');
+  const [password, setPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [type, setType] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setType('');
+
+    try {
+      const res = await axios.post('http://localhost:9002/api/userAccount/login', {
+        login,
+        password,
+      }, {
+        withCredentials: true  // <== important pour les cookies de session Laravel
+      });
+
+      if (res.data.success) {
+        setType('success');
+        setMessage('Connexion réussie ✅');
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+        window.location.href = "/";
+      } else {
+        setType('error');
+        setMessage(res.data.message || 'Erreur de connexion');
+      }
+    } catch (error) {
+      console.error(error);
+      if (error.response?.data?.message) {
+        setMessage(error.response.data.message);
+      } else {
+        setMessage('Erreur réseau ou serveur.');
+      }
+      setType('error');
+    }
+  };
+
   return (
     <Box
       sx={{
         minHeight: '100vh',
-        backgroundImage: 'url("/img/bg1.jpg")', // ✅ remplace avec ton image d’arrière-plan
+        backgroundImage: 'url("/img/bg1.jpg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         display: 'flex',
@@ -43,7 +83,7 @@ const LoginPage = () => {
           Connectez-vous !
         </Typography>
 
-        <Box component="form" noValidate autoComplete="on" mt={3}>
+        <Box component="form" noValidate autoComplete="on" mt={3} onSubmit={handleSubmit}>
           <Typography
             variant="body2"
             sx={{ color: '#FFB74D', mb: 1, fontStyle: 'italic', textAlign: 'start' }}
@@ -54,6 +94,8 @@ const LoginPage = () => {
             fullWidth
             variant="outlined"
             placeholder="2250102010200"
+            value={login}
+            onChange={(e) => setLogin(e.target.value)}
             sx={{
               input: { color: 'black' },
               backgroundColor: '#e9f0fe',
@@ -64,7 +106,7 @@ const LoginPage = () => {
             }}
           />
 
-          <Typography variant="body2" sx={{ color: 'white', mb: 1, textAlign: 'start'  }}>
+          <Typography variant="body2" sx={{ color: 'white', mb: 1, textAlign: 'start' }}>
             Mot de passe *
           </Typography>
           <TextField
@@ -72,6 +114,8 @@ const LoginPage = () => {
             type="password"
             variant="outlined"
             placeholder="********"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             sx={{
               input: { color: 'black' },
               backgroundColor: '#e9f0fe',
@@ -82,7 +126,14 @@ const LoginPage = () => {
             }}
           />
 
+          {message && (
+            <Alert severity={type} sx={{ mb: 2 }}>
+              {message}
+            </Alert>
+          )}
+
           <Button
+            type="submit"
             variant="contained"
             fullWidth
             sx={{

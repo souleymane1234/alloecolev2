@@ -27,7 +27,7 @@ const Header = () => {
 
       {/* Bouton Auth */}
       <button className="flex items-center bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold hover:bg-purple-800 transition">
-        <FaLock className="mr-2" /> S'AUTHENTIFIER
+        <FaLock className="mr-2" />   
       </button>
     </nav>
   );
