@@ -1,4 +1,3 @@
-import * as React from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
@@ -61,7 +60,7 @@ function Actuality() {
       gap: 3,              // espace entre les cartes
     }}
   >
-    {ActualityCards.map((card, index) => (
+    {ActualityCards.map((card) => (
       <Card key={card.id}>
         <CardActionArea
         //   onClick={() => setSelectedCard(index)}

@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import { FaLock } from "react-icons/fa";
 import { Link } from 'react-router-dom';
 

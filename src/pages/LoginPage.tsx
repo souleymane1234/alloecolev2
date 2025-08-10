@@ -11,15 +11,16 @@ import {
 } from '@mui/material';
 
 const LoginPage = () => {
-  const [login, setLogin] = useState('');
+  const [login, setLogin] = React.useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-  const [type, setType] = useState('');
+  const [type, setType] = useState<"error" | "info" | "success" | "warning" | undefined>(undefined);
 
-  const handleSubmit = async (e) => {
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMessage('');
-    setType('');
+    setType(undefined);
 
     try {
       const res = await axios.post('http://localhost:9002/api/userAccount/login', {
@@ -38,12 +39,16 @@ const LoginPage = () => {
         setType('error');
         setMessage(res.data.message || 'Erreur de connexion');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error);
-      if (error.response?.data?.message) {
-        setMessage(error.response.data.message);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.data?.message) {
+          setMessage(error.response.data.message);
+        } else {
+          setMessage('Erreur réseau ou serveur.');
+        }
       } else {
-        setMessage('Erreur réseau ou serveur.');
+        setMessage('Erreur inconnue.');
       }
       setType('error');
     }

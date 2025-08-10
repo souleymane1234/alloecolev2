@@ -1,9 +1,7 @@
-import * as React from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import CardActionArea from '@mui/material/CardActionArea';
-import { CalendarDays } from "lucide-react";
 
 const TalentCards = [
   {
@@ -46,7 +44,7 @@ function AlreadyProduced() {
       gap: 3,              // espace entre les cartes
     }}
   >
-    {TalentCards.map((card, index) => (
+    {TalentCards.map((card) => (
       <Card key={card.id}>
         <CardActionArea
         //   onClick={() => setSelectedCard(index)}

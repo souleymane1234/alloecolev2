@@ -1,19 +1,21 @@
 import React from 'react';
-import { Box, Typography, Grid, Paper, Stack, List, ListItem, ListItemText } from '@mui/material';
+import { Box, Typography, Paper, Stack, List, ListItem, ListItemText } from '@mui/material';
 import { FaFacebookF, FaTwitter, FaInstagram, FaYoutube } from 'react-icons/fa';
 
-const AboutSection = () => {
+const AboutSection: React.FC = () => {
   return (
     <Box bgcolor="white" py={10} px={2}>
-              <Stack
-                direction={{ xs: 'column', sm: 'row', md: 'row', lg: 'row' }}
-                spacing={{ xs: 1, sm: 2, md: 2 }}
-                justifyContent="center"
-                alignItems="center"
-                width="100%"
-              >
-                        {/* Colonne Réseaux sociaux */}
-        <Grid item xs={12} md={6}>
+      <Box 
+        display="flex" 
+        flexDirection={{ xs: 'column', md: 'row' }} 
+        gap={{ xs: 1, sm: 2, md: 2 }}
+        justifyContent="center"
+        alignItems="stretch"
+        maxWidth="1200px"
+        mx="auto"
+      >
+        {/* Colonne Réseaux sociaux */}
+        <Box flex={1} minWidth={{ xs: '100%', md: '50%' }}>
           <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom>
               Suivez-nous
@@ -41,10 +43,10 @@ const AboutSection = () => {
               />
             </Stack>
           </Paper>
-        </Grid>
+        </Box>
 
         {/* Colonne À propos */}
-        <Grid item xs={12} md={6}>
+        <Box flex={1} minWidth={{ xs: '100%', md: '50%' }}>
           <Paper elevation={3} sx={{ p: 4, textAlign: 'center', height: '100%' }}>
             <Typography variant="h4" fontWeight="bold" gutterBottom>
               A PROPOS DE NOUS
@@ -94,19 +96,8 @@ const AboutSection = () => {
               </Stack>
             </Box>
           </Paper>
-        </Grid>
-              </Stack>
-      {/* <Grid 
-        container 
-        spacing={4} 
-        direction="row" 
-        justifyContent="center" 
-        alignItems="stretch"
-        maxWidth="lg"
-        mx="auto"
-      >
-
-      </Grid> */}
+        </Box>
+      </Box>
     </Box>
   );
 };

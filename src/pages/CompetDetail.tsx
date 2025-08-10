@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import CompetCard from '../components/CompetCard';
 import CompetBanner from '../components/CompetBanner';
 import ProfileCard from '../components/ProfileCard';
 import InscriptionForm from '../components/InscriptionForm';
 import { useParams } from 'react-router-dom';
+
 
 const CompetDetail: React.FC = () => {
   const { code_competition } = useParams();
@@ -39,7 +39,9 @@ const CompetDetail: React.FC = () => {
   
   return (
     <>
-    <CompetBanner onInscriptionClick={handleInscriptionClick} competition={competition} />
+    {!loading && competition && (
+      <CompetBanner onInscriptionClick={handleInscriptionClick} competition={competition} />
+    )}
     {loading ? (
       <p>Chargement...</p>
     ) : showInscription ? (

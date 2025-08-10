@@ -1,8 +1,6 @@
-import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import DrawerAppBar from "./DrawerAppBar";
+import DrawerAppBar from "./Drawerappbar";
 import Footer from "./Footer";
-import { Box, Toolbar } from '@mui/material';
 
 const Layout = () => {
   const location = useLocation();

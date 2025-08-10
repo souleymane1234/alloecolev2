@@ -5,47 +5,24 @@ import axios from 'axios';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
-import CardActionArea from '@mui/material/CardActionArea';
 import { CalendarDays } from "lucide-react";
 import { Link } from 'react-router-dom';
 
-const competCards = [
-  {
-    id: 1,
-    title: 'GOSPEL TALENT',
-    badge: 'Compétition',
-    urlVideo: '/video/video.mp4',
-    urlPoster: '/img/zik.jpg',
-    dateDebut: '2025-02-02',
-    dateFin: '2025-07-10',
-    description: '« GOSPEL TALENT » est un concept qui permet de détecter, révéler et faire la promotion des talents da...',
-  },
-  {
-    id: 2,
-    title: 'IVOIRE ZIK TALENT',
-    badge: 'Compétition',
-    urlVideo: '/video/video.mp4',
-    urlPoster: '/img/zik.jpg',
-    dateDebut: '2025-02-02',
-    dateFin: '2025-07-10',
-    description: '« GOSPEL TALENT » est un concept qui permet de détecter, révéler et faire la promotion des talents da...',
-  },
-  {
-    id: 3,
-    title: 'URBAN TALENT',
-    badge: 'Compétition',
-    urlVideo: '/video/video.mp4',
-    urlPoster: '/img/zik.jpg',
-    dateDebut: '2025-02-02',
-    dateFin: '2025-07-10',
-    description: '« GOSPEL TALENT » est un concept qui permet de détecter, révéler et faire la promotion des talents da...',
-  },
-];
-
-function CompetCard() {
+const CompetCard: React.FC = () => {
   const { code_emission } = useParams();
-  const [selectedCard, setSelectedCard] = useState(0);
-  const [emissionsDetails, setEmissionsDetails] = useState([]);
+  
+  interface EmissionDetail {
+    id: string;
+    url_video_competition: string;
+    url_photo_competition: string;
+    titre_competition: string;
+    description_competition: string;
+    debut_inscription_competition: string;
+    fin_inscription_competition: string;
+    code_competition: string;
+  }
+  
+  const [emissionsDetails, setEmissionsDetails] = useState<EmissionDetail[]>([]);
   const [loading, setLoading] = useState(true);
 
 
@@ -65,7 +42,7 @@ function CompetCard() {
     if (loading) return <p>Chargement...</p>;
 
 
-    function truncateText(text, maxLength = 100) {
+    function truncateText(text: string, maxLength = 100) {
       return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
     }
 
@@ -92,9 +69,9 @@ function CompetCard() {
     gap: 3,
   }}
 >
-  {emissionsDetails.map((card, index) => (
+  {emissionsDetails.map((card) => (
     <Card key={card.id}>
-      <Box data-active={selectedCard === index ? '' : undefined} sx={{ height: '100%' }}>
+      <Box sx={{ height: '100%' }}>
         <div className="w-full rounded-xl shadow-lg overflow-hidden bg-white">
           <div className="relative">
             <video

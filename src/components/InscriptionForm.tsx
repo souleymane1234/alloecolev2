@@ -7,7 +7,17 @@ type Props = {
 };
 
 const InscriptionForm = ({ competitionCode }: Props) => {
-  const [user, setUser] = useState(null);
+  interface User {
+    code_user_account?: string;
+    login_number?: string;
+    telephone?: string;
+    localisation?: string;
+    ville?: string;
+    pays?: string;
+    nom?: string;
+  }
+  
+  const [user, setUser] = React.useState<User | null>(null);
   const [formData, setFormData] = useState({
     nom_correct: '',
     nom_presentation: '',
@@ -30,16 +40,17 @@ const InscriptionForm = ({ competitionCode }: Props) => {
     }
   }, [navigate]);
 
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    if (files) {
-      setFormData({ ...formData, [name]: files[0] });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    if ((e.target as HTMLInputElement).files) {
+      setFormData({ ...formData, [name]: (e.target as HTMLInputElement).files![0] });
     } else {
       setFormData({ ...formData, [name]: value });
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
   
     if (!user) {
@@ -100,14 +111,24 @@ const InscriptionForm = ({ competitionCode }: Props) => {
       }
     } catch (err) {
       console.error('Erreur complète:', err);
-      console.error('Réponse serveur:', err.response?.data);
+      console.error('Réponse serveur:', (err as any).response?.data);
       
-      if (err.response?.data?.errors) {
+      if ((err as any).response?.data?.errors) {
         // Afficher les erreurs de validation
-        const errors = Object.values(err.response.data.errors).flat();
+        if (axios.isAxiosError(err) && err.response?.data?.errors) {
+          const errors = Object.values(err.response.data.errors).flat();
+           alert('Erreurs de validation:\n' + errors.join('\n')); // Removed redundant alert
+        }
+        const errors = (err as any).response?.data?.errors
+          ? Object.values((err as any).response.data.errors).flat()
+          : [];
         alert('Erreurs de validation:\n' + errors.join('\n'));
       } else {
-        alert('Une erreur est survenue: ' + (err.response?.data?.message || err.message));
+        if (axios.isAxiosError(err)) {
+          alert('Une erreur est survenue: ' + (err.response?.data?.message || err.message));
+        } else {
+          alert('Une erreur est survenue: ' + String(err));
+        }
       }
     }
   };

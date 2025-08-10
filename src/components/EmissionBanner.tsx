@@ -2,25 +2,19 @@ import { useParams } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import axios from 'axios';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
-import { styled } from '@mui/material/styles';
 
-const Item = styled(Paper)(({ theme }) => ({
-  backgroundColor: '#fff',
-  ...theme.typography.body2,
-  padding: theme.spacing(1),
-  textAlign: 'center',
-  color: (theme.vars ?? theme).palette.text.secondary,
-  ...theme.applyStyles('dark', {
-    backgroundColor: '#1A2027',
-  }),
-}));
 
-const EmissionBanner = () => {
+interface Emission {
+  url_video_emission: string;
+  url_photo_emission: string;
+  titre_emission: string;
+  description_emission: string;
+}
+
+const EmissionBanner: React.FC = () => {
     const { code_emission } = useParams();
-    const [selectedCard, setSelectedCard] = useState(0);
-    const [emissionsInfo, setEmissionsInfo] = useState([]);
+    const [emissionsInfo, setEmissionsInfo] = useState<Emission | null>(null);
     const [loading, setLoading] = useState(true);
 
         useEffect(() => {
@@ -38,7 +32,7 @@ const EmissionBanner = () => {
     
         if (loading) return <p>Chargement...</p>;
 
-        function truncateText(text, maxLength = 100) {
+        function truncateText(text: string, maxLength: number = 100): string {
           return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
         }
   return (
@@ -61,23 +55,29 @@ const EmissionBanner = () => {
         justifyContent="center"
         alignItems="center"
         width="100%"
-        backgroundColor="rgba(0, 0, 0, 0.5)"
+        sx={{
+          backgroundColor: 'rgba(0, 0, 0, 0.5)'
+        }}
 
       >
         <Box sx={{ width: { xs: '100%' }, padding: 2 }}>
         <div className="w-full  aspect-video">
         <video
               className="w-full h-64object-cover"
-              src={`http://localhost:9002/${emissionsInfo.url_video_emission}`}
-              poster={`http://localhost:9002/${emissionsInfo.url_photo_emission}`}
+              src={`http://localhost:9002/${emissionsInfo?.url_video_emission}`}
+              poster={`http://localhost:9002/${emissionsInfo?.url_photo_emission}`}
               controls
             ></video>
       </div>
         </Box>
         <Box sx={{ width: { xs: '100%' }, padding: 2 }}>
         <div className="mt-10">
-            <h1 className="text-white font-semibold font-[Formula_Condensed] mb-8">{emissionsInfo.titre_emission}</h1>
-            <p className="text-white text-[22px] font-semibold font-[Formula_Condensed] mb-8">{truncateText(emissionsInfo.description_emission, 80)}</p>
+            <h1 className="text-white font-semibold font-[Formula_Condensed] mb-8">{emissionsInfo?.titre_emission}</h1>
+            <p className="...">
+                {emissionsInfo?.description_emission
+                  ? truncateText(emissionsInfo.description_emission, 80)
+                  : ''}
+              </p>
     </div>       
         </Box>
         <Box sx={{ width: { xs: '100%' }, padding: 2 }}> 

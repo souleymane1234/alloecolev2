@@ -13,7 +13,6 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import MenuIcon from '@mui/icons-material/Menu';
 import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -28,13 +27,26 @@ const navItems = [
   { label: 'A PROPOS', path: '/a-propos' }
 ];
 
-function DrawerAppBar(props) {
+interface NavItem {
+  label: string;
+  path: string;
+}
+
+interface DrawerAppBarProps {
+  window?: () => Window;
+}
+
+interface User {
+  [key: string]: any; // Adjust this type based on the actual structure of the user object
+}
+
+function DrawerAppBar(props: DrawerAppBarProps) {
   const { window } = props;
-  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [mobileOpen, setMobileOpen] = React.useState<boolean>(false);
   const navigate = useNavigate();
   const location = useLocation(); // 🔥 pour identifier la route active
 
-  const [user, setUser] = React.useState(() => {
+  const [user, setUser] = React.useState<User | null>(() => {
     try {
       return JSON.parse(localStorage.getItem('user') || 'null');
     } catch {
@@ -42,35 +54,39 @@ function DrawerAppBar(props) {
     }
   });
 
-  const handleDrawerToggle = () => {
+  const handleDrawerToggle = (): void => {
     setMobileOpen((prevState) => !prevState);
   };
 
-  const handleLogout = async () => {
+  const handleLogout = async (): Promise<void> => {
     try {
-      const res = await axios.post('http://localhost:9002/api/logout', {}, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+      const res = await axios.post(
+        'http://localhost:9002/api/logout',
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
         }
-      });
+      );
 
       if (res.data.success) {
         localStorage.removeItem('user');
         setUser(null);
         navigate('/login');
       } else {
-        alert(res.data.message || "Erreur lors de la déconnexion");
+        alert(res.data.message || 'Erreur lors de la déconnexion');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erreur logout:', error);
       localStorage.removeItem('user');
       setUser(null);
-      if (error.response?.data?.message) {
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
         alert(error.response.data.message);
       } else {
-        alert("Erreur réseau. Déconnexion locale effectuée.");
+        alert('Erreur réseau. Déconnexion locale effectuée.');
       }
       navigate('/login');
     }
@@ -83,7 +99,7 @@ function DrawerAppBar(props) {
       </Box>
       <Divider />
       <List>
-        {navItems.map((item) => (
+        {navItems.map((item: NavItem) => (
           <ListItem key={item.label} disablePadding>
             <ListItemButton
               component={Link}
@@ -159,7 +175,7 @@ function DrawerAppBar(props) {
           </Box>
 
           <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 2 }}>
-            {navItems.map((item) => (
+            {navItems.map((item: NavItem) => (
               <Button
                 key={item.label}
                 component={Link}

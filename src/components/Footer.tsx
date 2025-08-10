@@ -1,6 +1,6 @@
-import React from 'react';
 import { Facebook, Twitter, Instagram, Youtube } from 'lucide-react';
-import { Box, Typography, Grid, Link } from '@mui/material';
+import { Box, Typography, Link } from '@mui/material';
+import Grid from '@mui/material/Grid';
 
 function Footer() {
   return (
@@ -15,13 +15,13 @@ function Footer() {
     >
       <Grid container spacing={4}>
         {/* Logo + description + social */}
-        <Grid size={{ xs: 12, md: 4 }} item xs={12} md={4} textAlign={{ xs: 'center', md: 'left' }}>
+        <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { xs: 'center', md: 'left' } }}>
           <img src="/img/logo.png" alt="ZikTalent" style={{ height: '80px' }} />
           <Typography mt={2} variant="body1" sx={{ color: '#d1d5db' }}>
             ZIK’TALENT est un concept qui permet de détecter, révéler et faire la promotion des talents dans le domaine de la musique.
           </Typography>
           <Box mt={3} display="flex" justifyContent={{ xs: 'center', md: 'flex-start' }} gap={2}>
-            <Link href="#" color="inherit" style={{}}><Facebook size={24} /></Link>
+            <Link href="#" color="inherit"><Facebook size={24} /></Link>
             <Link href="#" color="inherit"><Twitter size={24} /></Link>
             <Link href="#" color="inherit"><Instagram size={24} /></Link>
             <Link href="#" color="inherit"><Youtube size={24} /></Link>
@@ -29,7 +29,7 @@ function Footer() {
         </Grid>
 
         {/* Info utiles */}
-        <Grid size={{ xs: 12, sm: 6, md: 4 }} textAlign={{ xs: 'center', md: 'left' }}>
+        <Grid size={{ xs: 12, md: 6 }} sx={{ textAlign: { xs: 'center', md: 'left' } }}>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             INFO UTILES
           </Typography>
@@ -40,7 +40,7 @@ function Footer() {
         </Grid>
 
         {/* Liens utiles */}
-        <Grid size={{ xs: 12, sm: 6, md: 4 }} textAlign={{ xs: 'center', md: 'left' }}>
+        <Grid size={{ xs: 12, md: 4, sm:6 }} sx={{ textAlign: { xs: 'center', md: 'left' } }}>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             LIENS UTILES
           </Typography>

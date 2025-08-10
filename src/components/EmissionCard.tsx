@@ -5,10 +5,22 @@ import { Link } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import CardActionArea from '@mui/material/CardActionArea';
-import { CalendarDays } from "lucide-react";
 
-function EmissionCard({ titleComponent, titleButton }) {
-  const [emissions, setEmissions] = useState([]);
+interface Props {
+  titleComponent: string;
+  titleButton: string;
+}
+
+const EmissionCard: React.FC<Props> = ({ titleComponent, titleButton }) => {
+  interface Emission {
+    code_emission: string;
+    url_video_emission: string;
+    url_photo_emission: string;
+    titre_emission: string;
+    description_emission: string;
+  }
+  
+  const [emissions, setEmissions] = useState<Emission[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,7 +37,7 @@ function EmissionCard({ titleComponent, titleButton }) {
       });
   }, []);
 
-  if (loading) return <p className="text-center mt-4">Chargement...</p>;
+  if (loading) return <p className="text-center mt-4">Nos compétitions sont en cours de chargement...</p>;
 
   return (
     <>
@@ -55,7 +67,7 @@ function EmissionCard({ titleComponent, titleButton }) {
           gap: 2,
         }}
       >
-        {emissions.map((card, index) => (
+        {emissions.map((card) => (
           <Card key={card.code_emission} sx={{ height: '100%' }}>
             <CardActionArea sx={{ height: '100%' }}>
               <div className="rounded-xl shadow-md overflow-hidden bg-white h-full">
