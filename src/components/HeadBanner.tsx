@@ -14,25 +14,21 @@ const HeadBanner: React.FC = () => {
   }
 
     const [emissions, setEmissions] = useState<Emission | null>(null);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
       axios.get('http://localhost:9002/api/emission')
         .then((response) => {
           const allEmissions = response.data.emissions || [];
           const gospelEmission = allEmissions.find(
-            emission => emission.titre_emission === "GOSPEL TALENT"
+            (emission: Emission) => emission.titre_emission === "GOSPEL TALENT"
           );
           setEmissions(gospelEmission || null);
-          setLoading(false);
         })
         .catch((error) => {
           console.error('Erreur lors de la récupération des émissions :', error);
-          setLoading(false);
         });
     }, []);
 
-    console.log('competDetails', emissions);
   return (
     <>
     <Box     width="100%"
