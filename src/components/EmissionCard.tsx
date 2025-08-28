@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import CardActionArea from '@mui/material/CardActionArea';
+const apiUrl = import.meta.env.VITE_API_URL;
+const apiImageUrl = import.meta.env.VITE_API_URL_IMAGE;
 
 interface Props {
   titleComponent: string;
@@ -24,7 +26,7 @@ const EmissionCard: React.FC<Props> = ({ titleComponent, titleButton }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get('http://localhost:9002/api/emission')
+    axios.get(`${apiUrl}/emission`)
       .then((response) => {
         const allCompetitions = response.data.emissions || [];
         const limitedCompetitions = allCompetitions.slice(0, 4);
@@ -74,8 +76,8 @@ const EmissionCard: React.FC<Props> = ({ titleComponent, titleButton }) => {
                 <div className="relative">
                   <video
                     className="w-full h-32 sm:h-36 md:h-40 object-cover"
-                    src={`http://localhost:9002/${card.url_video_emission}`}
-                    poster={`http://localhost:9002/${card.url_photo_emission}`}
+                    src={`${apiImageUrl}/${card.url_video_emission}`}
+                    poster={`${apiImageUrl}/${card.url_photo_emission}`}
                     controls
                   ></video>
                   <div className="absolute top-0 right-0">

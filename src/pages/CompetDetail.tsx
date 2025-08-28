@@ -4,6 +4,7 @@ import CompetBanner from '../components/CompetBanner';
 import ProfileCard from '../components/ProfileCard';
 import InscriptionForm from '../components/InscriptionForm';
 import { useParams } from 'react-router-dom';
+const apiUrl = import.meta.env.VITE_API_URL;
 
 
 const CompetDetail: React.FC = () => {
@@ -20,7 +21,7 @@ const CompetDetail: React.FC = () => {
   useEffect(() => {
     const fetchCompetition = async () => {
       try {
-        const response = await axios.get(`http://localhost:9002/api/competitions/${code_competition}`);
+        const response = await axios.get(`${apiUrl}/competitions/${code_competition}`);
         if (response.status === 200) {
           setCompetition(response.data.details);
           setParticipants(response.data.participants || []);

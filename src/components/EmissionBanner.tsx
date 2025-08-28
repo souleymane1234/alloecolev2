@@ -3,6 +3,9 @@ import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import axios from 'axios';
 import Stack from '@mui/material/Stack';
+const apiUrl = import.meta.env.VITE_API_URL;
+const apiImageUrl = import.meta.env.VITE_API_URL_IMAGE;
+
 
 
 interface Emission {
@@ -18,7 +21,7 @@ const EmissionBanner: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
         useEffect(() => {
-          axios.get(`http://localhost:9002/api/emissions/${code_emission}`)
+          axios.get(`${apiUrl}/emissions/${code_emission}`)
             .then((response) => {
               setEmissionsInfo(response.data.emission);
               console.log('Emission Info:', response.data.emission); // Log emission info
@@ -64,8 +67,8 @@ const EmissionBanner: React.FC = () => {
         <div className="w-full  aspect-video">
         <video
               className="w-full h-64object-cover"
-              src={`http://localhost:9002/${emissionsInfo?.url_video_emission}`}
-              poster={`http://localhost:9002/${emissionsInfo?.url_photo_emission}`}
+              src={`${apiImageUrl}/${emissionsInfo?.url_video_emission}`}
+              poster={`${apiImageUrl}/${emissionsInfo?.url_photo_emission}`}
               controls
             ></video>
       </div>

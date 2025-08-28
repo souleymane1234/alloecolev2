@@ -9,6 +9,7 @@ import {
   Link as MuiLink,
   Alert,
 } from '@mui/material';
+const apiUrl = import.meta.env.VITE_API_URL;
 
 const LoginPage = () => {
   const [login, setLogin] = React.useState('');
@@ -23,7 +24,7 @@ const LoginPage = () => {
     setType(undefined);
 
     try {
-      const res = await axios.post('http://localhost:9002/api/userAccount/login', {
+      const res = await axios.post(`${apiUrl}/userAccount/login`, {
         login,
         password,
       }, {

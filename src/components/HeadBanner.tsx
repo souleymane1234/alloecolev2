@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import axios from 'axios';
+const apiUrl = import.meta.env.VITE_API_URL;
+const apiImageUrl = import.meta.env.VITE_API_URL_IMAGE;
 
 const HeadBanner: React.FC = () => {
 
@@ -16,7 +18,7 @@ const HeadBanner: React.FC = () => {
     const [emissions, setEmissions] = useState<Emission | null>(null);
 
     useEffect(() => {
-      axios.get('http://localhost:9002/api/emission')
+      axios.get(`${apiUrl}/emission`)
         .then((response) => {
           const allEmissions = response.data.emissions || [];
           const gospelEmission = allEmissions.find(
@@ -126,8 +128,8 @@ const HeadBanner: React.FC = () => {
       <div className="relative">
       <video
         className="w-full h-32 sm:h-36 md:h-40 object-cover"
-        src={`http://localhost:9002/${emissions?.url_video_emission}`}
-        poster={`http://localhost:9002/${emissions?.url_photo_emission}`}
+        src={`${apiImageUrl}/${emissions?.url_video_emission}`}
+        poster={`${apiImageUrl}/${emissions?.url_photo_emission}`}
         controls
       ></video>
         <div className="absolute top-0 right-0">

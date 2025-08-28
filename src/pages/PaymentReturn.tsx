@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+const apiUrl = import.meta.env.VITE_API_URL;
 
 const PaymentReturn = () => {
   const [params] = useSearchParams();
@@ -13,8 +14,8 @@ const PaymentReturn = () => {
       return;
     }
 
-    // Récupère les détails de la transaction depuis Laravel
-    axios.get(`http://localhost:9002/api/payment/return?ref=${ref}`)
+    // Récupère les détails de la transaction depuis Laravel 
+    axios.get( `${apiUrl}/payment/return?ref=${ref}`)
       .then(res => {
         // Affiche les messages de succès/échec dans ton app
         alert(res.data.message);

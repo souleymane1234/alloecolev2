@@ -6,6 +6,8 @@ import { Play } from 'lucide-react';
 import Button from '@mui/material/Button';
 import { Link } from 'react-router-dom';
 import Dialog from '@mui/material/Dialog';
+const apiUrl = import.meta.env.VITE_API_URL;
+const apiImageUrl = import.meta.env.VITE_API_URL_IMAGE;
 
 interface Participant {
   id: number;
@@ -98,7 +100,7 @@ function ProfileCard({ participants }: Props) {
 
                 <div className="w-24 h-24 rounded-full overflow-hidden mb-4 border-4 border-white/20 shadow-xl relative z-10">
                   <img
-                    src={`http://localhost:9002/${profile.url_photo_identite}`}
+                    src={`${apiImageUrl}/${profile.url_photo_identite}`}
                     alt={`${profile.nom_correct}`}
                     className="w-full h-full object-cover"
                   />
@@ -140,7 +142,7 @@ function ProfileCard({ participants }: Props) {
                     }}
                     startIcon={<Play className="w-4 h-4" />}
                     style={{ fontSize: '10px' }}
-                    onClick={() => handleOpenVideo(`http://localhost:9002/${profile.url_video}`)}
+                    onClick={() => handleOpenVideo(`${apiImageUrl}/${profile.url_video}`)}
                   >
                     Voir la vidéo
                   </Button>

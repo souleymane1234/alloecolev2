@@ -16,7 +16,18 @@ import Toolbar from '@mui/material/Toolbar';
 import Button from '@mui/material/Button';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
+import ShareIcon from '@mui/icons-material/Share';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import axios from 'axios';
+const apiUrl = import.meta.env.VITE_API_URL;
 
 const drawerWidth = 240;
 
@@ -37,14 +48,27 @@ interface DrawerAppBarProps {
 }
 
 interface User {
-  [key: string]: any; // Adjust this type based on the actual structure of the user object
+  id?: string;
+  email?: string;
+  [key: string]: any;
+}
+
+interface ReferralData {
+  code: string;
+  link: string;
 }
 
 function DrawerAppBar(props: DrawerAppBarProps) {
   const { window } = props;
   const [mobileOpen, setMobileOpen] = React.useState<boolean>(false);
+  const [referralDialogOpen, setReferralDialogOpen] = React.useState<boolean>(false);
+  const [referralData, setReferralData] = React.useState<ReferralData | null>(null);
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [snackbarOpen, setSnackbarOpen] = React.useState<boolean>(false);
+  const [snackbarMessage, setSnackbarMessage] = React.useState<string>('');
+  
   const navigate = useNavigate();
-  const location = useLocation(); // 🔥 pour identifier la route active
+  const location = useLocation();
 
   const [user, setUser] = React.useState<User | null>(() => {
     try {
@@ -60,8 +84,8 @@ function DrawerAppBar(props: DrawerAppBarProps) {
 
   const handleLogout = async (): Promise<void> => {
     try {
-      const res = await axios.post(
-        'http://localhost:9002/api/logout',
+      const res = await axios.post( 
+        `${apiUrl}/logout`,
         {},
         {
           withCredentials: true,
@@ -92,6 +116,71 @@ function DrawerAppBar(props: DrawerAppBarProps) {
     }
   };
 
+  const generateReferralCode = (): string => {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+  };
+
+  const handleReferralClick = async (): Promise<void> => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    setReferralDialogOpen(true);
+    setLoading(true);
+
+    try {
+      // Tentative d'appel API pour récupérer ou générer le code de parrainage
+      const response = await axios.get(
+        `${apiUrl}/referral/${user.id}`,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+        }
+      );
+
+      if (response.data.success) {
+        setReferralData(response.data.data);
+      } else {
+        throw new Error('Erreur lors de la récupération du code de parrainage');
+      }
+    } catch (error) {
+      console.warn('API non disponible, génération locale du code:', error);
+      
+      // Fallback : génération locale si l'API n'est pas disponible
+      const code = generateReferralCode();
+      const link = `http://localhost:5173/register?ref=${code}`;
+      
+      setReferralData({ code, link });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyToClipboard = async (text: string, type: 'code' | 'link'): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setSnackbarMessage(`${type === 'code' ? 'Code' : 'Lien'} copié dans le presse-papiers !`);
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error('Erreur lors de la copie:', error);
+      setSnackbarMessage('Erreur lors de la copie');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleCloseReferralDialog = (): void => {
+    setReferralDialogOpen(false);
+    setReferralData(null);
+  };
+
+  const handleCloseSnackbar = (): void => {
+    setSnackbarOpen(false);
+  };
+
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
       <Box sx={{ my: 2 }}>
@@ -118,6 +207,31 @@ function DrawerAppBar(props: DrawerAppBarProps) {
             </ListItemButton>
           </ListItem>
         ))}
+        
+        {/* Bouton de parrainage pour mobile */}
+        {user && (
+          <ListItem disablePadding>
+            <Button
+              onClick={handleReferralClick}
+              startIcon={<ShareIcon />}
+              variant="outlined"
+              fullWidth
+              sx={{
+                mt: 1,
+                mx: 2,
+                color: '#861e81',
+                borderColor: '#861e81',
+                '&:hover': {
+                  backgroundColor: 'rgba(134, 30, 129, 0.1)',
+                  borderColor: '#861e81',
+                },
+              }}
+            >
+              Parrainage
+            </Button>
+          </ListItem>
+        )}
+        
         {user ? (
           <Button
             onClick={handleLogout}
@@ -192,6 +306,26 @@ function DrawerAppBar(props: DrawerAppBarProps) {
                 {item.label}
               </Button>
             ))}
+            
+            {/* Bouton de parrainage pour desktop */}
+            {user && (
+              <Button
+                onClick={handleReferralClick}
+                startIcon={<ShareIcon />}
+                variant="outlined"
+                sx={{
+                  color: '#861e81',
+                  borderColor: '#861e81',
+                  '&:hover': {
+                    backgroundColor: 'rgba(134, 30, 129, 0.1)',
+                    borderColor: '#861e81',
+                  },
+                }}
+              >
+                Parrainage
+              </Button>
+            )}
+            
             {user ? (
               <Button
                 onClick={handleLogout}
@@ -239,6 +373,108 @@ function DrawerAppBar(props: DrawerAppBarProps) {
           {drawer}
         </Drawer>
       </nav>
+
+      {/* Dialog de parrainage */}
+      <Dialog
+        open={referralDialogOpen}
+        onClose={handleCloseReferralDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ShareIcon sx={{ color: '#861e81' }} />
+            <Typography variant="h6">Mon Code de Parrainage</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {loading ? (
+            <Box sx={{ textAlign: 'center', py: 3 }}>
+              <Typography>Génération du code de parrainage...</Typography>
+            </Box>
+          ) : referralData ? (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                Partagez votre code ou lien de parrainage avec vos amis pour qu'ils puissent s'inscrire :
+              </Typography>
+              
+              {/* Code de parrainage */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
+                  Code de parrainage :
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <TextField
+                    value={referralData.code}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    sx={{
+                      '& .MuiInputBase-input': {
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        fontSize: '1.2rem',
+                        color: '#861e81',
+                      },
+                    }}
+                  />
+                  <IconButton
+                    onClick={() => handleCopyToClipboard(referralData.code, 'code')}
+                    sx={{ color: '#861e81' }}
+                  >
+                    <ContentCopyIcon />
+                  </IconButton>
+                </Box>
+              </Box>
+
+              {/* Lien de parrainage */}
+              <Box>
+                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
+                  Lien de parrainage :
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <TextField
+                    value={referralData.link}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    sx={{
+                      '& .MuiInputBase-input': {
+                        fontSize: '0.9rem',
+                      },
+                    }}
+                  />
+                  <IconButton
+                    onClick={() => handleCopyToClipboard(referralData.link, 'link')}
+                    sx={{ color: '#861e81' }}
+                  >
+                    <ContentCopyIcon />
+                  </IconButton>
+                </Box>
+              </Box>
+            </Box>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseReferralDialog} sx={{ color: '#861e81' }}>
+            Fermer
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar pour les notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
 
       <Box component="main">
         <Toolbar />

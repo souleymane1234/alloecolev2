@@ -6,6 +6,8 @@ import { styled } from '@mui/material/styles';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
+const apiUrl = import.meta.env.VITE_API_URL;
+const apiImageUrl = import.meta.env.VITE_API_URL_IMAGE;
 
 interface Competition {
   titre_competition: string;
@@ -83,8 +85,8 @@ const CompetBanner: React.FC<CompetBannerProps> = ({ competition, onInscriptionC
           <Box sx={{ width: { xs: '100%', md: '33%' }, border: '6px solid #351931' }}>
             <video
               className="w-full h-48 object-cover"
-              src={`http://localhost:9002/${competition?.url_video_competition}`}
-              poster={`http://localhost:9002/${competition?.url_photo_competition}`}
+              src={`${apiImageUrl}/${competition?.url_video_competition}`}
+              poster={`${apiImageUrl}/${competition?.url_photo_competition}`}
               controls
             />
           </Box>

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Play, ArrowLeft, Trophy, Vote, CreditCard } from 'lucide-react';
+import { Play, ArrowLeft, Trophy, Vote, CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Box, 
@@ -9,7 +9,13 @@ import {
   Avatar, 
   Chip, 
   Paper,
+  Modal,
+  Backdrop,
+  Fade,
 } from '@mui/material';
+const apiUrl = import.meta.env.VITE_API_URL;
+const apiImageUrl = import.meta.env.VITE_API_URL_IMAGE;
+
 
 interface MessageState {
   type: string;
@@ -18,16 +24,153 @@ interface MessageState {
 }
 
 interface PaymentResponse {
-  success: boolean;
+  success?: boolean;
   result?: {
     payment_url?: string;
   };
+  message?: string;
+  status?: string;
+  data?: {
+    payment_url?: string;
+  };
+}
+
+interface PaymentStatusResponse {
+  state?: string;
+  status?: string;
   message?: string;
 }
 
 interface ErrorResponse {
   message?: string;
 }
+
+// Composant Modal de Confirmation de Paiement
+const PaymentStatusModal = ({ 
+  open, 
+  onClose, 
+  status, 
+  message, 
+  onRetry 
+}: {
+  open: boolean;
+  onClose: () => void;
+  status: 'success' | 'failed' | 'pending';
+  message: string;
+  onRetry?: () => void;
+}) => {
+  const getStatusIcon = () => {
+    switch (status) {
+      case 'success':
+        return <CheckCircle size={64} className="text-green-500" />;
+      case 'failed':
+        return <XCircle size={64} className="text-red-500" />;
+      case 'pending':
+      default:
+        return <Clock size={64} className="text-yellow-500" />;
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (status) {
+      case 'success':
+        return 'from-green-500 to-green-600';
+      case 'failed':
+        return 'from-red-500 to-red-600';
+      case 'pending':
+      default:
+        return 'from-yellow-500 to-yellow-600';
+    }
+  };
+
+  const getStatusText = () => {
+    switch (status) {
+      case 'success':
+        return 'Paiement Confirmé !';
+      case 'failed':
+        return 'Paiement Échoué';
+      case 'pending':
+      default:
+        return 'Paiement en Cours...';
+    }
+  };
+
+  return (
+    <Modal
+      aria-labelledby="payment-status-modal"
+      aria-describedby="payment-status-description"
+      open={open}
+      onClose={status !== 'pending' ? onClose : undefined}
+      closeAfterTransition
+      BackdropComponent={Backdrop}
+      BackdropProps={{
+        timeout: 500,
+      }}
+    >
+      <Fade in={open}>
+        <Box sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: { xs: '90%', sm: 400 },
+          bgcolor: 'background.paper',
+          borderRadius: 3,
+          boxShadow: 24,
+          p: 0,
+          outline: 'none',
+        }}>
+          <div className={`bg-gradient-to-r ${getStatusColor()} text-white p-6 rounded-t-3xl`}>
+            <div className="flex flex-col items-center text-center">
+              {getStatusIcon()}
+              <h2 className="text-xl font-bold mt-4">{getStatusText()}</h2>
+            </div>
+          </div>
+          
+          <div className="p-6">
+            <p className="text-gray-700 text-center mb-6">{message}</p>
+            
+            <div className="flex flex-col gap-3">
+              {status === 'success' && (
+                <button
+                  onClick={onClose}
+                  className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all"
+                >
+                  Parfait !
+                </button>
+              )}
+              
+              {status === 'failed' && (
+                <>
+                  {onRetry && (
+                    <button
+                      onClick={onRetry}
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all"
+                    >
+                      Réessayer
+                    </button>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="w-full bg-gray-500 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition-all"
+                  >
+                    Fermer
+                  </button>
+                </>
+              )}
+              
+              {status === 'pending' && (
+                <div className="flex justify-center">
+                  <div className="w-8 h-8 border-4 border-yellow-200 border-t-yellow-500 rounded-full animate-spin"></div>
+                </div>
+              )}
+            </div>
+          </div>
+        </Box>
+      </Fade>
+    </Modal>
+  );
+};
 
 const generateReference = (): string => {
   const timestamp = Date.now();
@@ -41,33 +184,47 @@ const VotingComponent: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<MessageState>({ type: '', text: '', show: false });
+  
+  // États pour la modal de statut de paiement
+  const [paymentModal, setPaymentModal] = useState({
+    open: false,
+    status: 'pending' as 'success' | 'failed' | 'pending',
+    message: ''
+  });
+  
+  // État pour la vérification du paiement
+  const [paymentCheckInterval, setPaymentCheckInterval] = useState<NodeJS.Timeout | null>(null);
+  const [currentReference, setCurrentReference] = useState<string>('');
 
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Récupération du participant transmis
   const part = location.state?.perso;
 
   const competition = {
     titre_competition: "ÉDITION 2025"
   };
 
-  // Removed unused handlePayment function
+  // Nettoyer les intervalles lors du démontage du composant
+  useEffect(() => {
+    return () => {
+      if (paymentCheckInterval) {
+        clearInterval(paymentCheckInterval);
+      }
+    };
+  }, [paymentCheckInterval]);
 
   const validatePhoneNumber = (number: string, operator: string): boolean => {
-    // Nettoyer les espaces
     const cleaned = number.replace(/\s+/g, '');
   
-    // Vérifie si le numéro est bien composé de 10 chiffres
     if (!/^\d{10}$/.test(cleaned)) {
       return false;
     }
   
-    // Valider selon l'opérateur (exemple de validation simple pour la Côte d'Ivoire)
     const mtnPrefixes = ['05', '65', '25'];
     const orangePrefixes = ['07', '67', '27'];
     const moovPrefixes = ['01', '61', '21'];
-    const wavePrefixes = ['01', '07', '05']; // dépend du support local Wave
+    const wavePrefixes = ['01', '07', '05'];
   
     const prefix = cleaned.substring(0, 2);
   
@@ -83,6 +240,95 @@ const VotingComponent: React.FC = () => {
       default:
         return false;
     }
+  };
+
+  const checkPaymentStatus = async (reference: string): Promise<boolean> => {
+    try {
+      const statusResponse = await axios.get<PaymentStatusResponse>(
+        `${apiUrl}/payment/status/${reference}`
+      );
+      
+      console.log('Statut de la transaction:', statusResponse.data);
+
+      if (statusResponse.data.state === 'COMPLETED' || statusResponse.data.state === 'SUCCESS') {
+        // Paiement réussi
+        setPaymentModal({
+          open: true,
+          status: 'success',
+          message: `🎉 Félicitations ! Vos ${votes} vote(s) ont été enregistrés avec succès pour ${part.nom_presentation}. Merci pour votre participation !`
+        });
+        
+        // Arrêter la vérification
+        if (paymentCheckInterval) {
+          clearInterval(paymentCheckInterval);
+          setPaymentCheckInterval(null);
+        }
+        
+        return true;
+        
+      } else if (statusResponse.data.state === 'FAILED' || statusResponse.data.state === 'ERROR') {
+        // Paiement échoué
+        setPaymentModal({
+          open: true,
+          status: 'failed',
+          message: 'Le paiement a échoué ou a été annulé. Aucun montant n\'a été débité de votre compte.'
+        });
+        
+        // Arrêter la vérification
+        if (paymentCheckInterval) {
+          clearInterval(paymentCheckInterval);
+          setPaymentCheckInterval(null);
+        }
+        
+        return true;
+        
+      } else if (statusResponse.data.state === 'PENDING' || statusResponse.data.state === 'INITIALISE') {
+        // Paiement toujours en cours
+        return false;
+      }
+      
+      return false;
+      
+    } catch (error) {
+      console.error('Erreur lors de la vérification du statut:', error);
+      return false;
+    }
+  };
+
+  const startPaymentStatusCheck = (reference: string) => {
+    setCurrentReference(reference);
+    
+    // Afficher la modal de statut en attente
+    setPaymentModal({
+      open: true,
+      status: 'pending',
+      message: 'Vérification du paiement en cours... Veuillez patienter.'
+    });
+
+    let checkCount = 0;
+    const maxChecks = 60; // 5 minutes avec des vérifications toutes les 5 secondes
+
+    const interval = setInterval(async () => {
+      checkCount++;
+      
+      const paymentCompleted = await checkPaymentStatus(reference);
+      
+      if (paymentCompleted || checkCount >= maxChecks) {
+        clearInterval(interval);
+        setPaymentCheckInterval(null);
+        
+        if (!paymentCompleted && checkCount >= maxChecks) {
+          // Délai d'attente dépassé
+          setPaymentModal({
+            open: true,
+            status: 'failed',
+            message: 'Délai d\'attente dépassé. Le statut du paiement n\'a pas pu être vérifié. Veuillez vérifier votre compte ou contacter le support.'
+          });
+        }
+      }
+    }, 5000); // Vérifier toutes les 5 secondes
+
+    setPaymentCheckInterval(interval);
   };
 
   const initiatePayment = async (): Promise<void> => {
@@ -112,7 +358,7 @@ const VotingComponent: React.FC = () => {
     }
   
     setIsLoading(true);
-    setMessage({ type: '', text: '', show: false }); // Reset message
+    setMessage({ type: '', text: '', show: false });
 
     const reference = generateReference();
     console.log('Référence générée:', reference);
@@ -121,14 +367,14 @@ const VotingComponent: React.FC = () => {
       numberClient: phoneNumber,
       typeService: paymentMethod,
       amount: totalAmount,
-      reference: reference
+      partner_reference: reference
     };
 
     console.log('Données envoyées:', paymentData);
 
     try {
-      const response = await axios.post<PaymentResponse>(
-        'http://localhost:9002/api/payment/cashout', 
+      const response = await axios.post<PaymentResponse>( 
+        `${apiUrl}/payment/cashout`,
         paymentData, 
         {
           headers: {
@@ -142,29 +388,43 @@ const VotingComponent: React.FC = () => {
       console.log('Status:', response.status);
       console.log('Data:', response.data);
 
-      // Vérification de la structure de la réponse
-      if (response.data && response.data.success) {
-        const result = response.data.result;
-        const paymentUrl = result?.payment_url;
-
-        console.log('Payment URL trouvée:', paymentUrl);
-
-        if (paymentUrl) {
-          // Construction de l'URL de retour
-          const returnUrl = `http://localhost:5173/payment/return?ref=${reference}`;
-          const fullPaymentUrl = `${paymentUrl}?return_url=${encodeURIComponent(returnUrl)}`;
+      if (response.data && response.status === 200) {
+        if (paymentMethod === 'wave') {
+          const paymentUrl = response.data.data?.payment_url || response.data.result?.payment_url;
           
-          console.log('Redirection vers:', fullPaymentUrl);
-          
-          // Redirection vers la page de paiement
-          window.location.href = fullPaymentUrl;
+          if (paymentUrl) {
+            console.log('Payment URL trouvée pour Wave:', paymentUrl);
+            
+            // Ouvrir l'URL de paiement Wave
+            window.open(paymentUrl, '_blank');
+            
+            setMessage({
+              type: 'success',
+              text: "Une fenêtre de paiement Wave s'est ouverte. Scannez le code QR avec votre application Wave.",
+              show: true
+            });
+
+            // Démarrer la vérification du statut
+            startPaymentStatusCheck(reference);
+            
+          } else {
+            console.error('Pas d\'URL de paiement pour Wave dans la réponse');
+            setMessage({
+              type: 'error',
+              text: "Erreur: URL de paiement Wave non fournie par le service.",
+              show: true
+            });
+          }
         } else {
-          console.error('Pas d\'URL de paiement dans la réponse');
+          // Pour MTN, Orange, Moov
           setMessage({
-            type: 'error',
-            text: "Erreur: URL de paiement non fournie par le service.",
+            type: 'success',
+            text: `Demande de paiement envoyée sur votre numéro ${paymentMethod.toUpperCase()}. Vérifiez votre téléphone et confirmez le paiement.`,
             show: true
           });
+
+          // Démarrer la vérification du statut
+          startPaymentStatusCheck(reference);
         }
       } else {
         console.error('Réponse d\'erreur:', response.data);
@@ -184,18 +444,26 @@ const VotingComponent: React.FC = () => {
         console.error('Error message:', error.message);
         
         if (error.response) {
-          // Erreur de réponse du serveur
           console.error('Status:', error.response.status);
           console.error('Data:', error.response.data);
           
           const errorData = error.response.data as ErrorResponse;
-          setMessage({
-            type: 'error',
-            text: `Erreur serveur: ${errorData?.message || error.response.statusText}`,
-            show: true
-          });
+          
+          if (error.response.status === 422 && error.response.data.errors) {
+            const validationErrors = Object.values(error.response.data.errors).flat();
+            setMessage({
+              type: 'error',
+              text: `Erreur de validation: ${validationErrors.join(', ')}`,
+              show: true
+            });
+          } else {
+            setMessage({
+              type: 'error',
+              text: `Erreur serveur: ${errorData?.message || error.response.statusText}`,
+              show: true
+            });
+          }
         } else if (error.request) {
-          // Erreur de requête (pas de réponse)
           console.error('Pas de réponse du serveur');
           setMessage({
             type: 'error',
@@ -203,7 +471,6 @@ const VotingComponent: React.FC = () => {
             show: true
           });
         } else {
-          // Autre erreur
           console.error('Erreur inconnue:', error.message);
           setMessage({
             type: 'error',
@@ -212,7 +479,6 @@ const VotingComponent: React.FC = () => {
           });
         }
       } else {
-        // Erreur non-Axios
         console.error('Erreur non-Axios:', error);
         setMessage({
           type: 'error',
@@ -226,13 +492,37 @@ const VotingComponent: React.FC = () => {
     }
   };
 
+  const handleModalClose = () => {
+    setPaymentModal({ ...paymentModal, open: false });
+    
+    // Si le paiement était réussi, rediriger après fermeture de la modal
+    if (paymentModal.status === 'success') {
+      setTimeout(() => {
+        navigate(-1);
+      }, 1000);
+    }
+  };
 
+  const handleRetryPayment = () => {
+    setPaymentModal({ ...paymentModal, open: false });
+    // Relancer le paiement
+    initiatePayment();
+  };
 
   const totalAmount = votes * 100;
   const totalPoints = votes * 10;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50">
+      {/* Modal de statut de paiement */}
+      <PaymentStatusModal
+        open={paymentModal.open}
+        onClose={handleModalClose}
+        status={paymentModal.status}
+        message={paymentModal.message}
+        onRetry={paymentModal.status === 'failed' ? handleRetryPayment : undefined}
+      />
+
       <Box     
         width="100%"
         display="flex"
@@ -256,8 +546,8 @@ const VotingComponent: React.FC = () => {
           }}
         >
           <Box sx={{ position: 'relative', width: { xs: '100%' }, padding: 2  }}>
-            <Avatar
-              src={`http://localhost:9002/${part.url_photo_identite}`}
+            <Avatar 
+              src={`${apiImageUrl}/${part.url_photo_identite}`}
               alt={part.nom_presentation}
               sx={{
                 width: 128,
@@ -333,7 +623,7 @@ const VotingComponent: React.FC = () => {
             {part.url_video ? (
               <Box
                 component="video"
-                src={`http://localhost:9002/${part.url_video}`}
+                src={`${apiImageUrl}/${part.url_video}`}
                 controls
                 sx={{
                   width: '100%',
@@ -380,7 +670,9 @@ const VotingComponent: React.FC = () => {
         {message.show && message.text && (
           <div className={`p-4 rounded-lg mb-6 ${
             message.type === 'success' 
-              ? 'bg-green-100 border border-green-200 text-green-800' 
+              ? 'bg-green-100 border border-green-200 text-green-800'
+              : message.type === 'warning'
+              ? 'bg-yellow-100 border border-yellow-200 text-yellow-800' 
               : 'bg-red-100 border border-red-200 text-red-800'
           }`}>
             {message.text}
@@ -415,7 +707,7 @@ const VotingComponent: React.FC = () => {
                     type="button"
                     onClick={() => setVotes(Math.max(1, votes - 1))}
                     className="bg-gray-200 hover:bg-gray-300 rounded-full p-3 transition-colors"
-                    disabled={votes <= 1}
+                    disabled={votes <= 1 || isLoading}
                   >
                     <span className="text-xl font-bold">-</span>
                   </button>
@@ -426,12 +718,14 @@ const VotingComponent: React.FC = () => {
                     onChange={(e) => setVotes(Math.max(1, parseInt(e.target.value) || 1))}
                     className="w-24 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg py-2"
                     min="1"
+                    disabled={isLoading}
                   />
                   
                   <button
                     type="button"
                     onClick={() => setVotes(votes + 1)}
                     className="bg-gray-200 hover:bg-gray-300 rounded-full p-3 transition-colors"
+                    disabled={isLoading}
                   >
                     <span className="text-xl font-bold">+</span>
                   </button>
@@ -463,6 +757,7 @@ const VotingComponent: React.FC = () => {
                         checked={paymentMethod === operator.id}
                         onChange={(e) => setPaymentMethod(e.target.value)}
                         className="sr-only"
+                        disabled={isLoading}
                       />
                       <div className={`p-4 rounded-lg border-2 text-center transition-all ${
                         paymentMethod === operator.id 
@@ -492,9 +787,21 @@ const VotingComponent: React.FC = () => {
                     placeholder="00 00 00 00 00"
                     className="flex-1 border border-gray-300 px-4 py-3 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
+
+              {/* Instructions spécifiques pour Wave */}
+              {paymentMethod === 'wave' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-800 mb-2">Instructions Wave :</h4>
+                  <p className="text-blue-700 text-sm">
+                    Après avoir cliqué sur "Valider et Payer", une nouvelle fenêtre s'ouvrira avec un code QR. 
+                    Scannez ce code avec votre application Wave pour finaliser le paiement.
+                  </p>
+                </div>
+              )}
 
               {/* Bouton de soumission */}
               <button
@@ -522,6 +829,7 @@ const VotingComponent: React.FC = () => {
               <button 
                 onClick={() => navigate(-1)}
                 className="flex items-center gap-2 text-purple-600 hover:text-purple-800 font-semibold mx-auto"
+                disabled={isLoading}
               >
                 <ArrowLeft className="w-4 h-4" />
                 Revenir à la liste des candidats

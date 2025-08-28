@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+const apiUrl = import.meta.env.VITE_API_URL;
 
 type Props = {
   competitionCode?: any;
@@ -96,7 +97,7 @@ const InscriptionForm = ({ competitionCode }: Props) => {
     // keyword, returnPassword, code_candidat sont générés côté backend
   
     try {
-      const res = await axios.post('http://localhost:9002/api/competition/register', data, {
+      const res = await axios.post(`${apiUrl}/competition/register`, data, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

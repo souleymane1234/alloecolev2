@@ -7,6 +7,8 @@ import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
 import { CalendarDays } from "lucide-react";
 import { Link } from 'react-router-dom';
+const apiUrl = import.meta.env.VITE_API_URL;
+const apiImageUrl = import.meta.env.VITE_API_URL_IMAGE;
 
 const CompetCard: React.FC = () => {
   const { code_emission } = useParams();
@@ -28,7 +30,7 @@ const CompetCard: React.FC = () => {
 
 
     useEffect(() => {
-      axios.get(`http://localhost:9002/api/emissions/${code_emission}`)
+      axios.get(`${apiUrl}/emissions/${code_emission}`)
         .then((response) => {
           setEmissionsDetails(response.data.competitions);
           setLoading(false);
@@ -76,8 +78,8 @@ const CompetCard: React.FC = () => {
           <div className="relative">
             <video
               className="w-full h-36 object-cover" // Hauteur réduite
-              src={`http://localhost:9002/${card.url_video_competition}`}
-              poster={`http://localhost:9002/${card.url_photo_competition}`}
+              src={`${apiImageUrl}/${card.url_video_competition}`}
+              poster={`${apiImageUrl}/${card.url_photo_competition}`}
               controls
             ></video>
             <div className="absolute top-0 right-0">
