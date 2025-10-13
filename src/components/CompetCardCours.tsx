@@ -44,6 +44,7 @@ const CompetCardCours: React.FC = () => {
           setLoading(false);
         });
     }, [code_emission]);
+    console.log('emissionsDetails', emissionsDetails);
 
     if (loading) return <p>Nos compétitions sont en cours de chargement...</p>;
     // console.log('emissionsss', emissionsDetails);
