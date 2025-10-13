@@ -4,7 +4,6 @@ import Box from '@mui/material/Box';
 import { Link } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
-import CardActionArea from '@mui/material/CardActionArea';
 const apiUrl = import.meta.env.VITE_API_URL;
 const apiImageUrl = import.meta.env.VITE_API_URL_IMAGE;
 
@@ -71,7 +70,7 @@ const EmissionCard: React.FC<Props> = ({ titleComponent, titleButton }) => {
       >
         {emissions.map((card) => (
           <Card key={card.code_emission} sx={{ height: '100%' }}>
-            <CardActionArea sx={{ height: '100%' }}>
+            <Box sx={{ height: '100%' }}>
               <div className="rounded-xl shadow-md overflow-hidden bg-white h-full">
                 <div className="relative">
                   <video
@@ -106,7 +105,7 @@ const EmissionCard: React.FC<Props> = ({ titleComponent, titleButton }) => {
                   </button>
                 </div>
               </div>
-            </CardActionArea>
+            </Box>
           </Card>
         ))}
       </Box>

@@ -6,7 +6,6 @@ import { styled } from '@mui/material/styles';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
-const apiUrl = import.meta.env.VITE_API_URL;
 const apiImageUrl = import.meta.env.VITE_API_URL_IMAGE;
 
 interface Competition {

@@ -193,8 +193,7 @@ const VotingComponent: React.FC = () => {
   });
   
   // État pour la vérification du paiement
-  const [paymentCheckInterval, setPaymentCheckInterval] = useState<NodeJS.Timeout | null>(null);
-  const [currentReference, setCurrentReference] = useState<string>('');
+  const [paymentCheckInterval, setPaymentCheckInterval] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -296,7 +295,7 @@ const VotingComponent: React.FC = () => {
   };
 
   const startPaymentStatusCheck = (reference: string) => {
-    setCurrentReference(reference);
+    // setCurrentReference(reference);
     
     // Afficher la modal de statut en attente
     setPaymentModal({

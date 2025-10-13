@@ -6,7 +6,6 @@ import { Play } from 'lucide-react';
 import Button from '@mui/material/Button';
 import { Link } from 'react-router-dom';
 import Dialog from '@mui/material/Dialog';
-const apiUrl = import.meta.env.VITE_API_URL;
 const apiImageUrl = import.meta.env.VITE_API_URL_IMAGE;
 
 interface Participant {
