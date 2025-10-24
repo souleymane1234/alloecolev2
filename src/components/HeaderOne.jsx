@@ -554,7 +554,7 @@ const HeaderOne = () => {
           </div>
 
           <div className='mobile-nav-item'>
-            <Link to='/sign-in' className='mobile-nav-link' onClick={closeMenu}>
+            <Link to='/login' className='mobile-nav-link' onClick={closeMenu}>
               <div className='mobile-nav-content'>
                 <LoginIcon className='mobile-nav-icon' />
                 Connexion
