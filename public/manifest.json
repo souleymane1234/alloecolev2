@@ -1,6 +1,6 @@
 {
-    "name": "Ziktalent",
-    "short_name": "Ziktalent",
+    "name": "Alloecole",
+    "short_name": "Alloecole",
     "description": "Description de mon application",
     "start_url": "/",
     "display": "standalone",

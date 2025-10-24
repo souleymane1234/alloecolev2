@@ -4,52 +4,55 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
-import Divider from '@mui/material/Divider';
-import Drawer from '@mui/material/Drawer';
-import IconButton from '@mui/material/IconButton';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
-import MenuIcon from '@mui/icons-material/Menu';
 import Toolbar from '@mui/material/Toolbar';
-import Button from '@mui/material/Button';
-import LoginIcon from '@mui/icons-material/Login';
-import LogoutIcon from '@mui/icons-material/Logout';
-import ShareIcon from '@mui/icons-material/Share';
+import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Avatar from '@mui/material/Avatar';
+import Typography from '@mui/material/Typography';
+import Badge from '@mui/material/Badge';
+import InputBase from '@mui/material/InputBase';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import Button from '@mui/material/Button';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import Drawer from '@mui/material/Drawer';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import Divider from '@mui/material/Divider';
+
+// Icons
+import HomeIcon from '@mui/icons-material/Home';
+import MessageIcon from '@mui/icons-material/Message';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import SearchIcon from '@mui/icons-material/Search';
+import MenuIcon from '@mui/icons-material/Menu';
+import ShareIcon from '@mui/icons-material/Share';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import LogoutIcon from '@mui/icons-material/Logout';
+import LoginIcon from '@mui/icons-material/Login';
+import NewspaperIcon from '@mui/icons-material/Newspaper';
+import InfoIcon from '@mui/icons-material/Info';
+import LiveTvIcon from '@mui/icons-material/LiveTv';
+import GridViewIcon from '@mui/icons-material/GridView';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import axios from 'axios';
+
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const drawerWidth = 240;
 
-const navItems = [
-  { label: 'ACCUEIL', path: '/' },
-  { label: 'ÉMISSIONS ET CONCOURS', path: '/emissions' },
-  { label: 'ACTUALITÉ', path: '/actualities' },
-  { label: 'A PROPOS', path: '/a-propos' }
-];
-
-interface NavItem {
-  label: string;
-  path: string;
-}
-
-interface DrawerAppBarProps {
-  window?: () => Window;
-}
-
 interface User {
   id?: string;
   email?: string;
+  name?: string;
+  avatar?: string;
   [key: string]: any;
 }
 
@@ -58,9 +61,16 @@ interface ReferralData {
   link: string;
 }
 
+interface DrawerAppBarProps {
+  window?: () => Window;
+}
+
 function DrawerAppBar(props: DrawerAppBarProps) {
   const { window } = props;
   const [mobileOpen, setMobileOpen] = React.useState<boolean>(false);
+  const [profileMenuAnchor, setProfileMenuAnchor] = React.useState<null | HTMLElement>(null);
+  const [productsMenuAnchor, setProductsMenuAnchor] = React.useState<null | HTMLElement>(null);
+  const [etudesMenuAnchor, setEtudesMenuAnchor] = React.useState<null | HTMLElement>(null);
   const [referralDialogOpen, setReferralDialogOpen] = React.useState<boolean>(false);
   const [referralData, setReferralData] = React.useState<ReferralData | null>(null);
   const [loading, setLoading] = React.useState<boolean>(false);
@@ -82,7 +92,32 @@ function DrawerAppBar(props: DrawerAppBarProps) {
     setMobileOpen((prevState) => !prevState);
   };
 
+  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>): void => {
+    setProfileMenuAnchor(event.currentTarget);
+  };
+
+  const handleProfileMenuClose = (): void => {
+    setProfileMenuAnchor(null);
+  };
+
+  const handleProductsMenuOpen = (event: React.MouseEvent<HTMLElement>): void => {
+    setProductsMenuAnchor(event.currentTarget);
+  };
+
+  const handleProductsMenuClose = (): void => {
+    setProductsMenuAnchor(null);
+  };
+
+  const handleEtudesMenuOpen = (event: React.MouseEvent<HTMLElement>): void => {
+    setEtudesMenuAnchor(event.currentTarget);
+  };
+
+  const handleEtudesMenuClose = (): void => {
+    setEtudesMenuAnchor(null);
+  };
+
   const handleLogout = async (): Promise<void> => {
+    handleProfileMenuClose();
     try {
       const res = await axios.post( 
         `${apiUrl}/logout`,
@@ -130,7 +165,6 @@ function DrawerAppBar(props: DrawerAppBarProps) {
     setLoading(true);
 
     try {
-      // Tentative d'appel API pour récupérer ou générer le code de parrainage
       const response = await axios.get(
         `${apiUrl}/referral/${user.id}`,
         {
@@ -149,11 +183,8 @@ function DrawerAppBar(props: DrawerAppBarProps) {
       }
     } catch (error) {
       console.warn('API non disponible, génération locale du code:', error);
-      
-      // Fallback : génération locale si l'API n'est pas disponible
       const code = generateReferralCode();
       const link = `http://localhost:5173/register?ref=${code}`;
-      
       setReferralData({ code, link });
     } finally {
       setLoading(false);
@@ -181,6 +212,30 @@ function DrawerAppBar(props: DrawerAppBarProps) {
     setSnackbarOpen(false);
   };
 
+  const navItemStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    padding: '8px 12px',
+    minWidth: '80px',
+    textDecoration: 'none',
+    transition: 'all 0.2s ease',
+    borderRadius: '2px',
+    '&:hover': {
+      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+      '& .MuiSvgIcon-root': {
+        color: '#000',
+      },
+      '& .nav-label': {
+        color: '#000',
+      },
+    },
+  };
+
+  const isActive = (path: string): boolean => location.pathname === path;
+
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
       <Box sx={{ my: 2 }}>
@@ -188,79 +243,56 @@ function DrawerAppBar(props: DrawerAppBarProps) {
       </Box>
       <Divider />
       <List>
-        {navItems.map((item: NavItem) => (
-          <ListItem key={item.label} disablePadding>
-            <ListItemButton
-              component={Link}
-              to={item.path}
-              sx={{
-                textAlign: 'center',
-                color: location.pathname === item.path ? '#861e81' : '#000',
-                backgroundColor: location.pathname === item.path ? 'rgba(134, 30, 129, 0.1)' : 'transparent',
-                '&:hover': {
-                  backgroundColor: 'rgba(134, 30, 129, 0.1)',
-                  color: '#861e81',
-                },
-              }}
-            >
-              <ListItemText primary={item.label} />
-            </ListItemButton>
-          </ListItem>
-        ))}
+        <ListItem disablePadding>
+          <ListItemButton component={Link} to="/" sx={{ py: 1.5 }}>
+            <HomeIcon sx={{ mr: 2, color: '#666' }} />
+            <ListItemText primary="ACCUEIL" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton component={Link} to="/emissions" sx={{ py: 1.5 }}>
+            <LiveTvIcon sx={{ mr: 2, color: '#666' }} />
+            <ListItemText primary="ÉMISSIONS ET CONCOURS" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton component={Link} to="/actualities" sx={{ py: 1.5 }}>
+            <NewspaperIcon sx={{ mr: 2, color: '#666' }} />
+            <ListItemText primary="ACTUALITÉ" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton component={Link} to="/a-propos" sx={{ py: 1.5 }}>
+            <InfoIcon sx={{ mr: 2, color: '#666' }} />
+            <ListItemText primary="A PROPOS" />
+          </ListItemButton>
+        </ListItem>
         
-        {/* Bouton de parrainage pour mobile */}
+        <Divider sx={{ my: 2 }} />
+        
         {user && (
           <ListItem disablePadding>
-            <Button
-              onClick={handleReferralClick}
-              startIcon={<ShareIcon />}
-              variant="outlined"
-              fullWidth
-              sx={{
-                mt: 1,
-                mx: 2,
-                color: '#861e81',
-                borderColor: '#861e81',
-                '&:hover': {
-                  backgroundColor: 'rgba(134, 30, 129, 0.1)',
-                  borderColor: '#861e81',
-                },
-              }}
-            >
-              Parrainage
-            </Button>
+            <ListItemButton onClick={handleReferralClick} sx={{ py: 1.5 }}>
+              <ShareIcon sx={{ mr: 2, color: '#861e81' }} />
+              <ListItemText primary="Parrainage" />
+            </ListItemButton>
           </ListItem>
         )}
         
         {user ? (
-          <Button
-            onClick={handleLogout}
-            startIcon={<LogoutIcon />}
-            variant="outlined"
-            sx={{
-              mt: 2,
-              color: '#fff',
-              backgroundColor: '#dc3545',
-              '&:hover': { backgroundColor: '#b52a37', color: '#fff' },
-            }}
-          >
-            Se Déconnecter
-          </Button>
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleLogout} sx={{ py: 1.5 }}>
+              <LogoutIcon sx={{ mr: 2, color: '#dc3545' }} />
+              <ListItemText primary="Se Déconnecter" />
+            </ListItemButton>
+          </ListItem>
         ) : (
-          <Button
-            component={Link}
-            to="/login"
-            startIcon={<LoginIcon />}
-            variant="outlined"
-            sx={{
-              mt: 2,
-              color: '#fff',
-              backgroundColor: '#861e81',
-              '&:hover': { backgroundColor: '#dc3545', color: '#fff' },
-            }}
-          >
-            S'AUTHENTIFIER
-          </Button>
+          <ListItem disablePadding>
+            <ListItemButton component={Link} to="/login" sx={{ py: 1.5 }}>
+              <LoginIcon sx={{ mr: 2, color: '#861e81' }} />
+              <ListItemText primary="S'AUTHENTIFIER" />
+            </ListItemButton>
+          </ListItem>
         )}
       </List>
     </Box>
@@ -271,93 +303,223 @@ function DrawerAppBar(props: DrawerAppBarProps) {
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <AppBar component="nav" sx={{ backgroundColor: '#fff', color: '#861e81', height: 80 }}>
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <AppBar 
+        component="nav" 
+        position="fixed"
+        sx={{ 
+          backgroundColor: '#fffefeff', 
+          color: '#666',
+          boxShadow: '0 0 0 1px rgba(0,0,0,.08), 0 2px 4px rgba(157, 51, 51, 0.08)',
+          zIndex: 1201,
+        }}
+      >
+        <Toolbar sx={{ justifyContent: 'space-between', maxWidth: 1200, width: '100%', mx: 'auto', minHeight: '52px !important', px: { xs: 1, sm: 2 } }}>
+          {/* Left section: Logo + Search */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
             <IconButton
               color="inherit"
               aria-label="open drawer"
               edge="start"
               onClick={handleDrawerToggle}
-              sx={{ mr: 2, display: { sm: 'none' } }}
+              sx={{ display: { sm: 'none' } }}
             >
               <MenuIcon />
             </IconButton>
-            <Box sx={{ my: 2, display: { xs: 'none', sm: 'block' } }}>
-              <img src="/img/logo.png" alt="Logo" style={{ height: 70 }} />
+            
+            <Box component={Link} to="/" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+              <img src="/img/logo.png" alt="Logo" style={{ height: 36 }} />
+            </Box>
+            
+            {/* Search Bar */}
+            <Box
+              sx={{
+                display: { xs: 'none', md: 'flex' },
+                alignItems: 'center',
+                backgroundColor: '#eef3f8',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                ml: 1,
+                width: 280,
+              }}
+            >
+              <SearchIcon sx={{ color: '#666', fontSize: 20, mr: 0.5 }} />
+              <InputBase
+                placeholder="Rechercher..."
+                sx={{ 
+                  flex: 1, 
+                  fontSize: '14px',
+                  '& input': {
+                    padding: '4px 0',
+                  }
+                }}
+              />
             </Box>
           </Box>
 
-          <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 2 }}>
-            {navItems.map((item: NavItem) => (
-              <Button
-                key={item.label}
-                component={Link}
-                to={item.path}
-                sx={{
-                  color: location.pathname === item.path ? '#861e81' : '#000',
-                  backgroundColor: location.pathname === item.path ? 'rgba(134, 30, 129, 0.1)' : 'transparent',
-                  '&:hover': {
-                    backgroundColor: 'rgba(134, 30, 129, 0.1)',
-                    color: '#861e81',
-                  },
-                }}
-              >
-                {item.label}
-              </Button>
-            ))}
-            
-            {/* Bouton de parrainage pour desktop */}
-            {user && (
-              <Button
-                onClick={handleReferralClick}
-                startIcon={<ShareIcon />}
-                variant="outlined"
-                sx={{
-                  color: '#861e81',
-                  borderColor: '#861e81',
-                  '&:hover': {
-                    backgroundColor: 'rgba(134, 30, 129, 0.1)',
-                    borderColor: '#861e81',
-                  },
-                }}
-              >
-                Parrainage
-              </Button>
-            )}
-            
+          {/* Center/Right section: Navigation Icons */}
+          <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 0.5 }}>
+            {/* Accueil */}
+            <Box
+              component={Link}
+              to="/"
+              sx={{
+                ...navItemStyle,
+                color: isActive('/') ? '#000' : '#666',
+                borderBottom: isActive('/') ? '2px solid #f97315' : '1px solid transparent',
+              }}
+            >
+              <HomeIcon sx={{ fontSize: 24 }} />
+              <Typography className="nav-label" sx={{ fontSize: '12px', mt: 0.3, fontWeight: isActive('/') ? 600 : 400 }}>
+                Accueil
+              </Typography>
+            </Box>
+            <Box
+                  onMouseEnter={handleEtudesMenuOpen}
+              sx={{
+                ...navItemStyle,
+                color: '#666',
+                borderBottom: '2px solid transparent',
+              }}
+            >
+              <LiveTvIcon sx={{ fontSize: 24 }} /> 
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.3 }}>
+                <Typography className="nav-label" sx={{ fontSize: '12px' }}>
+                  Émissions
+                </Typography>
+                <KeyboardArrowDownIcon sx={{ fontSize: 16, ml: 0.2 }} />
+              </Box>
+            </Box>
+
+            {/* Émissions */}
+            {/* <Box
+              component={Link}
+              to="/emissions"
+              sx={{
+                ...navItemStyle,
+                color: isActive('/emissions') ? '#000' : '#666',
+                borderBottom: isActive('/emissions') ? '2px solid #000' : '2px solid transparent',
+              }}
+            >
+              <LiveTvIcon sx={{ fontSize: 24 }} />
+              <Typography className="nav-label" sx={{ fontSize: '12px', mt: 0.3, fontWeight: isActive('/emissions') ? 600 : 400 }}>
+                Émissions
+              </Typography>
+            </Box> */}
+
+            {/* Actualité */}
+            <Box
+              component={Link}
+              to="/actualities"
+              sx={{
+                ...navItemStyle,
+                color: isActive('/actualities') ? '#000' : '#666',
+                borderBottom: isActive('/actualities') ? '2px solid #000' : '2px solid transparent',
+              }}
+            >
+              <NewspaperIcon sx={{ fontSize: 24 }} />
+              <Typography className="nav-label" sx={{ fontSize: '12px', mt: 0.3, fontWeight: isActive('/actualities') ? 600 : 400 }}>
+                Actualité
+              </Typography>
+            </Box>
+
+            {/* Messages */}
+            <Box
+              sx={{
+                ...navItemStyle,
+                color: '#666',
+                borderBottom: '2px solid transparent',
+              }}
+            >
+              <Badge badgeContent={3} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '10px', height: '16px', minWidth: '16px' } }}>
+                <MessageIcon sx={{ fontSize: 24 }} />
+              </Badge>
+              <Typography className="nav-label" sx={{ fontSize: '12px', mt: 0.3 }}>
+                Messages
+              </Typography>
+            </Box>
+
+            {/* Notifications */}
+            <Box
+              sx={{
+                ...navItemStyle,
+                color: '#666',
+                borderBottom: '2px solid transparent',
+              }}
+            >
+              <Badge badgeContent={5} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '10px', height: '16px', minWidth: '16px' } }}>
+                <NotificationsIcon sx={{ fontSize: 24 }} />
+              </Badge>
+              <Typography className="nav-label" sx={{ fontSize: '12px', mt: 0.3 }}>
+                Notifications
+              </Typography>
+            </Box>
+
+            {/* Profile Menu */}
             {user ? (
-              <Button
-                onClick={handleLogout}
-                startIcon={<LogoutIcon />}
-                variant="outlined"
+              <Box
+                onClick={handleProfileMenuOpen}
                 sx={{
-                  color: '#fff',
-                  backgroundColor: '#dc3545',
-                  '&:hover': { backgroundColor: '#b52a37', color: '#fff' },
+                  ...navItemStyle,
+                  color: '#666',
+                  borderBottom: '2px solid transparent',
                 }}
               >
-                Se Déconnecter
-              </Button>
+                <Avatar 
+                  sx={{ width: 24, height: 24, fontSize: '12px', bgcolor: '#861e81' }}
+                  src={user.avatar}
+                >
+                  {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
+                </Avatar>
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.3 }}>
+                  <Typography className="nav-label" sx={{ fontSize: '12px' }}>
+                    Moi
+                  </Typography>
+                  <KeyboardArrowDownIcon sx={{ fontSize: 16, ml: 0.2 }} />
+                </Box>
+              </Box>
             ) : (
-              <Button
+              <Box
                 component={Link}
                 to="/login"
-                startIcon={<LoginIcon />}
-                variant="outlined"
                 sx={{
-                  color: '#fff',
-                  backgroundColor: '#861e81',
-                  '&:hover': { backgroundColor: '#dc3545', color: '#fff' },
+                  ...navItemStyle,
+                  color: '#666',
+                  borderBottom: '2px solid transparent',
                 }}
               >
-                S'AUTHENTIFIER
-              </Button>
+                <Avatar sx={{ width: 24, height: 24, fontSize: '12px', bgcolor: '#666' }}>
+                  <LoginIcon sx={{ fontSize: 14 }} />
+                </Avatar>
+                <Typography className="nav-label" sx={{ fontSize: '12px', mt: 0.3 }}>
+                  Connexion
+                </Typography>
+              </Box>
             )}
+
+            <Divider orientation="vertical" flexItem sx={{ mx: 0.5, my: 1.5 }} />
+
+            {/* Products Menu */}
+            <Box
+              onClick={handleProductsMenuOpen}
+              sx={{
+                ...navItemStyle,
+                color: '#666',
+                borderBottom: '2px solid transparent',
+              }}
+            >
+              <GridViewIcon sx={{ fontSize: 24 }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.3 }}>
+                <Typography className="nav-label" sx={{ fontSize: '12px' }}>
+                  Produits
+                </Typography>
+                <KeyboardArrowDownIcon sx={{ fontSize: 16, ml: 0.2 }} />
+              </Box>
+            </Box>
           </Box>
         </Toolbar>
       </AppBar>
 
+      {/* Mobile Drawer */}
       <nav>
         <Drawer
           container={container}
@@ -374,12 +536,221 @@ function DrawerAppBar(props: DrawerAppBarProps) {
         </Drawer>
       </nav>
 
-      {/* Dialog de parrainage */}
+      {/* Profile Menu */}
+      <Menu
+        anchorEl={profileMenuAnchor}
+        open={Boolean(profileMenuAnchor)}
+        onClose={handleProfileMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        sx={{
+          mt: 1.5,
+          '& .MuiPaper-root': {
+            minWidth: 240,
+            boxShadow: '0 0 0 1px rgba(0,0,0,.08), 0 8px 16px rgba(0,0,0,.15)',
+            borderRadius: '8px',
+          },
+        }}
+      >
+        <Box sx={{ px: 2, py: 2, borderBottom: '1px solid #e0e0e0' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+            <Avatar 
+              sx={{ width: 48, height: 48, bgcolor: '#861e81' }}
+              src={user?.avatar}
+            >
+              {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+            </Avatar>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                {user?.name || 'Utilisateur'}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#666', display: 'block', mt: 0.5 }}>
+                {user?.email}
+              </Typography>
+            </Box>
+          </Box>
+          <Button
+            component={Link}
+            to="/profile"
+            variant="outlined"
+            size="small"
+            fullWidth
+            onClick={handleProfileMenuClose}
+            sx={{
+              textTransform: 'none',
+              borderColor: '#0a66c2',
+              color: '#0a66c2',
+              '&:hover': {
+                backgroundColor: 'rgba(10, 102, 194, 0.08)',
+                borderColor: '#0a66c2',
+              },
+            }}
+          >
+            Voir le profil
+          </Button>
+        </Box>
+        <MenuItem 
+          onClick={() => { 
+            handleProfileMenuClose(); 
+            handleReferralClick(); 
+          }}
+          sx={{ py: 1.5, fontSize: '14px' }}
+        >
+          <ShareIcon sx={{ mr: 1.5, fontSize: 20, color: '#666' }} />
+          Parrainage
+        </MenuItem>
+        <MenuItem 
+          component={Link} 
+          to="/a-propos" 
+          onClick={handleProfileMenuClose}
+          sx={{ py: 1.5, fontSize: '14px' }}
+        >
+          <InfoIcon sx={{ mr: 1.5, fontSize: 20, color: '#666' }} />
+          À propos
+        </MenuItem>
+        <Divider />
+        <MenuItem 
+          onClick={handleLogout}
+          sx={{ py: 1.5, fontSize: '14px', color: '#dc3545' }}
+        >
+          <LogoutIcon sx={{ mr: 1.5, fontSize: 20 }} />
+          Se déconnecter
+        </MenuItem>
+      </Menu>
+
+      {/* Products Menu */}
+      <Menu
+        anchorEl={productsMenuAnchor}
+        open={Boolean(productsMenuAnchor)}
+        onClose={handleProductsMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        sx={{
+          mt: 1.5,
+          '& .MuiPaper-root': {
+            minWidth: 280,
+            boxShadow: '0 0 0 1px rgba(0,0,0,.08), 0 8px 16px rgba(0,0,0,.15)',
+            borderRadius: '8px',
+          },
+        }}
+      >
+        <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid #e0e0e0' }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#000' }}>
+            Nos Produits & Services
+          </Typography>
+        </Box>
+        <MenuItem 
+          component={Link} 
+          to="/emissions" 
+          onClick={handleProductsMenuClose}
+          sx={{ py: 1.5, fontSize: '14px' }}
+        >
+          <LiveTvIcon sx={{ mr: 1.5, fontSize: 20, color: '#666' }} />
+          Émissions & Concours
+        </MenuItem>
+        <MenuItem 
+          component={Link} 
+          to="/actualities" 
+          onClick={handleProductsMenuClose}
+          sx={{ py: 1.5, fontSize: '14px' }}
+        >
+          <NewspaperIcon sx={{ mr: 1.5, fontSize: 20, color: '#666' }} />
+          Actualités
+        </MenuItem>
+        <MenuItem 
+          component={Link} 
+          to="/a-propos" 
+          onClick={handleProductsMenuClose}
+          sx={{ py: 1.5, fontSize: '14px' }}
+        >
+          <InfoIcon sx={{ mr: 1.5, fontSize: 20, color: '#666' }} />
+          À propos
+        </MenuItem>
+      </Menu>
+      {/* Etudes Menu */}
+      <Menu
+        anchorEl={etudesMenuAnchor}
+        open={Boolean(etudesMenuAnchor)}
+        onClose={handleEtudesMenuClose}
+        MenuListProps={{
+          onMouseEnter: () => setEtudesMenuAnchor(etudesMenuAnchor), // Garde le menu ouvert
+          onMouseLeave: handleEtudesMenuClose,
+        }}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        sx={{
+          mt: 1.5,
+          ml: 20,
+          '& .MuiPaper-root': {
+            minWidth: 280,
+            boxShadow: '0 0 0 1px rgba(0,0,0,.08), 0 8px 16px rgba(0,0,0,.15)',
+            borderRadius: '8px',
+          },
+        }}
+      >
+        <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid #e0e0e0' }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#000' }}>
+            Nos Etudes
+          </Typography>
+        </Box>
+        <MenuItem 
+          component={Link} 
+          to="/emissions" 
+          onClick={handleProductsMenuClose}
+          sx={{ py: 1.5, fontSize: '14px' }}
+        >
+          <LiveTvIcon sx={{ mr: 1.5, fontSize: 20, color: '#666' }} />
+          Émissions & Concours
+        </MenuItem>
+        <MenuItem 
+          component={Link} 
+          to="/actualities" 
+          onClick={handleProductsMenuClose}
+          sx={{ py: 1.5, fontSize: '14px' }}
+        >
+          <NewspaperIcon sx={{ mr: 1.5, fontSize: 20, color: '#666' }} />
+          Actualités
+        </MenuItem>
+        <MenuItem 
+          component={Link} 
+          to="/a-propos" 
+          onClick={handleProductsMenuClose}
+          sx={{ py: 1.5, fontSize: '14px' }}
+        >
+          <InfoIcon sx={{ mr: 1.5, fontSize: 20, color: '#666' }} />
+          À propos
+        </MenuItem>
+      </Menu>
+
+      {/* Referral Dialog */}
       <Dialog
         open={referralDialogOpen}
         onClose={handleCloseReferralDialog}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '8px',
+          }
+        }}
       >
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -394,13 +765,12 @@ function DrawerAppBar(props: DrawerAppBarProps) {
             </Box>
           ) : referralData ? (
             <Box sx={{ mt: 2 }}>
-              <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+              <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
                 Partagez votre code ou lien de parrainage avec vos amis pour qu'ils puissent s'inscrire :
               </Typography>
               
-              {/* Code de parrainage */}
               <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
+                <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 'bold' }}>
                   Code de parrainage :
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
@@ -416,21 +786,26 @@ function DrawerAppBar(props: DrawerAppBarProps) {
                         fontWeight: 'bold',
                         fontSize: '1.2rem',
                         color: '#861e81',
+                        letterSpacing: '2px',
                       },
                     }}
                   />
                   <IconButton
                     onClick={() => handleCopyToClipboard(referralData.code, 'code')}
-                    sx={{ color: '#861e81' }}
+                    sx={{ 
+                      color: '#861e81',
+                      '&:hover': {
+                        backgroundColor: 'rgba(134, 30, 129, 0.1)',
+                      }
+                    }}
                   >
                     <ContentCopyIcon />
                   </IconButton>
                 </Box>
               </Box>
 
-              {/* Lien de parrainage */}
               <Box>
-                <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
+                <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 'bold' }}>
                   Lien de parrainage :
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
@@ -448,7 +823,12 @@ function DrawerAppBar(props: DrawerAppBarProps) {
                   />
                   <IconButton
                     onClick={() => handleCopyToClipboard(referralData.link, 'link')}
-                    sx={{ color: '#861e81' }}
+                    sx={{ 
+                      color: '#861e81',
+                      '&:hover': {
+                        backgroundColor: 'rgba(134, 30, 129, 0.1)',
+                      }
+                    }}
                   >
                     <ContentCopyIcon />
                   </IconButton>
@@ -457,27 +837,41 @@ function DrawerAppBar(props: DrawerAppBarProps) {
             </Box>
           ) : null}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseReferralDialog} sx={{ color: '#861e81' }}>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button 
+            onClick={handleCloseReferralDialog} 
+            sx={{ 
+              color: '#861e81',
+              textTransform: 'none',
+              fontWeight: 600,
+            }}
+          >
             Fermer
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar pour les notifications */}
+      {/* Snackbar */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={3000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity="success" 
+          sx={{ 
+            width: '100%',
+            borderRadius: '8px',
+          }}
+        >
           {snackbarMessage}
         </Alert>
       </Snackbar>
 
-      <Box component="main">
-        <Toolbar />
+      <Box component="main" sx={{ flexGrow: 1, width: '100%' }}>
+        <Toolbar sx={{ minHeight: '52px !important' }} />
       </Box>
     </Box>
   );
