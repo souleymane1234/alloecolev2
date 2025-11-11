@@ -1,19 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Calendar, Clock, MapPin, ArrowRight, ChevronRight, Eye, User, BookOpen, GraduationCap, Settings, Bell, LogIn } from 'lucide-react';
 import ContactAlloEcoleService from './ContactAlloEcoleService';
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useOutletContext } from "react-router-dom";
+import axios from 'axios';
+import './AlloEcoleNewsFeed.css';
+import UserProfileSidebar from './userComponent/UserProfileSidebar';
 
 const AlloEcoleNewsFeed = () => {
+  const { isAuthenticated } = useOutletContext() || {};
   const location = useLocation();
-  const isConnect = location.state?.isConnect || false;
+  const token = localStorage.getItem("access_token");
+  console.log('token dans AlloEcoleNewsFeed:', token);
+  // const isConnect = location.state?.isConnect || false;
 
+  const [isUserConnected, setIsUserConnected] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [selectedPermutation, setSelectedPermutation] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [actualites, setActualites] = useState([]);
+  const [loadingNews, setLoadingNews] = useState(false);
+  const [pagination, setPagination] = useState(null);
 
   // Détection de la taille d'écran au chargement et au redimensionnement
 
-  console.log('okkkkkkk', isConnect)
+
   React.useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 991);
@@ -26,17 +40,21 @@ const AlloEcoleNewsFeed = () => {
       window.removeEventListener('resize', checkMobile);
     };
   }, []);
+    
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    const connected = !!token || isAuthenticated;
+    setIsUserConnected(connected);
+    
+    console.log("🔍 État connexion AlloEcoleNewsFeed:", {
+      token: token ? "Présent" : "Absent",
+      isAuthenticated,
+      connected
+    });
+  }, [isAuthenticated]);
 
-  const actualites = [
-    {
-      id: 1,
-      type: "actualite",
-      title: "Ouverture des inscriptions pour l'année académique 2025-2026",
-      date: "20/10/2025",
-      image: "/images/poster/ecole.png",
-      excerpt: "Les inscriptions pour la nouvelle année académique sont officiellement ouvertes dans tous les établissements de Côte d'Ivoire. Ne manquez pas cette opportunité...",
-      views: 1250
-    },
+  // Données statiques pour les autres types (bourses, écoles, permutations)
+  const staticData = [
     {
       id: 2,
       type: "bourse",
@@ -55,15 +73,6 @@ const AlloEcoleNewsFeed = () => {
       typeEcole: "Collège Privé",
       image: "/images/poster/ecole.png",
       description: "Établissement d'excellence offrant un enseignement de qualité avec des infrastructures modernes et un personnel qualifié."
-    },
-    {
-      id: 4,
-      type: "actualite",
-      title: "Nouvelles bourses d'excellence disponibles pour les étudiants ivoiriens",
-      date: "18/10/2025",
-      image: "/images/poster/bourse.jpg",
-      excerpt: "Le gouvernement annonce de nouvelles opportunités de bourses pour encourager l'excellence académique et soutenir les étudiants méritants...",
-      views: 2100
     },
     {
       id: 5,
@@ -105,15 +114,6 @@ const AlloEcoleNewsFeed = () => {
       description: "Institution reconnue pour son approche pédagogique innovante et son engagement envers la réussite de chaque élève."
     },
     {
-      id: 8,
-      type: "actualite",
-      title: "Réforme du système éducatif : Ce qui va changer en 2026",
-      date: "15/10/2025",
-      image: "/images/poster/ecole.png",
-      excerpt: "Une réforme majeure du système éducatif ivoirien est en cours, avec de nombreux changements prévus pour améliorer la qualité de l'enseignement...",
-      views: 890
-    },
-    {
       id: 9,
       type: "permutation",
       niveau: "Master 1",
@@ -153,15 +153,6 @@ const AlloEcoleNewsFeed = () => {
       description: "Établissement public offrant un enseignement de qualité accessible à tous avec un encadrement professionnel."
     },
     {
-      id: 12,
-      type: "actualite",
-      title: "Salon de l'orientation 2025 : Les dates annoncées",
-      date: "12/10/2025",
-      image: "/images/poster/ecole.png",
-      excerpt: "Le grand salon de l'orientation scolaire et professionnelle se tiendra du 5 au 8 novembre prochain à Abidjan. Un événement incontournable...",
-      views: 1450
-    },
-    {
       id: 13,
       type: "permutation",
       niveau: "Licence 3",
@@ -189,125 +180,260 @@ const AlloEcoleNewsFeed = () => {
       typeEcole: "Institut Secondaire",
       image: "/images/poster/ecole.png",
       description: "Institut moderne spécialisé dans la formation technique et professionnelle avec des équipements de pointe."
-    },
-    {
-      id: 15,
-      type: "actualite",
-      title: "Comment bien préparer son dossier Campus France",
-      date: "10/10/2025",
-      image: "/images/poster/ecole.png",
-      excerpt: "Guide complet pour maximiser vos chances d'admission dans les universités françaises. Découvrez toutes les étapes essentielles...",
-      views: 3200
     }
   ];
 
-  const userData = {
-    nom: 'Albert',
-    prenom: 'Kala',
-    email: 'albert.kala@email.com',
-    photo: '/images/poster/albert.jpg',
-    dossiers: 2,
-    bourses: 3,
-    permutations: 2
+  // Fonction pour rafraîchir le token d'accès
+  const getNewAccessToken = async () => {
+    const storedRefresh = localStorage.getItem('refresh_token');
+    if (!storedRefresh) throw new Error('Aucun refresh token');
+
+    const resp = await fetch('https://alloecoleapi-dev.up.railway.app/api/v1/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: storedRefresh })
+    });
+
+    if (!resp.ok) throw new Error('Échec du refresh token');
+    const data = await resp.json();
+    const newAccess = data?.access_token || data?.data?.access_token || data?.accessToken || data?.data?.accessToken || data?.token;
+    if (!newAccess) throw new Error('Réponse refresh invalide');
+    localStorage.setItem('access_token', newAccess);
+    return newAccess;
   };
 
-  const UserProfileSidebar = () => (
-    <div className="profile-sidebar">
-      {isConnect ? (
-        <>
-          <div className="profile-header">
-            <div className="profile-avatar">
-              <img src={userData.photo} alt="Photo de profil" />
-              <div className="online-indicator"></div>
-            </div>
-            <div className="profile-info">
-              <h4 className="profile-name">{userData.prenom} {userData.nom}</h4>
-              <p className="profile-email">{userData.email}</p>
-            </div>
-          </div>
-          
-          <div className="profile-stats">
-            <div className="stat-item">
-              <div className="stat-number">{userData.dossiers}</div>
-              <div className="stat-label">Dossiers</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-number">{userData.bourses}</div>
-              <div className="stat-label">Bourses</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-number">{userData.permutations}</div>
-              <div className="stat-label">Permutations</div>
-            </div>
-          </div>
+  // Fonction pour récupérer les actualités depuis l'API
+//   const fetchNews = async () => {
+//     setLoadingNews(true);
+//     setError("");
+  
+//     try {
+//       const response = await fetch('https://alloecoleapi-dev.up.railway.app/api/v1/students/feed');
+      
+//       if (!response.ok) throw new Error(`Erreur ${response.status}`);
+      
+//       const result = await response.json();
+  
+//       if (result.success && result.data) {
+//         const formattedNews = result.data.map((item) => ({
+//           id: item.id,
+//           type: "actualite",
+//           title: item.title,
+//           date: new Date(item.publishedAt).toLocaleDateString('fr-FR'),
+//           image: item.mainImage || "/images/poster/ecole.png",
+//           excerpt: item.summary || "",
+//           views: item.views || 0,
+//           author: item.author,
+//           category: item.category?.name,
+//           slug: item.slug
+//         }));
+//         console.log('formattedNews', formattedNews);
+  
+//         setActualites(formattedNews);
+//         setPagination(result.pagination);
+//       }
+//     } catch (err) {
+//       console.error('Erreur actualités:', err);
+//       setError(err.message || "Impossible de charger les actualités");
+//     } finally {
+//       setLoadingNews(false);
+//     }
+//   };
 
-          <div className="profile-quick-actions">
-            <button className="quick-action-btn">
-              <User className="icon-sm" />
-              <span>Mon Profil</span>
-            </button>
-            <button className="quick-action-btn">
-              <BookOpen className="icon-sm" />
-              <span>Mes Dossiers</span>
-            </button>
-            <button className="quick-action-btn">
-              <GraduationCap className="icon-sm" />
-              <span>Mes Bourses</span>
-            </button>
-            <button className="quick-action-btn">
-              <Settings className="icon-sm" />
-              <span>Paramètres</span>
-            </button>
-          </div>
+// useEffect(() => {
+//   fetchNews();
+  
+//   if (token) {
+//     setLoading(true);
+//     axios
+//       .get(`https://alloecoleapi-dev.up.railway.app/api/v1/profile/student`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//       })
+//       .then((response) => {
+//         setUser(response.data.data);
+//       })
+//       .catch((error) => {
+//         console.error('❌ Erreur lors de la récupération du profil :', error);
+//         if (error.response?.status === 401) {
+//           localStorage.removeItem('access_token');
+//         }
+//       })
+//       .finally(() => {
+//         setLoading(false);
+//       });
+//   }
+// }, [token]);
 
-          <div className="profile-notifications">
-            <div className="notification-header">
-              <Bell className="icon-sm" />
-              <span>Notifications récentes</span>
-            </div>
-            <div className="notification-item">
-              <div className="notification-dot"></div>
-              <span>Nouvelle bourse disponible</span>
-            </div>
-            <div className="notification-item">
-              <div className="notification-dot"></div>
-              <span>Mise à jour de votre dossier</span>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="guest-profile">
-          <div className="guest-header">
-            <User className="icon-lg" />
-            <h4>Rejoignez-nous</h4>
-            <p>Connectez-vous pour accéder à toutes les fonctionnalités</p>
-          </div>
-          
-          <div className="guest-actions">
-          <Link to='/login'>
-            <button className="btn-primary full-width">
-              <LogIn className="icon-sm" />
-              Se connecter
-            </button>
-            </Link>
-            <button className="btn-secondary full-width">
-              S'inscrire
-            </button>
-          </div>
 
-          <div className="guest-benefits">
-            <h5>Avantages de s'inscrire :</h5>
-            <ul>
-              <li>✓ Sauvegarder vos recherches</li>
-              <li>✓ Postuler aux bourses</li>
-              <li>✓ Gérer vos dossiers</li>
-              <li>✓ Recevoir des alertes</li>
-            </ul>
-          </div>
-        </div>
-      )}
-    </div>
+  // ✅ Fonction pour récupérer TOUT le feed (toutes les pages)
+const fetchAllFeed = async () => {
+  const baseUrl = 'https://alloecoleapi-dev.up.railway.app/api/v1/students/feed';
+
+  // 🟠 Récupération de la première page
+  const firstResponse = await fetch(`${baseUrl}?page=1`);
+  if (!firstResponse.ok) throw new Error(`Erreur ${firstResponse.status}`);
+  const firstResult = await firstResponse.json();
+
+  if (!firstResult.success) throw new Error("Erreur API : success = false");
+
+  const totalPages = firstResult.pagination?.total_pages || 1;
+  let allData = firstResult.data;
+
+  // 🟢 Si plusieurs pages, on récupère toutes les autres
+  if (totalPages > 1) {
+    const pages = [];
+    for (let p = 2; p <= totalPages; p++) {
+      pages.push(fetch(`${baseUrl}?page=${p}`).then(r => r.json()));
+    }
+
+    const results = await Promise.all(pages);
+    results.forEach(r => {
+      if (r.success) allData = [...allData, ...r.data];
+    });
+  }
+
+  console.log("✅ Données totales avant suppression des doublons:", allData);
+
+  // 🧹 Élimination des doublons basés sur l'ID
+  const uniqueData = Array.from(
+    new Map(allData.map(item => [item.id, item])).values()
   );
+
+  console.log("🧭 Données uniques après nettoyage:", uniqueData);
+
+  // 🧩 Transformation des données pour l'affichage
+  return uniqueData.map((item) => ({
+    id: item.id,
+    title: item.title || "Actualité sans titre",
+    image: item.mainImage || "/images/poster/ecole.png",
+    excerpt: item.summary || "",
+    date: item.publishedAt
+      ? new Date(item.publishedAt).toLocaleDateString("fr-FR")
+      : "Date inconnue",
+    views: item.views || 0,
+  }));
+};
+
+
+
+  // 🧠 React Query pour le feed complet
+  const { data: feed = [], isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['feed-all'],
+    queryFn: fetchAllFeed,
+    staleTime: 10 * 60 * 1000,
+    cacheTime: 20 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+
+  // 👤 Charger le profil utilisateur
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    
+    if (token && isUserConnected) {
+      setLoadingProfile(true);
+      axios
+        .get(`https://alloecoleapi-dev.up.railway.app/api/v1/profile/student`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((response) => {
+          console.log("✅ Profil chargé:", response.data.data);
+          setUser(response.data.data);
+        })
+        .catch((error) => {
+          console.error('❌ Erreur profil :', error);
+          if (error.response?.status === 401) {
+            console.log("⚠️ Token invalide, déconnexion");
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            setIsUserConnected(false);
+            setUser(null);
+          }
+        })
+        .finally(() => setLoadingProfile(false));
+    }
+  }, [isUserConnected]);
+
+  console.log('Actualités fetched:', feed);
+
+  // 👤 Charger le profil utilisateur si connecté
+  useEffect(() => {
+    if (token) {
+      setLoadingProfile(true);
+      axios
+        .get(`https://alloecoleapi-dev.up.railway.app/api/v1/profile/student`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((response) => setUser(response.data.data))
+        .catch((error) => {
+          console.error('❌ Erreur profil :', error);
+          if (error.response?.status === 401) {
+            localStorage.removeItem('access_token');
+          }
+        })
+        .finally(() => setLoadingProfile(false));
+    }
+  }, [token]);
+
+  
+
+
+  // const UserProfileSidebar = () => (
+  //   <div className="profile-sidebar">
+  //     {user ? (
+  //       <>
+  //         <div className="profile-header">
+  //           <div className="profile-avatar">
+  //             <img src={user.photo || user.avatar || '/images/poster/albert.jpg'} alt="Photo de profil" />
+  //             <div className="online-indicator"></div>
+  //           </div>
+  //           <div className="profile-info">
+  //             <h4 className="profile-name">{user.prenom || user.firstName || 'Prénom'} {user.nom || user.lastName || 'Nom'}</h4>
+  //             <p className="profile-email">{user.email || 'Email non disponible'}</p>
+  //           </div>
+  //         </div>
+
+  //         <div className="profile-quick-actions">
+  //           <Link to="/profil" className="quick-action-btn">
+  //             <User className="icon-sm" />
+  //             <span>Mon Profil</span>
+  //           </Link>
+  //           <Link to="/profil" className="quick-action-btn">
+  //             <Settings className="icon-sm" />
+  //             <span>Paramètres</span>
+  //           </Link>
+  //         </div>
+  //       </>
+  //     ) : (
+  //       <div className="guest-profile">
+  //         <div className="guest-header">
+  //           <User className="icon-lg" />
+  //           <h4>Rejoignez-nous</h4>
+  //           <p>Connectez-vous pour accéder à toutes les fonctionnalités</p>
+  //         </div>
+          
+  //         <div className="guest-actions">
+  //         <Link to='/login'>
+  //           <button className="btn-primary full-width" >
+  //             <LogIn className="icon-sm" />
+  //              S'authentifier
+  //           </button>
+  //           </Link>
+  //         </div>
+
+  //         <div className="guest-benefits">
+  //           <h5>Avantages de s'authentifier :</h5>
+  //           <ul>
+  //             <li>✓ Sauvegarder vos recherches</li>
+  //             <li>✓ Postuler aux bourses</li>
+  //             <li>✓ Gérer vos dossiers</li>
+  //             <li>✓ Recevoir des alertes</li>
+  //           </ul>
+  //         </div>
+  //       </div>
+  //     )}
+  //   </div>
+  // );
 
   const RightSidebar = () => (
     <div className="sidebar-right-content">
@@ -563,925 +689,31 @@ const AlloEcoleNewsFeed = () => {
       </div>
     </div>
   );
+  {loadingNews && (
+                  <div style={{ textAlign: 'center', padding: '2rem' }}>
+                    <p>Chargement des actualités...</p>
+                  </div>
+                )}
+                
+                {error && (
+                  <div style={{ 
+                    padding: '1rem', 
+                    margin: '1rem', 
+                    background: '#fee2e2', 
+                    color: '#dc2626', 
+                    borderRadius: '0.5rem' 
+                  }}>
+                    ⚠️ {error}
+                  </div>
+                )}
 
   return (
     <>
-      <style>{`
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-
-        .section {
-          padding: 3rem 1rem;
-        }
-
-        .max-width {
-          margin: 0 auto;
-          max-width: 1300px;
-        }
-
-        /* Layout principal - Desktop */
-        .main-layout {
-          display: flex;
-          gap: 2rem;
-          align-items: flex-start;
-          width: 100%;
-        }
-
-        .sidebar {
-          background: white;
-          border-radius: 0.5rem;
-          padding: 1.5rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Desktop: sidebar sticky */
-        .sidebar-left {
-          width: 320px;
-          flex-shrink: 0; /* IMPORTANT: empêche le rétrécissement */
-          position: sticky;
-          top: 2rem;
-          height: fit-content;
-        }
-
-        .sidebar-right {
-          width: 300px;
-          flex-shrink: 0; /* IMPORTANT: empêche le rétrécissement */
-          position: sticky;
-          top: 2rem;
-          height: fit-content;
-        }
-
-        .content-area {
-          flex: 1;
-          min-width: 0; /* IMPORTANT: permet au contenu de se réduire correctement */
-        }
-
-        /* MOBILE FIRST APPROACH */
-        @media (max-width: 991px) {
-          .main-layout {
-            flex-direction: column;
-            gap: 1.5rem;
-          }
-
-          /* Sur mobile: sidebar prend toute la largeur et vient en premier */
-          .sidebar-left {
-            width: 100% !important;
-            left: 0;
-            right: 0;
-            marggin:0;
-            position: relative;
-            top: 0;
-            order: 1; /* Premier élément */
-            /* RETIRER le background-color: red; */
-          }
-
-          .sidebar-right {
-            width: 100% !important;
-            left: 0;
-            right: 0;
-            marggin:0;
-            position: relative;
-            top: 0;
-            order: 3; /* Premier élément */ 
-            /* RETIRER le background-color: red; */
-          }
-
-          .content-area {
-            order: 2; /* Deuxième élément */
-            width: 100%;
-          }
-
-
-          .section {
-            padding: 1.5rem 1rem;
-          }
-        }
-
-        /* Desktop uniquement */
-        @media (min-width: 992px) {
-          .sidebar-right {
-            display: block;
-          }
-          
-          .main-layout {
-            display: flex;
-            flex-direction: row;
-          }
-        }
-
-        /* Styles pour le profil utilisateur */
-        .profile-sidebar {
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-        }
-
-        .profile-header {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          padding-bottom: 1rem;
-          border-bottom: 1px solid #e5e7eb;
-        }
-
-        .profile-avatar {
-          position: relative;
-        }
-
-        .profile-avatar img {
-          width: 60px;
-          height: 60px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 3px solid #f97316;
-        }
-
-        .online-indicator {
-          position: absolute;
-          bottom: 2px;
-          right: 2px;
-          width: 12px;
-          height: 12px;
-          background: #10b981;
-          border: 2px solid white;
-          border-radius: 50%;
-        }
-
-        .profile-info {
-          flex: 1;
-        }
-
-        .profile-name {
-          font-size: 1.125rem;
-          font-weight: 600;
-          color: #1f2937;
-          margin-bottom: 0.25rem;
-        }
-
-        .profile-email {
-          font-size: 0.875rem;
-          color: #6b7280;
-          margin: 0;
-        }
-
-        .profile-stats {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1rem;
-          background: #f8fafc;
-          padding: 1rem;
-          border-radius: 0.5rem;
-        }
-
-        .stat-item {
-          text-align: center;
-        }
-
-        .stat-number {
-          font-size: 1.25rem;
-          font-weight: 700;
-          color: #f97316;
-        }
-
-        .stat-label {
-          font-size: 0.50rem;
-          color: #6b7280;
-          margin-top: 0.25rem;
-        }
-
-        .profile-quick-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .quick-action-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem;
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 0.5rem;
-          cursor: pointer;
-          transition: all 0.2s;
-          color: #4b5563;
-        }
-
-        .quick-action-btn:hover {
-          background: #fff7ed;
-          border-color: #f97316;
-          color: #f97316;
-        }
-
-        .profile-notifications {
-          background: #fef3c7;
-          padding: 1rem;
-          border-radius: 0.5rem;
-          border-left: 4px solid #f59e0b;
-        }
-
-        .notification-header {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-weight: 600;
-          color: #92400e;
-          margin-bottom: 0.75rem;
-        }
-
-        .notification-item {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.875rem;
-          color: #92400e;
-          margin-bottom: 0.5rem;
-        }
-
-        .notification-dot {
-          width: 6px;
-          height: 6px;
-          background: #f59e0b;
-          border-radius: 50%;
-        }
-
-        /* Styles pour les utilisateurs non connectés */
-        .guest-profile {
-          text-align: center;
-          padding: 1rem 0;
-        }
-
-        .guest-header {
-          margin-bottom: 1.5rem;
-        }
-
-        .guest-header .icon-lg {
-          width: 3rem;
-          height: 3rem;
-          color: #6b7280;
-          margin-bottom: 1rem;
-        }
-
-        .guest-header h4 {
-          color: #1f2937;
-          margin-bottom: 0.5rem;
-        }
-
-        .guest-header p {
-          color: #6b7280;
-          font-size: 0.875rem;
-        }
-
-        .guest-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-          margin-bottom: 1.5rem;
-        }
-
-        .btn-primary, .btn-secondary {
-          padding: 0.75rem;
-          border-radius: 0.5rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-        }
-
-        .btn-primary {
-          background: #f97316;
-          color: white;
-          border: none;
-        }
-
-        .btn-primary:hover {
-          background: #ea580c;
-        }
-
-        .btn-secondary {
-          background: white;
-          color: #f97316;
-          border: 2px solid #f97316;
-        }
-
-        .btn-secondary:hover {
-          background: #fff7ed;
-        }
-
-        .full-width {
-          width: 100%;
-        }
-
-        .guest-benefits {
-          text-align: left;
-          background: #f8fafc;
-          padding: 1rem;
-          border-radius: 0.5rem;
-        }
-
-        .guest-benefits h5 {
-          color: #1f2937;
-          margin-bottom: 0.75rem;
-          font-size: 0.875rem;
-        }
-
-        .guest-benefits ul {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-        }
-
-        .guest-benefits li {
-          font-size: 0.75rem;
-          color: #6b7280;
-          margin-bottom: 0.5rem;
-        }
-
-        /* Styles pour la sidebar droite */
-        .sidebar-right-content {
-          display: flex;
-          flex-direction: column;
-          gap: 2rem;
-        }
-
-        .sidebar-section {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-              /* Footer Styles */
-      .sidebar-footer {
-        background: white;
-        border-radius: 0.75rem;
-        padding: 1.25rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        margin-top: auto;
-      }
-
-      .footer-links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem 0;
-        margin-bottom: 1rem;
-      }
-
-      .footer-link {
-        font-size: 0.75rem;
-        color: #6b7280;
-        text-decoration: none;
-        transition: color 0.2s;
-        padding: 0.25rem 0;
-      }
-
-      .footer-link:hover {
-        color: #ea580c;
-        text-decoration: underline;
-      }
-
-      .footer-link:not(:last-child)::after {
-        content: '•';
-        margin: 0 0.5rem;
-        color: #d1d5db;
-      }
-
-      .footer-brand {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding-top: 0.75rem;
-        border-top: 1px solid #f3f4f6;
-      }
-
-      .brand-name {
-        font-size: 0.875rem;
-        font-weight: 700;
-        color: #ea580c;
-      }
-
-      .copyright {
-        font-size: 0.75rem;
-        color: #9ca3af;
-      }
-
-        .school-ad {
-          display: flex;
-          gap: 1rem;
-          padding: 1rem;
-          background: #f8fafc;
-          border-radius: 0.5rem;
-          border: 1px solid #e5e7eb;
-        }
-
-        .ad-image {
-          width: 60px;
-          height: 60px;
-          border-radius: 0.5rem;
-          overflow: hidden;
-        }
-
-        .ad-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .ad-content {
-          flex: 1;
-        }
-
-        .ad-content h5 {
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: #1f2937;
-          margin-bottom: 0.25rem;
-        }
-
-        .ad-content p {
-          font-size: 0.75rem;
-          color: #6b7280;
-          margin-bottom: 0.5rem;
-        }
-
-        .btn-ad {
-          padding: 0.25rem 0.75rem;
-          background: #f97316;
-          color: white;
-          border: none;
-          border-radius: 0.25rem;
-          font-size: 0.75rem;
-          cursor: pointer;
-        }
-
-        .quick-actions-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.75rem;
-        }
-
-        .action-card {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 1rem 0.5rem;
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 0.5rem;
-          cursor: pointer;
-          transition: all 0.2s;
-          text-align: center;
-        }
-
-        .action-card:hover {
-          background: #fff7ed;
-          border-color: #f97316;
-          transform: translateY(-2px);
-        }
-
-        .action-card span {
-          font-size: 0.75rem;
-          color: #4b5563;
-          font-weight: 500;
-        }
-
-        .stats-cards {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-
-        .stat-card {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0.75rem;
-          background: #f8fafc;
-          border-radius: 0.5rem;
-          border-left: 4px solid #f97316;
-        }
-
-        .stat-card .stat-number {
-          font-size: 1.125rem;
-          font-weight: 700;
-          color: #f97316;
-        }
-
-        .stat-card .stat-label {
-          font-size: 0.75rem;
-          color: #6b7280;
-          margin: 0;
-        }
-
-        .event-item {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          padding: 0.75rem;
-          background: #f8fafc;
-          border-radius: 0.5rem;
-        }
-
-        .event-date {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          background: #f97316;
-          color: white;
-          padding: 0.5rem;
-          border-radius: 0.375rem;
-          min-width: 50px;
-        }
-
-        .event-day {
-          font-size: 1.125rem;
-          font-weight: 700;
-        }
-
-        .event-month {
-          font-size: 0.75rem;
-        }
-
-        .event-details h6 {
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: #1f2937;
-          margin-bottom: 0.25rem;
-        }
-
-        .event-details p {
-          font-size: 0.75rem;
-          color: #6b7280;
-          margin: 0;
-        }
-
-        /* Styles des cartes d'actualités */
-        .grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 2rem;
-        }
-
-        .card {
-          background: white;
-          border-radius: 0.5rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          overflow: hidden;
-          transition: all 0.3s ease;
-          border-left: 4px solid #f97316;
-        }
-
-        .card:hover {
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-          transform: translateY(-2px);
-        }
-
-        .card-image {
-          width: 100%;
-          height: 16rem;
-          object-fit: cover;
-        }
-
-        .card-content {
-          padding: 1.5rem;
-        }
-
-        .card-badges {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin-bottom: 0.75rem;
-        }
-
-        .badges-wrap {
-          flex-wrap: wrap;
-        }
-
-        .badge {
-          padding: 0.25rem 0.75rem;
-          font-size: 0.75rem;
-          font-weight: 600;
-          border-radius: 9999px;
-        }
-
-        .badge-orange {
-          background-color: #ffedd5;
-          color: #f97316;
-        }
-
-        .badge-blue {
-          background-color: #dbeafe;
-          color: #2563eb;
-        }
-
-        .badge-green {
-          background-color: #dcfce7;
-          color: #16a34a;
-        }
-
-        .badge-purple {
-          background-color: #f3e8ff;
-          color: #9333ea;
-        }
-
-        .date-info {
-          display: flex;
-          align-items: center;
-          color: #6b7280;
-          font-size: 0.875rem;
-        }
-
-        .card-title {
-          font-size: 1.5rem;
-          font-weight: bold;
-          color: #1f2937;
-          margin-bottom: 0.75rem;
-          cursor: pointer;
-          transition: color 0.2s;
-        }
-
-        .card-title:hover {
-          color: #f97316;
-        }
-
-        .card-excerpt {
-          color: #6b7280;
-          margin-bottom: 1rem;
-          line-height: 1.625;
-        }
-
-        .card-footer {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .link-button {
-          display: flex;
-          align-items: center;
-          color: #f97316;
-          font-weight: 600;
-          background: none;
-          border: none;
-          cursor: pointer;
-          transition: color 0.2s;
-        }
-
-        .link-button:hover {
-          color: #ea580c;
-        }
-
-        .views {
-          color: #6b7280;
-          font-size: 0.875rem;
-        }
-
-        .info-list {
-          margin-bottom: 1rem;
-        }
-
-        .info-item {
-          display: flex;
-          align-items: center;
-          color: #6b7280;
-          margin-bottom: 0.5rem;
-        }
-
-        .info-item.deadline {
-          color: #dc2626;
-          font-weight: 600;
-        }
-
-        .location-info {
-          display: flex;
-          align-items: center;
-          color: #6b7280;
-          margin-bottom: 1rem;
-        }
-
-        .button-primary {
-          width: 100%;
-          padding: 0.75rem;
-          background-color: #f97316;
-          color: white;
-          border: none;
-          border-radius: 0.5rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background-color 0.2s;
-        }
-
-        .button-primary:hover {
-          background-color: #ea580c;
-        }
-
-        .button-secondary {
-          width: 100%;
-          padding: 0.75rem;
-          background-color: white;
-          color: #f97316;
-          border: 2px solid #f97316;
-          border-radius: 0.5rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background-color 0.2s;
-        }
-
-        .button-secondary:hover {
-          background-color: #fff7ed;
-        }
-
-        .permutation-path {
-          margin-bottom: 1rem;
-        }
-
-        .path-item {
-          display: flex;
-          align-items: flex-start;
-          margin-bottom: 0.75rem;
-        }
-
-        .path-dot {
-          width: 0.5rem;
-          height: 0.5rem;
-          background-color: #f97316;
-          border-radius: 50%;
-          margin-top: 0.5rem;
-          margin-right: 0.75rem;
-          flex-shrink: 0;
-        }
-
-        .path-label {
-          font-size: 0.875rem;
-          color: #6b7280;
-        }
-
-        .path-value {
-          font-weight: 600;
-          color: #1f2937;
-        }
-
-        .path-arrow {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0.5rem 0;
-        }
-
-        .year-info {
-          display: flex;
-          align-items: center;
-          color: #6b7280;
-          font-size: 0.875rem;
-          margin-bottom: 1rem;
-        }
-
-        .permutation-user-info {
-          display: flex;
-          align-items: center;
-          margin-bottom: 1rem;
-          padding-bottom: 1rem;
-          border-bottom: 1px solid #e5e7eb;
-        }
-
-        .user-avatar {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: #f97316;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-weight: bold;
-          font-size: 1rem;
-          margin-right: 1rem;
-        }
-
-        .user-name {
-          font-size: 1rem;
-          font-weight: 600;
-          color: #1f2937;
-          margin-bottom: 0.25rem;
-        }
-
-        .user-location {
-          display: flex;
-          align-items: center;
-          color: #6b7280;
-          font-size: 0.875rem;
-          margin: 0;
-        }
-
-        .permutation-meta {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1rem;
-          flex-wrap: wrap;
-          gap: 1rem;
-        }
-
-        .permutation-stats {
-          display: flex;
-          gap: 1rem;
-          align-items: center;
-        }
-
-        .stat-item {
-          align-items: center;
-          gap: 0.25rem;
-          font-size: 0.875rem;
-          color: #6b7280;
-        }
-
-        .correspondances-badge {
-          background: #fef3c7;
-          color: #92400e;
-          padding: 0.25rem 0.75rem;
-          border-radius: 9999px;
-          font-size: 0.75rem;
-          font-weight: 600;
-        }
-
-        .permutation-actions {
-          display: flex;
-          gap: 0.75rem;
-        }
-
-        .path-location {
-          font-size: 0.75rem;
-          color: #9ca3af;
-          margin-top: 0.25rem;
-        }
-
-        .icon-sm {
-          width: 1rem;
-          height: 1rem;
-          margin-right: 0.25rem;
-        }
-
-        .icon-md {
-          width: 1.25rem;
-          height: 1.25rem;
-          margin-right: 0.5rem;
-        }
-
-        .icon-lg {
-          width: 1.5rem;
-          height: 1.5rem;
-        }
-
-        .icon-orange {
-          color: #f97316;
-        }
-
-        .load-more-container {
-          text-align: center;
-          margin-top: 3rem;
-        }
-
-        .load-more-button {
-          padding: 1rem 2rem;
-          background-color: #f97316;
-          color: white;
-          border: none;
-          border-radius: 0.5rem;
-          font-weight: 600;
-          font-size: 1.125rem;
-          cursor: pointer;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          transition: background-color 0.2s;
-        }
-
-        .load-more-button:hover {
-          background-color: #ea580c;
-        }
-
-        @media (max-width: 767px) {
-          .card-title {
-            font-size: 1.25rem;
-          }
-
-          .section {
-            padding: 1rem;
-          }
-
-          .profile-stats {
-            grid-template-columns: repeat(3, 1fr);
-          }
-
-          .quick-actions-grid {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-      `}</style>
+      {loadingProfile && (
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <p>Chargement des actualités...</p>
+          </div>
+      )}
       
       <div className="container-fluid bg-[#fdfaf8ff]">
         <section className="section">
@@ -1494,9 +726,13 @@ const AlloEcoleNewsFeed = () => {
 
               {/* Content Area - Actualités */}
               <div className="content-area">
+
                 <div className="grid">
-                  {actualites.map((item) => {
-                    if (item.type === 'actualite') return renderActualiteCard(item);
+                  {/* Afficher les actualités de l'API */}
+                  {feed.map((item) => renderActualiteCard(item))}
+                  
+                  {/* Afficher les données statiques pour les autres types */}
+                  {staticData.map((item) => {
                     if (item.type === 'bourse') return renderBourseCard(item);
                     if (item.type === 'ecole') return renderEcoleCard(item);
                     if (item.type === 'permutation') return renderPermutationCard(item);
@@ -1504,11 +740,13 @@ const AlloEcoleNewsFeed = () => {
                   })}
                 </div>
 
-                <div className="load-more-container">
-                  <button className="load-more-button">
-                    Charger plus d'actualités
-                  </button>
-                </div>
+                {pagination && pagination.current_page < pagination.total_pages && (
+                  <div className="load-more-container">
+                    <button className="load-more-button" onClick={fetchNews}>
+                      Charger plus d'actualités
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Sidebar Right - Pubs et actions rapides */}

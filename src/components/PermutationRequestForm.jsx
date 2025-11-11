@@ -1,759 +1,639 @@
 import React, { useState } from 'react';
-import { User, GraduationCap, MapPin, Calendar, FileText, Send, AlertCircle, CheckCircle } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Send, AlertCircle, CheckCircle, Search, MessageCircle, Building, ArrowRight } from 'lucide-react';
 
-const PermutationRequestForm = () => {
+// Configuration de l'API
+const API_BASE_URL = 'https://alloecoleapi-dev.up.railway.app/api/v1';
+
+// Utilitaire pour récupérer le token
+const getAuthToken = () => {
+  return localStorage.getItem('access_token');
+};
+
+// Utilitaire pour les headers avec authentification
+const getAuthHeaders = () => {
+  const token = getAuthToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
+
+// Service API
+const permutationService = {
+  // Créer une nouvelle demande de permutation
+  createPermutation: async (data) => {
+    const response = await fetch(`${API_BASE_URL}/students/transfers`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        sourceInstitution: data.sourceInstitution,
+        targetInstitution: data.targetInstitution
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Erreur lors de la création de la demande');
+    }
+    
+    return await response.json();
+  },
+
+  // Récupérer toutes les permutations
+  getAllPermutations: async () => {
+    const response = await fetch(`${API_BASE_URL}/students/transfers/public`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération des permutations');
+    }
+    
+    return await response.json();
+  }
+};
+
+// Hook personnalisé pour créer une permutation
+const useCreatePermutation = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: permutationService.createPermutation,
+    onSuccess: () => {
+      // Invalider et refetch les permutations après création
+      queryClient.invalidateQueries({ queryKey: ['permutations'] });
+    }
+  });
+};
+
+// Hook personnalisé pour récupérer les permutations
+const usePermutations = () => {
+  return useQuery({
+    queryKey: ['permutations'],
+    queryFn: permutationService.getAllPermutations,
+    staleTime: 30000,
+    retry: 2,
+    select: (data) => {
+      // Adapter la réponse de l'API pour toujours retourner un tableau
+      if (Array.isArray(data)) {
+        return data;
+      }
+      if (data?.data) {
+        return Array.isArray(data.data) ? data.data : [];
+      }
+      if (data?.transfers) {
+        return Array.isArray(data.transfers) ? data.transfers : [];
+      }
+      if (data?.content) {
+        return Array.isArray(data.content) ? data.content : [];
+      }
+      return [];
+    }
+  });
+};
+
+// Composant Formulaire de Demande
+const PermutationRequestForm = ({ onSubmitSuccess }) => {
   const [formData, setFormData] = useState({
-    // Informations personnelles
-    nom: '',
-    prenom: '',
-    email: '',
-    telephone: '',
-    dateNaissance: '',
-    
-    // Informations académiques actuelles
-    niveauEtude: '',
-    filiere: '',
-    etablissementActuel: '',
-    villeActuelle: '',
-    anneeAcademique: '',
-    
-    // Établissement souhaité
-    etablissementSouhaite: '',
-    villeSouhaitee: '',
-    filiereSouhaitee: '',
-    niveauSouhaite: '',
-    
-    // Motifs et documents
-    motifPermutation: '',
-    documents: [],
-    commentaires: '',
-    
-    // Préférences de contact
-    prefereContact: 'email',
-    disponibilite: '',
-    
-    // Consentement
-    consentement: false,
-    consentementDonnees: false
+    sourceInstitution: '',
+    targetInstitution: ''
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null);
+  const createPermutation = useCreatePermutation();
 
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
-
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    setFormData(prev => ({
-      ...prev,
-      documents: [...prev.documents, ...files]
-    }));
-  };
-
-  const removeDocument = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      documents: prev.documents.filter((_, i) => i !== index)
+      [name]: value
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
     
     try {
-      // Simulation d'envoi de données
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const result = await createPermutation.mutateAsync(formData);
       
-      setSubmitStatus('success');
-      // Reset form
+      // Réinitialiser le formulaire
       setFormData({
-        nom: '',
-        prenom: '',
-        email: '',
-        telephone: '',
-        dateNaissance: '',
-        niveauEtude: '',
-        filiere: '',
-        etablissementActuel: '',
-        villeActuelle: '',
-        anneeAcademique: '',
-        etablissementSouhaite: '',
-        villeSouhaitee: '',
-        filiereSouhaitee: '',
-        niveauSouhaite: '',
-        motifPermutation: '',
-        documents: [],
-        commentaires: '',
-        prefereContact: 'email',
-        disponibilite: '',
-        consentement: false,
-        consentementDonnees: false
+        sourceInstitution: '',
+        targetInstitution: ''
       });
+
+      // Appeler le callback de succès
+      if (onSubmitSuccess) {
+        onSubmitSuccess(result);
+      }
+      
     } catch (error) {
-      setSubmitStatus('error');
-    } finally {
-      setIsSubmitting(false);
+      console.error('Erreur:', error);
     }
   };
 
-  const niveauxEtude = [
-    '6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Terminale',
-    'BTS 1', 'BTS 2', 'Licence 1', 'Licence 2', 'Licence 3',
-    'Master 1', 'Master 2', 'Doctorat'
-  ];
-
-  const filieres = [
-    'Lycée', 'Collège', 'Génie Civil', 'Génie Informatique', 'Génie Électrique', 'Génie Mécanique',
-    'Commerce', 'Gestion', 'Comptabilité', 'Marketing', 'Communication',
-    'Droit', 'Médecine', 'Pharmacie', 'Sciences', 'Lettres', 'Langues'
-  ];
-
   return (
-    <>
-      <style>{`
-        .permutation-form-section {
-          padding: 4rem 0;
-          background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        }
+    <section style={{ padding: '4rem 0', background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 1rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '1rem' }}>
+            Demande de Permutation
+          </h1>
+          <p style={{ fontSize: '1.125rem', color: '#6b7280' }}>
+            Créez une demande de permutation entre établissements
+          </p>
+        </div>
 
-        .container {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 0 1rem;
-        }
+        <div style={{ background: 'white', borderRadius: '1rem', boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)', overflow: 'hidden' }}>
+          <form onSubmit={handleSubmit} style={{ padding: '3rem' }}>
+            {/* Établissements */}
+            <div style={{ marginBottom: '3rem' }}>
+              <h2 style={{ display: 'flex', alignItems: 'center', fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '2rem', paddingBottom: '0.75rem', borderBottom: '2px solid #f97316' }}>
+                <Building size={24} style={{ marginRight: '0.75rem', color: '#f97316' }} />
+                Établissements
+              </h2>
+              
+              <div style={{ display: 'grid', gap: '2rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>
+                    Établissement actuel <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="sourceInstitution"
+                    value={formData.sourceInstitution}
+                    onChange={handleInputChange}
+                    style={{ width: '100%', padding: '0.75rem 1rem', border: '2px solid #e5e7eb', borderRadius: '0.5rem', fontSize: '1rem' }}
+                    placeholder="Nom de votre établissement actuel"
+                    required
+                  />
+                </div>
 
-        .form-header {
-          text-align: center;
-          margin-bottom: 3rem;
-        }
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f97316' }}>
+                  <ArrowRight size={24} />
+                </div>
 
-        .form-title {
-          font-size: 2.5rem;
-          font-weight: bold;
-          color: #1f2937;
-          margin-bottom: 1rem;
-        }
-
-        .form-subtitle {
-          font-size: 1.25rem;
-          color: #6b7280;
-          max-width: 600px;
-          margin: 0 auto;
-        }
-
-        .form-container {
-          background: white;
-          border-radius: 1rem;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-          overflow: hidden;
-        }
-
-        .form-tabs {
-          display: flex;
-          background: #f8fafc;
-          border-bottom: 1px solid #e2e8f0;
-        }
-
-        .form-tab {
-          flex: 1;
-          padding: 1.5rem;
-          text-align: center;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          font-weight: 600;
-          color: #6b7280;
-          transition: all 0.3s;
-          position: relative;
-        }
-
-        .form-tab.active {
-          color: #f97316;
-          background: white;
-        }
-
-        .form-tab.active::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 3px;
-          background: #f97316;
-        }
-
-        .form-content {
-          padding: 3rem;
-        }
-
-        .form-section {
-          margin-bottom: 3rem;
-        }
-
-        .section-title {
-          display: flex;
-          align-items: center;
-          font-size: 1.5rem;
-          font-weight: bold;
-          color: #1f2937;
-          margin-bottom: 2rem;
-          padding-bottom: 0.75rem;
-          border-bottom: 2px solid #f97316;
-        }
-
-        .section-title svg {
-          margin-right: 0.75rem;
-          color: #f97316;
-        }
-
-        .form-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 1.5rem;
-        }
-
-        .form-group {
-          margin-bottom: 1.5rem;
-        }
-
-        .form-label {
-          display: block;
-          font-weight: 600;
-          color: #374151;
-          margin-bottom: 0.5rem;
-        }
-
-        .form-input,
-        .form-select,
-        .form-textarea {
-          width: 100%;
-          padding: 0.75rem 1rem;
-          border: 2px solid #e5e7eb;
-          border-radius: 0.5rem;
-          font-size: 1rem;
-          transition: all 0.3s;
-          background: white;
-        }
-
-        .form-input:focus,
-        .form-select:focus,
-        .form-textarea:focus {
-          outline: none;
-          border-color: #f97316;
-          box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
-        }
-
-        .form-textarea {
-          min-height: 120px;
-          resize: vertical;
-        }
-
-        .file-upload {
-          border: 2px dashed #d1d5db;
-          border-radius: 0.5rem;
-          padding: 2rem;
-          text-align: center;
-          transition: all 0.3s;
-          cursor: pointer;
-        }
-
-        .file-upload:hover {
-          border-color: #f97316;
-          background: #fff7ed;
-        }
-
-        .file-upload.dragover {
-          border-color: #f97316;
-          background: #fff7ed;
-        }
-
-        .file-list {
-          margin-top: 1rem;
-        }
-
-        .file-item {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0.75rem;
-          background: #f9fafb;
-          border-radius: 0.5rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .file-name {
-          font-weight: 500;
-          color: #374151;
-        }
-
-        .file-remove {
-          background: #ef4444;
-          color: white;
-          border: none;
-          border-radius: 0.25rem;
-          padding: 0.25rem 0.5rem;
-          cursor: pointer;
-          font-size: 0.875rem;
-        }
-
-        .checkbox-group {
-          display: flex;
-          align-items: flex-start;
-          margin-bottom: 1rem;
-        }
-
-        .checkbox {
-          margin-right: 0.75rem;
-          margin-top: 0.25rem;
-        }
-
-        .checkbox-label {
-          font-size: 0.875rem;
-          color: #6b7280;
-          line-height: 1.5;
-        }
-
-        .submit-section {
-          text-align: center;
-          padding-top: 2rem;
-          border-top: 1px solid #e5e7eb;
-        }
-
-        .submit-button {
-          background: #f97316;
-          color: white;
-          border: none;
-          padding: 1rem 3rem;
-          border-radius: 0.5rem;
-          font-size: 1.125rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .submit-button:hover:not(:disabled) {
-          background: #ea580c;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
-        }
-
-        .submit-button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .status-message {
-          margin-top: 1rem;
-          padding: 1rem;
-          border-radius: 0.5rem;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .status-success {
-          background: #dcfce7;
-          color: #166534;
-          border: 1px solid #bbf7d0;
-        }
-
-        .status-error {
-          background: #fef2f2;
-          color: #dc2626;
-          border: 1px solid #fecaca;
-        }
-
-        .required {
-          color: #ef4444;
-        }
-
-        @media (max-width: 768px) {
-          .form-tabs {
-            flex-direction: column;
-          }
-
-          .form-content {
-            padding: 2rem 1rem;
-          }
-
-          .form-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .form-title {
-            font-size: 2rem;
-          }
-        }
-      `}</style>
-
-      <section className="permutation-form-section">
-        <div className="container">
-          <div className="form-header">
-            <h1 className="form-title">Demande de Permutation</h1>
-            {/* <p className="form-subtitle">
-              Remplissez ce formulaire pour faire une demande de permutation d'établissement. 
-              Notre équipe vous accompagnera dans vos démarches auprès des autorités compétentes.
-            </p> */}
-          </div>
-
-          <div className="form-container">
-            <div className="form-tabs">
-              <button className="form-tab active">Informations Personnelles</button>
-              <button className="form-tab">Situation Actuelle</button>
-              <button className="form-tab">Établissement Souhaité</button>
-              <button className="form-tab">Motifs</button>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>
+                    Établissement souhaité <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="targetInstitution"
+                    value={formData.targetInstitution}
+                    onChange={handleInputChange}
+                    style={{ width: '100%', padding: '0.75rem 1rem', border: '2px solid #e5e7eb', borderRadius: '0.5rem', fontSize: '1rem' }}
+                    placeholder="Nom de l'établissement souhaité"
+                    required
+                  />
+                </div>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="form-content">
-              {/* Informations Personnelles */}
-              <div className="form-section">
-                <h2 className="section-title">
-                  <User size={24} />
-                  Informations Personnelles
-                </h2>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label className="form-label">
-                      Nom <span className="required">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="nom"
-                      value={formData.nom}
-                      onChange={handleInputChange}
-                      className="form-input"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">
-                      Prénom <span className="required">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="prenom"
-                      value={formData.prenom}
-                      onChange={handleInputChange}
-                      className="form-input"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">
-                      Email <span className="required">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="form-input"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">
-                      Téléphone <span className="required">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      name="telephone"
-                      value={formData.telephone}
-                      onChange={handleInputChange}
-                      className="form-input"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">
-                      Date de naissance <span className="required">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      name="dateNaissance"
-                      value={formData.dateNaissance}
-                      onChange={handleInputChange}
-                      className="form-input"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Situation Académique Actuelle */}
-              <div className="form-section">
-                <h2 className="section-title">
-                  <GraduationCap size={24} />
-                  Situation Académique Actuelle
-                </h2>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label className="form-label">
-                      Niveau d'étude <span className="required">*</span>
-                    </label>
-                    <select
-                      name="niveauEtude"
-                      value={formData.niveauEtude}
-                      onChange={handleInputChange}
-                      className="form-select"
-                      required
-                    >
-                      <option value="">Sélectionnez votre niveau</option>
-                      {niveauxEtude.map(niveau => (
-                        <option key={niveau} value={niveau}>{niveau}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">
-                      Filière <span className="required">*</span>
-                    </label>
-                    <select
-                      name="filiere"
-                      value={formData.filiere}
-                      onChange={handleInputChange}
-                      className="form-select"
-                      required
-                    >
-                      <option value="">Sélectionnez votre filière</option>
-                      {filieres.map(filiere => (
-                        <option key={filiere} value={filiere}>{filiere}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">
-                      Établissement actuel <span className="required">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="etablissementActuel"
-                      value={formData.etablissementActuel}
-                      onChange={handleInputChange}
-                      className="form-input"
-                      placeholder="Nom de votre établissement actuel"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">
-                      Ville actuelle <span className="required">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="villeActuelle"
-                      value={formData.villeActuelle}
-                      onChange={handleInputChange}
-                      className="form-input"
-                      placeholder="Ville où vous étudiez actuellement"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">
-                      Année académique <span className="required">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="anneeAcademique"
-                      value={formData.anneeAcademique}
-                      onChange={handleInputChange}
-                      className="form-input"
-                      placeholder="Ex: 2024-2025"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Établissement Souhaité */}
-              <div className="form-section">
-                <h2 className="section-title">
-                  <MapPin size={24} />
-                  Établissement Souhaité
-                </h2>
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label className="form-label">
-                      Établissement souhaité <span className="required">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="etablissementSouhaite"
-                      value={formData.etablissementSouhaite}
-                      onChange={handleInputChange}
-                      className="form-input"
-                      placeholder="Nom de l'établissement souhaité"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">
-                      Ville souhaitée <span className="required">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="villeSouhaitee"
-                      value={formData.villeSouhaitee}
-                      onChange={handleInputChange}
-                      className="form-input"
-                      placeholder="Ville où vous souhaitez étudier"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">
-                      Filière souhaitée
-                    </label>
-                    <select
-                      name="filiereSouhaitee"
-                      value={formData.filiereSouhaitee}
-                      onChange={handleInputChange}
-                      className="form-select"
-                    >
-                      <option value="">Même filière</option>
-                      {filieres.map(filiere => (
-                        <option key={filiere} value={filiere}>{filiere}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">
-                      Niveau souhaité
-                    </label>
-                    <select
-                      name="niveauSouhaite"
-                      value={formData.niveauSouhaite}
-                      onChange={handleInputChange}
-                      className="form-select"
-                    >
-                      <option value="">Même niveau</option>
-                      {niveauxEtude.map(niveau => (
-                        <option key={niveau} value={niveau}>{niveau}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Motifs et Documents */}
-              <div className="form-section">
-                <h2 className="section-title">
-                  <FileText size={24} />
-                   Motifs
-                </h2>
-                <div className="form-group">
-                  <label className="form-label">
-                    Motif de la permutation <span className="required">*</span>
-                  </label>
-                  <textarea
-                    name="motifPermutation"
-                    value={formData.motifPermutation}
-                    onChange={handleInputChange}
-                    className="form-textarea"
-                    placeholder="Expliquez les raisons de votre demande de permutation..."
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Consentements */}
-              <div className="form-section">
-                <div className="checkbox-group">
-                  <input
-                    type="checkbox"
-                    name="consentement"
-                    checked={formData.consentement}
-                    onChange={handleInputChange}
-                    className="checkbox"
-                    required
-                  />
-                  <label className="checkbox-label">
-                    J'accepte que mes informations soient partagées avec d'autres utilisateurs 
-                    pour faciliter les échanges de permutation. <span className="required">*</span>
-                  </label>
-                </div>
-
-                <div className="checkbox-group">
-                  <input
-                    type="checkbox"
-                    name="consentementDonnees"
-                    checked={formData.consentementDonnees}
-                    onChange={handleInputChange}
-                    className="checkbox"
-                    required
-                  />
-                  <label className="checkbox-label">
-                    J'accepte le traitement de mes données personnelles conformément à la 
-                    politique de confidentialité d'AlloEcole. <span className="required">*</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Submit Section */}
-              <div className="submit-section">
-                <button
-                  type="submit"
-                  className="submit-button"
-                  disabled={isSubmitting || !formData.consentement || !formData.consentementDonnees}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div style={{
-                        width: '20px',
-                        height: '20px',
-                        border: '2px solid #ffffff',
-                        borderTop: '2px solid transparent',
-                        borderRadius: '50%',
-                        animation: 'spin 1s linear infinite'
-                      }}></div>
-                      Publication en cours...
-                    </>
-                  ) : (
-                    <>
-                      <Send size={20} />
-                      Publiez ma demande
-                    </>
-                  )}
-                </button>
-
-                {submitStatus === 'success' && (
-                  <div className="status-message status-success">
-                    <CheckCircle size={20} />
-                    Votre demande a été envoyée avec succès ! Notre équipe vous contactera sous 48h.
-                  </div>
+            {/* Submit Section */}
+            <div style={{ textAlign: 'center', paddingTop: '2rem', borderTop: '1px solid #e5e7eb' }}>
+              <button
+                type="submit"
+                disabled={createPermutation.isPending}
+                style={{
+                  background: createPermutation.isPending ? '#d1d5db' : '#f97316',
+                  color: 'white',
+                  border: 'none',
+                  padding: '1rem 3rem',
+                  borderRadius: '0.5rem',
+                  fontSize: '1.125rem',
+                  fontWeight: 600,
+                  cursor: createPermutation.isPending ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                {createPermutation.isPending ? (
+                  <>
+                    <div style={{
+                      width: '20px',
+                      height: '20px',
+                      border: '2px solid #ffffff',
+                      borderTop: '2px solid transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                    Publication en cours...
+                  </>
+                ) : (
+                  <>
+                    <Send size={20} />
+                    Publier ma demande
+                  </>
                 )}
+              </button>
 
-                {submitStatus === 'error' && (
-                  <div className="status-message status-error">
-                    <AlertCircle size={20} />
-                    Une erreur est survenue. Veuillez réessayer ou nous contacter.
-                  </div>
-                )}
-              </div>
-            </form>
-          </div>
+              {createPermutation.isSuccess && (
+                <div style={{
+                  marginTop: '1rem',
+                  padding: '1rem',
+                  borderRadius: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  background: '#dcfce7',
+                  color: '#166534',
+                  border: '1px solid #bbf7d0'
+                }}>
+                  <CheckCircle size={20} />
+                  Votre demande a été publiée avec succès !
+                </div>
+              )}
+
+              {createPermutation.isError && (
+                <div style={{
+                  marginTop: '1rem',
+                  padding: '1rem',
+                  borderRadius: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  background: '#fef2f2',
+                  color: '#dc2626',
+                  border: '1px solid #fecaca'
+                }}>
+                  <AlertCircle size={20} />
+                  {createPermutation.error?.message || 'Une erreur est survenue. Veuillez réessayer.'}
+                </div>
+              )}
+            </div>
+          </form>
         </div>
-      </section>
-
-      <style jsx>{`
+      </div>
+      
+      <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
       `}</style>
-    </>
+    </section>
   );
 };
 
-export default PermutationRequestForm;
+// Composant Liste des Permutations
+const PermutationList = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState('all');
+
+  const { data: permutations = [], isLoading, isError, error, refetch } = usePermutations();
+  
+  const filteredPermutations = Array.isArray(permutations) ? permutations.filter(permutation => {
+    const matchesSearch =
+      (permutation.sourceInstitution || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (permutation.targetInstitution || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilter = selectedFilter === 'all' || permutation.status === selectedFilter;
+
+    return matchesSearch && matchesFilter;
+  }) : [];
+
+  const sortedPermutations = [...filteredPermutations].sort((a, b) => {
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  });
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: '4rem 0', textAlign: 'center' }}>
+        <div style={{
+          width: '50px',
+          height: '50px',
+          border: '4px solid #f3f4f6',
+          borderTop: '4px solid #f97316',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          margin: '0 auto 1rem'
+        }}></div>
+        <div style={{ fontSize: '1.5rem', color: '#6b7280' }}>Chargement des permutations...</div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div style={{ padding: '4rem 0', textAlign: 'center' }}>
+        <AlertCircle size={64} style={{ margin: '0 auto 1rem', color: '#dc2626' }} />
+        <div style={{ fontSize: '1.5rem', color: '#dc2626', marginBottom: '1rem' }}>
+          {error?.message || 'Impossible de charger les permutations'}
+        </div>
+        <button
+          onClick={() => refetch()}
+          style={{
+            background: '#f97316',
+            color: 'white',
+            border: 'none',
+            padding: '0.75rem 2rem',
+            borderRadius: '0.5rem',
+            fontSize: '1rem',
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <section style={{ padding: '4rem 0', background: '#f8fafc' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '1rem' }}>
+            Demandes de Permutation
+          </h2>
+          <p style={{ fontSize: '1.25rem', color: '#6b7280', maxWidth: '600px', margin: '0 auto' }}>
+            Consultez les demandes de permutation entre établissements
+          </p>
+        </div>
+
+        <div style={{ background: 'white', borderRadius: '1rem', padding: '2rem', marginBottom: '2rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
+              <Search style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} size={20} />
+              <input
+                type="text"
+                placeholder="Rechercher par établissement..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 3rem', border: '2px solid #e5e7eb', borderRadius: '0.5rem', fontSize: '1rem' }}
+              />
+            </div>
+            
+            <select
+              value={selectedFilter}
+              onChange={(e) => setSelectedFilter(e.target.value)}
+              style={{ padding: '0.75rem 1rem', border: '2px solid #e5e7eb', borderRadius: '0.5rem', fontSize: '1rem', background: 'white', cursor: 'pointer' }}
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="EN_ATTENTE">En attente</option>
+              <option value="ACCEPTEE">Acceptée</option>
+              <option value="REFUSEE">Refusée</option>
+            </select>
+          </div>
+        </div>
+
+        {sortedPermutations.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#6b7280' }}>
+            <Search size={64} style={{ margin: '0 auto 1rem', color: '#d1d5db' }} />
+            <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Aucune demande trouvée</h3>
+            <p>Essayez de modifier vos critères de recherche</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '2rem' }}>
+            {sortedPermutations.map((permutation) => (
+              <div
+                key={permutation.id}
+                style={{
+                  background: 'white',
+                  borderRadius: '1rem',
+                  padding: '2rem',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                  borderLeft: '4px solid #f97316',
+                  transition: 'transform 0.3s, box-shadow 0.3s'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{
+                      width: '50px',
+                      height: '50px',
+                      borderRadius: '50%',
+                      background: '#f97316',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      fontSize: '1.25rem'
+                    }}>
+                      {permutation.studentId ? permutation.studentId.slice(0, 2).toUpperCase() : 'ET'}
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.25rem' }}>
+                        Permutation 
+                      </h3>
+                    </div>
+                  </div>
+                  <div style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    background: permutation.status === 'EN_ATTENTE' ? '#fef3c7' : permutation.status === 'ACCEPTEE' ? '#dcfce7' : '#fee2e2',
+                    color: permutation.status === 'EN_ATTENTE' ? '#92400e' : permutation.status === 'ACCEPTEE' ? '#166534' : '#dc2626'
+                  }}>
+                    {permutation.status === 'EN_ATTENTE' ? 'En attente' : permutation.status === 'ACCEPTEE' ? 'Acceptée' : 'Refusée'}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                    <div style={{
+                      width: '12px',
+                      height: '12px',
+                      background: '#f97316',
+                      borderRadius: '50%',
+                      marginTop: '0.5rem',
+                      marginRight: '1rem',
+                      flexShrink: 0
+                    }}></div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
+                        Établissement actuel
+                      </div>
+                      <div style={{ fontWeight: 600, color: '#1f2937' }}>
+                        {permutation.sourceInstitution}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0.5rem 0', color: '#f97316' }}>
+                    <ArrowRight size={20} />
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <div style={{
+                      width: '12px',
+                      height: '12px',
+                      background: '#f97316',
+                      borderRadius: '50%',
+                      marginTop: '0.5rem',
+                      marginRight: '1rem',
+                      flexShrink: 0
+                    }}></div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
+                        Établissement souhaité
+                      </div>
+                      <div style={{ fontWeight: 600, color: '#1f2937' }}>
+                        {permutation.targetInstitution}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: '#f97316',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    transition: 'background 0.3s'
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = '#ea580c'}
+                  onMouseLeave={(e) => e.target.style.background = '#f97316'}
+                  onClick={() => {
+                    // Action de contact à définir
+                    console.log('Contacter pour la permutation:', permutation.id);
+                  }}
+                >
+                  <MessageCircle size={16} />
+                  Contacter
+                </button>
+
+                {permutation.createdAt && (
+                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb', fontSize: '0.75rem', color: '#6b7280', textAlign: 'center' }}>
+                    Publié le {new Date(permutation.createdAt).toLocaleDateString('fr-FR')}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+    </section>
+  );
+};
+
+// Composant Principal
+const PermutationSystem = () => {
+  const [activeView, setActiveView] = useState('list'); // 'list' ou 'form'
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  const handleSubmitSuccess = (result) => {
+    setShowSuccessMessage(true);
+    setTimeout(() => {
+      setActiveView('list');
+      setShowSuccessMessage(false);
+    }, 3000);
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+      {/* Navigation */}
+      <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem', display: 'flex', gap: '1rem' }}>
+          <button
+            onClick={() => setActiveView('list')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: activeView === 'list' ? '#f97316' : 'white',
+              color: activeView === 'list' ? 'white' : '#6b7280',
+              border: `2px solid ${activeView === 'list' ? '#f97316' : '#e5e7eb'}`,
+              borderRadius: '0.5rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.3s'
+            }}
+          >
+            Liste des demandes
+          </button>
+          <button
+            onClick={() => setActiveView('form')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: activeView === 'form' ? '#f97316' : 'white',
+              color: activeView === 'form' ? 'white' : '#6b7280',
+              border: `2px solid ${activeView === 'form' ? '#f97316' : '#e5e7eb'}`,
+              borderRadius: '0.5rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.3s'
+            }}
+          >
+            Créer une demande
+          </button>
+        </div>
+      </div>
+
+      {/* Message de succès global */}
+      {showSuccessMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '5rem',
+          right: '1rem',
+          background: '#dcfce7',
+          color: '#166534',
+          border: '1px solid #bbf7d0',
+          padding: '1rem 2rem',
+          borderRadius: '0.5rem',
+          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          zIndex: 1000,
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          <CheckCircle size={20} />
+          Demande créée avec succès ! Redirection vers la liste...
+        </div>
+      )}
+
+      {/* Contenu */}
+      {activeView === 'list' ? (
+        <PermutationList />
+      ) : (
+        <PermutationRequestForm onSubmitSuccess={handleSubmitSuccess} />
+      )}
+
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+          [style*="grid-template-columns: repeat(auto-fill, minmax(400px, 1fr))"] {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default PermutationSystem;

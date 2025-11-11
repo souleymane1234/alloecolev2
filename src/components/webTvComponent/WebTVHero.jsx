@@ -1,31 +1,68 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Play, Volume2, Maximize, Share2, Heart, Download, Clock, Eye, Pause } from 'lucide-react';
 
 const WebTVHero = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [featuredVideo, setFeaturedVideo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showPremiumPopup, setShowPremiumPopup] = useState(false);
   const videoRef = useRef(null);
 
-  const featuredVideo = {
-    id: 1,
-    title: "Comment bien choisir son orientation après le BAC ?",
-    description: "Découvrez les meilleures stratégies pour faire le bon choix d'orientation après votre baccalauréat. Nos experts vous guident à travers les différentes options disponibles.",
-    thumbnail: "/images/poster/poster.jpg",
-    videoUrl: "/video/video2.mp4",
-    duration: "15:30",
-    views: 12500,
-    likes: 890,
-    category: "Orientation",
-    publishedAt: "2024-01-15",
-    author: {
-      name: "Dr. Marie Kouassi",
-      title: "Conseillère en orientation",
-      avatar: "/assets/images/placeholder-avatar.jpg"
-    }
+  // Récupérer les vidéos depuis l'API
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        const response = await fetch("https://alloecoleapi-dev.up.railway.app/api/v1/students/webtv/videos");
+        const result = await response.json();
+        
+        if (result.success && result.data.length > 0) {
+          // Prendre la première vidéo non premium comme vidéo featured
+          const nonPremiumVideo = result.data.find(video => !video.premiumRequired) || result.data[0];
+          setFeaturedVideo({
+            id: nonPremiumVideo.id,
+            title: nonPremiumVideo.title,
+            description: nonPremiumVideo.description,
+            thumbnail: nonPremiumVideo.thumbnailUrl || "/images/poster/poster.jpg",
+            videoUrl: nonPremiumVideo.url,
+            duration: formatDuration(nonPremiumVideo.duration),
+            views: nonPremiumVideo.views,
+            likes: nonPremiumVideo.likesCount,
+            category: nonPremiumVideo.category.name,
+            publishedAt: new Date(nonPremiumVideo.createdAt).toLocaleDateString(),
+            premiumRequired: nonPremiumVideo.premiumRequired,
+            author: {
+              name: "Expert AlloEcole",
+              title: "Spécialiste en éducation",
+              avatar: "/assets/images/placeholder-avatar.jpg"
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des vidéos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVideos();
+  }, []);
+
+  const formatDuration = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   const handlePlay = () => {
+    if (!featuredVideo) return;
+    
+    if (featuredVideo.premiumRequired) {
+      setShowPremiumPopup(true);
+      return;
+    }
+
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
@@ -65,6 +102,39 @@ const WebTVHero = () => {
   const handleVideoClick = () => {
     handlePlay();
   };
+
+  if (loading) {
+    return (
+      <section className="webtv-hero">
+        <div className="hero-container">
+          <div className="hero-content">
+            <div className="hero-info">
+              <div className="skeleton-loader" style={{height: '32px', width: '200px', marginBottom: '1.5rem'}}></div>
+              <div className="skeleton-loader" style={{height: '60px', width: '100%', marginBottom: '1rem'}}></div>
+              <div className="skeleton-loader" style={{height: '80px', width: '100%', marginBottom: '2rem'}}></div>
+            </div>
+            <div className="hero-video">
+              <div className="skeleton-loader" style={{height: '400px', width: '100%', borderRadius: '1rem'}}></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!featuredVideo) {
+    return (
+      <section className="webtv-hero">
+        <div className="hero-container">
+          <div className="hero-content">
+            <div className="hero-info">
+              <h1 className="hero-title">Aucune vidéo disponible</h1>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <>
@@ -351,6 +421,82 @@ const WebTVHero = () => {
           z-index: 1;
         }
 
+        .premium-popup {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+
+        .premium-content {
+          background: white;
+          padding: 2rem;
+          border-radius: 1rem;
+          text-align: center;
+          max-width: 400px;
+          margin: 1rem;
+        }
+
+        .premium-title {
+          font-size: 1.5rem;
+          font-weight: bold;
+          color: #1f2937;
+          margin-bottom: 1rem;
+        }
+
+        .premium-message {
+          color: #6b7280;
+          margin-bottom: 2rem;
+        }
+
+        .premium-button {
+          background: #f97316;
+          color: white;
+          border: none;
+          padding: 1rem 2rem;
+          border-radius: 0.5rem;
+          font-size: 1.125rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+
+        .premium-button:hover {
+          background: #ea580c;
+        }
+
+        .close-button {
+          background: #6b7280;
+          color: white;
+          border: none;
+          padding: 0.75rem 1.5rem;
+          border-radius: 0.5rem;
+          margin-left: 1rem;
+          cursor: pointer;
+        }
+
+        .skeleton-loader {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+          background-size: 200% 100%;
+          animation: loading 1.5s infinite;
+          border-radius: 0.5rem;
+        }
+
+        @keyframes loading {
+          0% {
+            background-position: 200% 0;
+          }
+          100% {
+            background-position: -200% 0;
+          }
+        }
+
         @media (max-width: 768px) {
           .hero-content {
             grid-template-columns: 1fr;
@@ -407,8 +553,7 @@ const WebTVHero = () => {
               </h1>
               
               <p className="hero-description">
-                Découvrez des contenus vidéo exclusifs sur l'orientation, les études, 
-                les bourses et les conseils pratiques pour réussir votre parcours éducatif.
+                {featuredVideo.description}
               </p>
 
               <div className="hero-meta">
@@ -424,6 +569,22 @@ const WebTVHero = () => {
                   <Heart size={16} />
                   {featuredVideo.likes} j'aime
                 </div>
+                {featuredVideo.premiumRequired && (
+                  <div className="meta-item" style={{ color: '#f97316' }}>
+                    🔒 Premium
+                  </div>
+                )}
+              </div>
+
+              <div className="hero-actions">
+                {/* <button className="play-button" onClick={handlePlay}>
+                  {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                  {isPlaying ? 'Pause' : 'Regarder'}
+                </button> */}
+                <button className="secondary-button">
+                  <Share2 size={20} />
+                  Partager
+                </button>
               </div>
             </div>
 
@@ -501,6 +662,26 @@ const WebTVHero = () => {
             </div>
           </div>
         </div>
+
+        {/* Popup Premium */}
+        {showPremiumPopup && (
+          <div className="premium-popup">
+            <div className="premium-content">
+              <h3 className="premium-title">Contenu Premium</h3>
+              <p className="premium-message">
+                Cette vidéo est réservée aux membres Premium. Abonnez-vous pour accéder à tous nos contenus exclusifs.
+              </p>
+              <div>
+                <button className="premium-button" onClick={() => setShowPremiumPopup(false)}>
+                  Devenir Premium
+                </button>
+                <button className="close-button" onClick={() => setShowPremiumPopup(false)}>
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     </>
   );

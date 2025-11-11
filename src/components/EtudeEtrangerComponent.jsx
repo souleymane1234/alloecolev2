@@ -1,66 +1,84 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+
+const API_BASE_URL = 'https://alloecoleapi-dev.up.railway.app/api/v1';
 
 const EtudesEtrangerComponent = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [showBoursePopup, setShowBoursePopup] = useState(false);
+  const [createdDossierId, setCreatedDossierId] = useState(null);
   const [formData, setFormData] = useState({
-    // Informations personnelles
-    nom: '',
-    prenom: '',
-    email: '',
-    telephone: '',
-    dateNaissance: '',
-    nationalite: '',
-    
-    // Informations académiques
+    targetCountry: '',
     niveauEtude: '',
     domaineEtude: '',
     etablissementActuel: '',
     moyenne: '',
     diplomeObtenu: '',
-    
-    // Destination souhaitée
-    paysSouhaite: '',
     villeSouhaite: '',
     universiteSouhaite: '',
     programmeSouhaite: '',
     niveauSouhaite: '',
-    
-    // Langues
     langueMaternelle: '',
     languesEtrangeres: [],
     niveauAnglais: '',
     niveauFrancais: '',
     certificatsLangues: '',
-    
-    // Motivation et objectifs
     motivation: '',
     objectifsCarriere: '',
     experienceInternationale: '',
-    
-    // Situation financière
     budgetDisponible: '',
     besoinBourse: false,
     typeBourse: '',
     autresFinancements: '',
-    
-    // Documents
-    cv: null,
-    lettreMotivation: null,
-    relevesNotes: null,
-    diplomes: null,
-    certificatsLangues: null
+    cv: '',
+    lettreMotivation: '',
+    relevesNotes: '',
+    diplomes: '',
+    certificatsLanguesFile: ''
   });
 
   const [errors, setErrors] = useState({});
 
+  // Query pour récupérer le dossier existant
+  const { data: existingDossier, isLoading: isLoadingDossier, refetch } = useQuery({
+    queryKey: ['foreign-studies-file'],
+    queryFn: async () => {
+      const token = localStorage.getItem('access_token');
+      
+      if (!token) {
+        throw new Error('Non authentifié. Veuillez vous connecter.');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/students/foreign-studies/file`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null;
+        }
+        const error = await response.json();
+        throw new Error(error.message || 'Erreur lors de la récupération du dossier');
+      }
+
+      const result = await response.json();
+      return result.data;
+    },
+    retry: false
+  });
+
   const steps = [
-    { id: 1, title: 'Informations personnelles', icon: 'ph-user' },
-    { id: 2, title: 'Profil académique', icon: 'ph-graduation-cap' },
-    { id: 3, title: 'Destination souhaitée', icon: 'ph-globe' },
-    { id: 4, title: 'Langues', icon: 'ph-translate' },
-    { id: 5, title: 'Motivation', icon: 'ph-lightbulb' },
-    { id: 6, title: 'Financement', icon: 'ph-currency-circle-dollar' },
-    { id: 7, title: 'Documents', icon: 'ph-file-text' }
+    { id: 1, title: 'Profil académique', icon: 'ph-graduation-cap' },
+    { id: 2, title: 'Destination souhaitée', icon: 'ph-globe' },
+    { id: 3, title: 'Langues', icon: 'ph-translate' },
+    { id: 4, title: 'Motivation', icon: 'ph-lightbulb' },
+    { id: 5, title: 'Financement', icon: 'ph-currency-circle-dollar' },
+    { id: 6, title: 'Documents', icon: 'ph-file-text' }
   ];
 
   const paysOptions = [
@@ -83,6 +101,88 @@ const EtudesEtrangerComponent = () => {
     'Débutant (A1)', 'Élémentaire (A2)', 'Intermédiaire (B1)', 
     'Intermédiaire supérieur (B2)', 'Avancé (C1)', 'Maîtrise (C2)'
   ];
+
+  // Mutation pour créer le dossier
+  const createDossierMutation = useMutation({
+    mutationFn: async (data) => {
+      const token = localStorage.getItem('access_token');
+      
+      if (!token) {
+        throw new Error('Non authentifié. Veuillez vous connecter.');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/students/foreign-studies/file`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erreur lors de la création du dossier');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      console.log('Dossier créé:', data);
+      setCreatedDossierId(data.id || data.foreignFileId);
+      setShowBoursePopup(true);
+      refetch();
+    },
+    onError: (error) => {
+      console.error('Erreur:', error);
+      if (error.message.includes('authentifié')) {
+        alert('Votre session a expiré. Veuillez vous reconnecter.');
+        navigate('/login?redirect=/etudes-etranger');
+      } else {
+        alert(`Erreur: ${error.message}`);
+      }
+    }
+  });
+
+  // Mutation pour soumettre la candidature de bourse
+  const submitBourseMutation = useMutation({
+    mutationFn: async (foreignFileId) => {
+      const token = localStorage.getItem('access_token');
+      
+      if (!token) {
+        throw new Error('Non authentifié. Veuillez vous connecter.');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/students/foreign-studies/applications/free`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          foreignFileId: foreignFileId
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erreur lors de la soumission de la candidature');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      alert('Votre candidature de bourse a été soumise avec succès !');
+      console.log('Candidature soumise:', data);
+      setShowBoursePopup(false);
+      navigate('/dossiers');
+    },
+    onError: (error) => {
+      console.error('Erreur:', error);
+      alert(`Erreur lors de la soumission: ${error.message}`);
+      navigate('/dossiers');
+    }
+  });
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -108,12 +208,26 @@ const EtudesEtrangerComponent = () => {
     }));
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const { name, files } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: files[0] || null
-    }));
+    const file = files[0];
+    
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Le fichier est trop volumineux. Taille maximale: 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result.split(',')[1];
+      setFormData(prev => ({
+        ...prev,
+        [name]: base64String
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const validateStep = (step) => {
@@ -121,18 +235,17 @@ const EtudesEtrangerComponent = () => {
     
     switch (step) {
       case 1:
-        if (!formData.nom) newErrors.nom = 'Le nom est requis';
-        if (!formData.prenom) newErrors.prenom = 'Le prénom est requis';
-        if (!formData.email) newErrors.email = 'L\'email est requis';
-        if (!formData.telephone) newErrors.telephone = 'Le téléphone est requis';
-        break;
-      case 2:
         if (!formData.niveauEtude) newErrors.niveauEtude = 'Le niveau d\'étude est requis';
         if (!formData.domaineEtude) newErrors.domaineEtude = 'Le domaine d\'étude est requis';
         break;
-      case 3:
-        if (!formData.paysSouhaite) newErrors.paysSouhaite = 'Le pays souhaité est requis';
+      case 2:
+        if (!formData.targetCountry) newErrors.targetCountry = 'Le pays souhaité est requis';
         if (!formData.niveauSouhaite) newErrors.niveauSouhaite = 'Le niveau souhaité est requis';
+        break;
+      case 4:
+        if (!formData.motivation || formData.motivation.trim().length < 50) {
+          newErrors.motivation = 'La motivation doit contenir au moins 50 caractères';
+        }
         break;
     }
     
@@ -153,91 +266,63 @@ const EtudesEtrangerComponent = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateStep(currentStep)) {
-      console.log('Form submitted:', formData);
-      alert('Votre dossier d\'études à l\'étranger a été créé avec succès !');
+      createDossierMutation.mutate(formData);
+    }
+  };
+
+  const handleSubmitBourse = () => {
+    const dossierId = createdDossierId || existingDossier?.id;
+    if (dossierId) {
+      submitBourseMutation.mutate(dossierId);
+    } else {
+      alert('Erreur: ID du dossier non trouvé');
+      navigate('/dossiers');
+    }
+  };
+
+  const handleSkipBourse = () => {
+    alert('Votre dossier d\'études à l\'étranger a été créé avec succès !');
+    setShowBoursePopup(false);
+    navigate('/dossiers');
+  };
+
+  const handleEditDossier = () => {
+    if (existingDossier) {
+      setFormData({
+        targetCountry: existingDossier.targetCountry || '',
+        niveauEtude: existingDossier.niveauEtude || '',
+        domaineEtude: existingDossier.domaineEtude || '',
+        etablissementActuel: existingDossier.etablissementActuel || '',
+        moyenne: existingDossier.moyenne || '',
+        diplomeObtenu: existingDossier.diplomeObtenu || '',
+        villeSouhaite: existingDossier.villeSouhaite || '',
+        universiteSouhaite: existingDossier.universiteSouhaite || '',
+        programmeSouhaite: existingDossier.programmeSouhaite || '',
+        niveauSouhaite: existingDossier.niveauSouhaite || '',
+        langueMaternelle: existingDossier.langueMaternelle || '',
+        languesEtrangeres: existingDossier.languesEtrangeres || [],
+        niveauAnglais: existingDossier.niveauAnglais || '',
+        niveauFrancais: existingDossier.niveauFrancais || '',
+        certificatsLangues: existingDossier.certificatsLangues || '',
+        motivation: existingDossier.motivation || '',
+        objectifsCarriere: existingDossier.objectifsCarriere || '',
+        experienceInternationale: existingDossier.experienceInternationale || '',
+        budgetDisponible: existingDossier.budgetDisponible || '',
+        besoinBourse: existingDossier.besoinBourse || false,
+        typeBourse: existingDossier.typeBourse || '',
+        autresFinancements: existingDossier.autresFinancements || '',
+        cv: existingDossier.cv || '',
+        lettreMotivation: existingDossier.lettreMotivation || '',
+        relevesNotes: existingDossier.relevesNotes || '',
+        diplomes: existingDossier.diplomes || '',
+        certificatsLanguesFile: existingDossier.certificatsLanguesFile || ''
+      });
     }
   };
 
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
-        return (
-          <div className="step-content">
-            <h3 className="step-title-content">Informations personnelles</h3>
-            <div className="form-row">
-              <div className="form-col-half">
-                <label className="form-label">Nom *</label>
-                <input
-                  type="text"
-                  className={`form-input ${errors.nom ? 'input-invalid' : ''}`}
-                  name="nom"
-                  value={formData.nom}
-                  onChange={handleInputChange}
-                />
-                {errors.nom && <div className="error-message">{errors.nom}</div>}
-              </div>
-              <div className="form-col-half">
-                <label className="form-label">Prénom *</label>
-                <input
-                  type="text"
-                  className={`form-input ${errors.prenom ? 'input-invalid' : ''}`}
-                  name="prenom"
-                  value={formData.prenom}
-                  onChange={handleInputChange}
-                />
-                {errors.prenom && <div className="error-message">{errors.prenom}</div>}
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-col-half">
-                <label className="form-label">Email *</label>
-                <input
-                  type="email"
-                  className={`form-input ${errors.email ? 'input-invalid' : ''}`}
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-                {errors.email && <div className="error-message">{errors.email}</div>}
-              </div>
-              <div className="form-col-half">
-                <label className="form-label">Téléphone *</label>
-                <input
-                  type="tel"
-                  className={`form-input ${errors.telephone ? 'input-invalid' : ''}`}
-                  name="telephone"
-                  value={formData.telephone}
-                  onChange={handleInputChange}
-                />
-                {errors.telephone && <div className="error-message">{errors.telephone}</div>}
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-col-half">
-                <label className="form-label">Date de naissance</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  name="dateNaissance"
-                  value={formData.dateNaissance}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="form-col-half">
-                <label className="form-label">Nationalité</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  name="nationalite"
-                  value={formData.nationalite}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-          </div>
-        );
-
-      case 2:
         return (
           <div className="step-content">
             <h3 className="step-title-content">Profil académique</h3>
@@ -311,7 +396,7 @@ const EtudesEtrangerComponent = () => {
           </div>
         );
 
-      case 3:
+      case 2:
         return (
           <div className="step-content">
             <h3 className="step-title-content">Destination souhaitée</h3>
@@ -319,9 +404,9 @@ const EtudesEtrangerComponent = () => {
               <div className="form-col-half">
                 <label className="form-label">Pays souhaité *</label>
                 <select
-                  className={`form-select ${errors.paysSouhaite ? 'input-invalid' : ''}`}
-                  name="paysSouhaite"
-                  value={formData.paysSouhaite}
+                  className={`form-select ${errors.targetCountry ? 'input-invalid' : ''}`}
+                  name="targetCountry"
+                  value={formData.targetCountry}
                   onChange={handleInputChange}
                 >
                   <option value="">Sélectionnez un pays</option>
@@ -329,7 +414,7 @@ const EtudesEtrangerComponent = () => {
                     <option key={pays} value={pays}>{pays}</option>
                   ))}
                 </select>
-                {errors.paysSouhaite && <div className="error-message">{errors.paysSouhaite}</div>}
+                {errors.targetCountry && <div className="error-message">{errors.targetCountry}</div>}
               </div>
               <div className="form-col-half">
                 <label className="form-label">Ville souhaitée</label>
@@ -385,7 +470,7 @@ const EtudesEtrangerComponent = () => {
           </div>
         );
 
-      case 4:
+      case 3:
         return (
           <div className="step-content">
             <h3 className="step-title-content">Compétences linguistiques</h3>
@@ -464,20 +549,22 @@ const EtudesEtrangerComponent = () => {
           </div>
         );
 
-      case 5:
+      case 4:
         return (
           <div className="step-content">
             <h3 className="step-title-content">Motivation et objectifs</h3>
             <div className="form-group">
               <label className="form-label">Pourquoi souhaitez-vous étudier à l'étranger ? *</label>
               <textarea
-                className="form-textarea"
+                className={`form-textarea ${errors.motivation ? 'input-invalid' : ''}`}
                 name="motivation"
                 value={formData.motivation}
                 onChange={handleInputChange}
                 rows="4"
-                placeholder="Décrivez vos motivations pour étudier à l'étranger..."
+                placeholder="Décrivez vos motivations pour étudier à l'étranger (minimum 50 caractères)..."
               />
+              {errors.motivation && <div className="error-message">{errors.motivation}</div>}
+              <div className="char-count">{formData.motivation.length} caractères</div>
             </div>
             <div className="form-group">
               <label className="form-label">Objectifs de carrière</label>
@@ -504,7 +591,7 @@ const EtudesEtrangerComponent = () => {
           </div>
         );
 
-      case 6:
+      case 5:
         return (
           <div className="step-content">
             <h3 className="step-title-content">Situation financière</h3>
@@ -576,7 +663,7 @@ const EtudesEtrangerComponent = () => {
           </div>
         );
 
-      case 7:
+      case 6:
         return (
           <div className="step-content">
             <h3 className="step-title-content">Documents à joindre</h3>
@@ -590,6 +677,7 @@ const EtudesEtrangerComponent = () => {
                   onChange={handleFileChange}
                   accept=".pdf"
                 />
+                {formData.cv && <div className="file-uploaded">✓ Fichier téléchargé</div>}
               </div>
               <div className="form-col-half">
                 <label className="form-label">Lettre de motivation (PDF)</label>
@@ -600,6 +688,7 @@ const EtudesEtrangerComponent = () => {
                   onChange={handleFileChange}
                   accept=".pdf"
                 />
+                {formData.lettreMotivation && <div className="file-uploaded">✓ Fichier téléchargé</div>}
               </div>
             </div>
             <div className="form-row">
@@ -612,6 +701,7 @@ const EtudesEtrangerComponent = () => {
                   onChange={handleFileChange}
                   accept=".pdf"
                 />
+                {formData.relevesNotes && <div className="file-uploaded">✓ Fichier téléchargé</div>}
               </div>
               <div className="form-col-half">
                 <label className="form-label">Diplômes (PDF)</label>
@@ -622,6 +712,7 @@ const EtudesEtrangerComponent = () => {
                   onChange={handleFileChange}
                   accept=".pdf"
                 />
+                {formData.diplomes && <div className="file-uploaded">✓ Fichier téléchargé</div>}
               </div>
             </div>
             <div className="form-group">
@@ -629,10 +720,11 @@ const EtudesEtrangerComponent = () => {
               <input
                 type="file"
                 className="form-file"
-                name="certificatsLangues"
+                name="certificatsLanguesFile"
                 onChange={handleFileChange}
                 accept=".pdf"
               />
+              {formData.certificatsLanguesFile && <div className="file-uploaded">✓ Fichier téléchargé</div>}
             </div>
             <div className="alert-info">
               <i className="ph-info"></i>
@@ -646,6 +738,276 @@ const EtudesEtrangerComponent = () => {
     }
   };
 
+  // Afficher le loading pendant la vérification du dossier
+  if (isLoadingDossier) {
+    return (
+      <div className="etudes-etranger-section">
+        <div className="container">
+          <div className="text-center">
+            <div className="loading-spinner"></div>
+            <p>Vérification de votre dossier...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Si un dossier existe, afficher la vue du dossier existant
+  if (existingDossier) {
+    return (
+      <>
+        <style>{`
+          .dossier-existant-section {
+            padding: 3rem 0;
+            min-height: 100vh;
+          }
+
+          .dossier-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 auto;
+          }
+
+          .dossier-header {
+            text-align: center;
+            margin-bottom: 2rem;
+          }
+
+          .dossier-icon {
+            font-size: 3rem;
+            color: #ea580c;
+            margin-bottom: 1rem;
+          }
+
+          .dossier-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+          }
+
+          .dossier-subtitle {
+            color: #6b7280;
+            margin-bottom: 2rem;
+          }
+
+          .dossier-info {
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+          }
+
+          .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+          }
+
+          .info-item:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+          }
+
+          .info-label {
+            font-weight: 600;
+            color: #374151;
+          }
+
+          .info-value {
+            color: #6b7280;
+            text-align: right;
+          }
+
+          .dossier-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+          }
+
+          .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+
+          .btn-primary {
+            background-color: #ea580c;
+            color: white;
+          }
+
+          .btn-primary:hover {
+            background-color: #c2410c;
+          }
+
+          .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+          }
+
+          .btn-secondary:hover {
+            background-color: #4b5563;
+          }
+
+          .btn-primary.loading {
+            position: relative;
+          }
+
+          .btn-primary.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.6s linear infinite;
+            margin-left: 0.5rem;
+          }
+
+          .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #ea580c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+          }
+
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+
+          @media (max-width: 768px) {
+            .dossier-actions {
+              flex-direction: column;
+            }
+            
+            .btn {
+              width: 100%;
+              justify-content: center;
+            }
+          }
+        `}</style>
+
+        <div className="dossier-existant-section">
+          <div className="container">
+            <div className="dossier-card">
+              <div className="dossier-header">
+                <div className="dossier-icon">
+                  <i className="ph-graduation-cap"></i>
+                </div>
+                <h1 className="dossier-title">Dossier Existant</h1>
+                <p className="dossier-subtitle">
+                  Vous avez déjà un dossier d'études à l'étranger en cours
+                </p>
+              </div>
+
+              <div className="dossier-info">
+                <div className="info-item">
+                  <span className="info-label">Destination :</span>
+                  <span className="info-value">{existingDossier.targetCountry}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Ville souhaitée :</span>
+                  <span className="info-value">{existingDossier.villeSouhaite || 'Non spécifiée'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Université souhaitée :</span>
+                  <span className="info-value">{existingDossier.universiteSouhaite || 'Non spécifiée'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Programme :</span>
+                  <span className="info-value">{existingDossier.programmeSouhaite || 'Non spécifié'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Niveau :</span>
+                  <span className="info-value">{existingDossier.niveauSouhaite}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">Statut :</span>
+                  <span className="info-value" style={{ 
+                    color: existingDossier.status === 'BROUILLON' ? '#ea580c' : '#16a34a',
+                    fontWeight: '600'
+                  }}>
+                    {existingDossier.status === 'BROUILLON' ? 'Brouillon' : 'Soumis'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="dossier-actions">
+                <button 
+                  className="btn btn-secondary"
+                  onClick={handleEditDossier}
+                >
+                  <i className="ph-pencil"></i>
+                  Modifier le dossier
+                </button>
+                <button 
+                  className={`btn btn-primary ${submitBourseMutation.isPending ? 'loading' : ''}`}
+                  onClick={handleSubmitBourse}
+                  disabled={submitBourseMutation.isPending}
+                >
+                  {submitBourseMutation.isPending ? 'Soumission...' : 'Soumettre ma candidature'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Popup pour la soumission de bourse */}
+        {showBoursePopup && (
+          <div className="popup-overlay">
+            <div className="popup-container">
+              <div className="popup-icon">
+                <i className="ph-graduation-cap"></i>
+              </div>
+              <h2 className="popup-title">Félicitations !</h2>
+              <div className="popup-content">
+                <p>Votre dossier d'études à l'étranger a été créé avec succès !</p>
+                <p>Souhaitez-vous maintenant soumettre une candidature pour une bourse d'études ?</p>
+                <p><small>Cette candidature vous permettra d'être considéré pour diverses opportunités de financement.</small></p>
+              </div>
+              <div className="popup-actions">
+                <button 
+                  type="button" 
+                  className="popup-btn popup-btn-secondary"
+                  onClick={handleSkipBourse}
+                  disabled={submitBourseMutation.isPending}
+                >
+                  Plus tard
+                </button>
+                <button 
+                  type="button" 
+                  className={`popup-btn popup-btn-primary ${submitBourseMutation.isPending ? 'loading' : ''}`}
+                  onClick={handleSubmitBourse}
+                  disabled={submitBourseMutation.isPending}
+                >
+                  {submitBourseMutation.isPending ? 'Soumission...' : 'Soumettre ma candidature'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  // Si aucun dossier n'existe, afficher le formulaire de création normal
   return (
     <>
       <style>{`
@@ -684,6 +1046,14 @@ const EtudesEtrangerComponent = () => {
           font-size: 1.125rem;
           color: #6b7280;
           margin-bottom: 2rem;
+        }
+
+        .text-center {
+          text-align: center;
+        }
+
+        .mb-5 {
+          margin-bottom: 3rem;
         }
 
         .progress-container {
@@ -851,6 +1221,21 @@ const EtudesEtrangerComponent = () => {
           margin-top: 0.25rem;
         }
 
+        .char-count {
+          font-size: 0.875rem;
+          color: #6b7280;
+          margin-top: 0.25rem;
+        }
+
+        .file-uploaded {
+          color: #16a34a;
+          font-size: 0.875rem;
+          margin-top: 0.25rem;
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+        }
+
         .checkbox-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -868,6 +1253,7 @@ const EtudesEtrangerComponent = () => {
           width: 1rem;
           height: 1rem;
           accent-color: #ea580c;
+          cursor: pointer;
         }
 
         .checkbox-label {
@@ -905,6 +1291,14 @@ const EtudesEtrangerComponent = () => {
           border-top: 1px solid #e5e7eb;
         }
 
+        .d-flex {
+          display: flex;
+        }
+
+        .gap-2 {
+          gap: 0.5rem;
+        }
+
         .btn {
           padding: 0.75rem 1.5rem;
           border-radius: 0.5rem;
@@ -919,12 +1313,17 @@ const EtudesEtrangerComponent = () => {
           gap: 0.5rem;
         }
 
+        .btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
         .btn-secondary {
           background-color: #6b7280;
           color: white;
         }
 
-        .btn-secondary:hover {
+        .btn-secondary:hover:not(:disabled) {
           background-color: #4b5563;
         }
 
@@ -933,19 +1332,161 @@ const EtudesEtrangerComponent = () => {
           color: white;
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
           background-color: #c2410c;
         }
 
-        .btn-primary:disabled {
-          background-color: #d1d5db;
-          cursor: not-allowed;
+        .btn-primary.loading {
+          position: relative;
+        }
+
+        .btn-primary.loading::after {
+          content: '';
+          position: absolute;
+          width: 16px;
+          height: 16px;
+          border: 2px solid #ffffff;
+          border-radius: 50%;
+          border-top-color: transparent;
+          animation: spin 0.6s linear infinite;
+          margin-left: 0.5rem;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
 
         .step-counter {
           color: #6b7280;
           font-size: 0.875rem;
           font-weight: 500;
+        }
+
+        /* Styles pour le popup */
+        .popup-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+          padding: 1rem;
+        }
+
+        .popup-container {
+          background-color: white;
+          border-radius: 1rem;
+          padding: 2rem;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+          max-width: 500px;
+          width: 100%;
+          animation: popup-appear 0.3s ease-out;
+        }
+
+        @keyframes popup-appear {
+          from {
+            opacity: 0;
+            transform: scale(0.9) translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+
+        .popup-icon {
+          text-align: center;
+          margin-bottom: 1rem;
+        }
+
+        .popup-icon i {
+          font-size: 3rem;
+          color: #ea580c;
+        }
+
+        .popup-title {
+          font-size: 1.5rem;
+          font-weight: bold;
+          color: #1f2937;
+          text-align: center;
+          margin-bottom: 1rem;
+        }
+
+        .popup-content {
+          color: #6b7280;
+          text-align: center;
+          margin-bottom: 2rem;
+          line-height: 1.6;
+        }
+
+        .popup-actions {
+          display: flex;
+          gap: 1rem;
+          justify-content: center;
+        }
+
+        .popup-btn {
+          padding: 0.75rem 1.5rem;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: all 0.2s;
+          border: none;
+          text-decoration: none;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          min-width: 120px;
+          justify-content: center;
+        }
+
+        .popup-btn-secondary {
+          background-color: #6b7280;
+          color: white;
+        }
+
+        .popup-btn-secondary:hover {
+          background-color: #4b5563;
+        }
+
+        .popup-btn-primary {
+          background-color: #ea580c;
+          color: white;
+        }
+
+        .popup-btn-primary:hover {
+          background-color: #c2410c;
+        }
+
+        .popup-btn-primary.loading {
+          position: relative;
+        }
+
+        .popup-btn-primary.loading::after {
+          content: '';
+          position: absolute;
+          width: 16px;
+          height: 16px;
+          border: 2px solid #ffffff;
+          border-radius: 50%;
+          border-top-color: transparent;
+          animation: spin 0.6s linear infinite;
+          margin-left: 0.5rem;
+        }
+
+        .loading-spinner {
+          width: 40px;
+          height: 40px;
+          border: 4px solid #e5e7eb;
+          border-top: 4px solid #ea580c;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 1rem;
         }
 
         @media (max-width: 768px) {
@@ -985,6 +1526,19 @@ const EtudesEtrangerComponent = () => {
           .btn {
             width: 100%;
             justify-content: center;
+          }
+
+          .d-flex {
+            flex-direction: column;
+            width: 100%;
+          }
+
+          .popup-actions {
+            flex-direction: column;
+          }
+          
+          .popup-btn {
+            width: 100%;
           }
         }
       `}</style>
@@ -1042,6 +1596,7 @@ const EtudesEtrangerComponent = () => {
                       type="button" 
                       className="btn btn-secondary"
                       onClick={prevStep}
+                      disabled={createDossierMutation.isPending}
                     >
                       <i className="ph-arrow-left"></i>
                       Précédent
@@ -1053,6 +1608,7 @@ const EtudesEtrangerComponent = () => {
                       type="button" 
                       className="btn btn-primary"
                       onClick={nextStep}
+                      disabled={createDossierMutation.isPending}
                     >
                       Suivant
                       <i className="ph-arrow-right"></i>
@@ -1060,10 +1616,17 @@ const EtudesEtrangerComponent = () => {
                   ) : (
                     <button 
                       type="submit" 
-                      className="btn btn-primary"
+                      className={`btn btn-primary ${createDossierMutation.isPending ? 'loading' : ''}`}
+                      disabled={createDossierMutation.isPending}
                     >
-                      <i className="ph-check"></i>
-                      Créer le dossier
+                      {createDossierMutation.isPending ? (
+                        'Création en cours...'
+                      ) : (
+                        <>
+                          <i className="ph-check"></i>
+                          Créer le dossier
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
@@ -1072,6 +1635,41 @@ const EtudesEtrangerComponent = () => {
           </div>
         </div>
       </div>
+
+      {/* Popup pour la soumission de bourse */}
+      {showBoursePopup && (
+        <div className="popup-overlay">
+          <div className="popup-container">
+            <div className="popup-icon">
+              <i className="ph-graduation-cap"></i>
+            </div>
+            <h2 className="popup-title">Félicitations !</h2>
+            <div className="popup-content">
+              <p>Votre dossier d'études à l'étranger a été créé avec succès !</p>
+              <p>Souhaitez-vous maintenant soumettre une candidature pour une bourse d'études ?</p>
+              <p><small>Cette candidature vous permettra d'être considéré pour diverses opportunités de financement.</small></p>
+            </div>
+            <div className="popup-actions">
+              <button 
+                type="button" 
+                className="popup-btn popup-btn-secondary"
+                onClick={handleSkipBourse}
+                disabled={submitBourseMutation.isPending}
+              >
+                Plus tard
+              </button>
+              <button 
+                type="button" 
+                className={`popup-btn popup-btn-primary ${submitBourseMutation.isPending ? 'loading' : ''}`}
+                onClick={handleSubmitBourse}
+                disabled={submitBourseMutation.isPending}
+              >
+                {submitBourseMutation.isPending ? 'Soumission...' : 'Soumettre ma candidature'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

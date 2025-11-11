@@ -1,0 +1,93 @@
+{
+  "dossiers": [
+    {
+      "id": 1,
+      "type": "Études à l'étranger",
+      "pays": "Canada",
+      "universite": "Université de Toronto",
+      "programme": "Master en Informatique",
+      "dateCreation": "2024-01-15",
+      "statut": "En cours de traitement",
+      "priorite": "Haute",
+      "derniereMiseAJour": "2024-01-20",
+      "documents": 5,
+      "etape": "Évaluation des documents"
+    },
+    {
+      "id": 2,
+      "type": "Bourse d'étude",
+      "pays": "France",
+      "universite": "Sorbonne Université",
+      "programme": "Master en Littérature",
+      "dateCreation": "2024-01-10",
+      "statut": "Approuvé",
+      "priorite": "Moyenne",
+      "derniereMiseAJour": "2024-01-18",
+      "documents": 3,
+      "etape": "Prêt pour inscription"
+    }
+  ],
+
+  "demandesBourses": [
+    {
+      "id": 1,
+      "titre": "Bourse d'excellence Eiffel 2024-2025",
+      "universite": "Sorbonne Université",
+      "montant": "1 181€/mois",
+      "dateDemande": "2024-01-10",
+      "statut": "En cours",
+      "echeance": "2024-03-15"
+    },
+    {
+      "id": 2,
+      "titre": "Bourse Chevening 2024-2025",
+      "universite": "University of Cambridge",
+      "montant": "£18,000/an",
+      "dateDemande": "2024-01-05",
+      "statut": "Approuvée",
+      "echeance": "2024-02-28"
+    }
+  ],
+
+  "demandesPermutation": [
+    {
+      "id": 1,
+      "niveau": "BTS 1",
+      "filiere": "Génie Informatique",
+      "etablissementActuel": "Grande école ASTC",
+      "villeActuelle": "Abidjan",
+      "etablissementSouhaite": "Université de Amérique",
+      "villeSouhaitee": "Abidjan",
+      "anneeAcademique": "2024-2025",
+      "dateCreation": "2024-01-15",
+      "statut": "En cours",
+      "motif": "Rapprochement familial et meilleure qualité d'enseignement",
+      "vues": 45,
+      "correspondances": 3
+    },
+    {
+      "id": 2,
+      "niveau": "Master 1",
+      "filiere": "Commerce",
+      "etablissementActuel": "Université Félix Houphouët Boigny",
+      "villeActuelle": "Abidjan",
+      "etablissementSouhaite": "Université de Strasbourg",
+      "villeSouhaitee": "Strasbourg, France",
+      "anneeAcademique": "2024-2025",
+      "dateCreation": "2024-01-12",
+      "statut": "En cours",
+      "motif": "Poursuite d'études à l'étranger pour spécialisation",
+      "vues": 78,
+      "correspondances": 1
+    }
+  ],
+
+  "tabs": [
+    { "id": "informations", "label": "Mes informations", "icon": "ph-user" },
+    { "id": "dossiers", "label": "Mes dossiers", "icon": "ph-folder" },
+    { "id": "bourses", "label": "Demandes de bourses", "icon": "ph-graduation-cap" },
+    { "id": "permutations", "label": "Mes permutations", "icon": "ph-arrows-clockwise" },
+    { "id": "documents", "label": "Mes documents", "icon": "ph-file-text" },
+    { "id": "parametres", "label": "Paramètres", "icon": "ph-gear" }
+  ]
+}

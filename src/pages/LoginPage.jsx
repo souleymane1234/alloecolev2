@@ -1,20 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import ConsumApi from "../services_workers/consum_api";
 
 const LoginPage = () => {
-  const [step, setStep] = useState('phone');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [step, setStep] = useState("phone");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [countdown, setCountdown] = useState(60);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false); // Ajout de l'état loading manquant
   const navigate = useNavigate();
-  
   const otpRefs = [useRef(null), useRef(null), useRef(null), useRef(null), useRef(null), useRef(null)];
 
+  // 🔁 Gestion du compte à rebours pour l'OTP
   useEffect(() => {
-    if (step === 'otp' && countdown > 0) {
+    if (step === "otp" && countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
     } else if (countdown === 0) {
@@ -22,88 +23,205 @@ const LoginPage = () => {
     }
   }, [countdown, step]);
 
-  const handlePhoneChange = (e) => {
-    const value = e.target.value.replace(/\D/g, '');
-    if (value.length <= 10) {
-      setPhoneNumber(value);
-      setError('');
+  // 📱 Gérer le numéro de téléphone
+const handlePhoneChange = (e) => {
+  const value = e.target.value.replace(/\D/g, "");
+  if (value.length <= 10) {
+    setPhoneNumber(value);
+    setError("");
+    
+    // Validation en temps réel
+    if (value.length === 10) {
+      // Vérifier que le numéro commence par 07, 05, ou 01 (formats Côte d'Ivoire)
+      const isValidFormat = /^(07|05|01)/.test(value);
+      if (!isValidFormat) {
+        setError("Le numéro doit commencer par 07, 05 ou 01");
+      }
     }
-  };
+  }
+};
 
-  const handleSendOTP = () => {
-    if (phoneNumber.length < 10) {
-      setError('Veuillez entrer un numéro valide');
+  // ✉️ Envoi du code OTP via l'API
+const handleSendOTP = async () => {
+  if (phoneNumber.length < 10) {
+    setError("Veuillez entrer un numéro valide");
+    return;
+  }
+
+  setLoading(true);
+  setError("");
+
+  try {
+    // Format du numéro: nettoyer et formater correctement
+    const cleanPhoneNumber = phoneNumber.replace(/\D/g, "");
+    
+    // Vérifier que le numéro a exactement 10 chiffres
+    if (cleanPhoneNumber.length !== 10) {
+      setError("Le numéro doit contenir exactement 10 chiffres");
       return;
     }
-    setLoading(true);
-    setError('');
-    setTimeout(() => {
-      setLoading(false);
-      setStep('otp');
+
+    // Formater selon le format attendu par l'API: 225XXXXXXXXX
+    const formattedPhoneNumber = `225${cleanPhoneNumber}`;
+    
+    console.log("Envoi OTP avec le numéro:", formattedPhoneNumber); // Debug
+    
+    const response = await ConsumApi.sendOTP(formattedPhoneNumber);
+    
+    if (response.success) {
+      setStep("otp");
       setCountdown(60);
       setIsResendDisabled(true);
-    }, 1500);
-  };
+      
+      // En développement, vous pouvez afficher le code de test
+      if (response.testCode) {
+        console.log("Code OTP de test:", response.testCode);
+        // Optionnel: pré-remplir le code OTP en développement pour tester
+        // setOtp(response.testCode.split(""));
+      }
+    } else {
+      setError(response.message || "Erreur lors de l'envoi du code");
+    }
+  } catch (error) {
+    console.error("Erreur envoi OTP:", error);
+    
+    // Récupérer le message d'erreur détaillé
+    const errorMessage = error.responseData?.message || error.message;
+    
+    if (error.status === 429) {
+      setError("Trop de tentatives. Veuillez réessayer plus tard.");
+    } else if (error.status === 422) {
+      setError(`Numéro de téléphone invalide: ${errorMessage}`);
+    } else {
+      setError(errorMessage || "Erreur réseau. Vérifiez votre connexion.");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
+  // 🔢 Gestion du code OTP
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
-    setError('');
-    if (value && index < 5) {
-      otpRefs[index + 1].current?.focus();
-    }
-    if (newOtp.every(digit => digit !== '') && index === 5) {
-      handleVerifyOTP(newOtp.join(''));
+    setError("");
+    if (value && index < 5) otpRefs[index + 1].current?.focus();
+    if (newOtp.every((digit) => digit !== "") && index === 5) {
+      handleVerifyOTP(newOtp.join(""));
     }
   };
 
   const handleOtpKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
       otpRefs[index - 1].current?.focus();
     }
   };
 
   const handleOtpPaste = (e) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     const newOtp = [...otp];
     for (let i = 0; i < pastedData.length; i++) {
       newOtp[i] = pastedData[i];
     }
     setOtp(newOtp);
-    if (pastedData.length === 6) {
-      handleVerifyOTP(pastedData);
+    if (pastedData.length === 6) handleVerifyOTP(pastedData);
+  };
+
+  // ✅ Vérification OTP via l'API
+
+const handleVerifyOTP = async (otpCode) => {
+  setLoading(true);
+  setError("");
+
+  try {
+    const formattedPhoneNumber = `225${phoneNumber}`;
+    const response = await ConsumApi.verifyOTP(formattedPhoneNumber, otpCode);
+    
+    console.log("Réponse API:", response);
+
+    if (response?.data?.accessToken) {
+      // Stocker tous les éléments de data
+      Object.keys(response.data).forEach(key => {
+        if (typeof response.data[key] === 'string') {
+          localStorage.setItem(key, response.data[key]);
+        } else {
+          localStorage.setItem(key, JSON.stringify(response.data[key]));
+        }
+      });
+
+      // ✅ CORRECTION : Stocker explicitement access_token et refresh_token
+      localStorage.setItem('access_token', response.data.accessToken);
+      if (response.data.refreshToken) {
+        localStorage.setItem('refresh_token', response.data.refreshToken);
+      }
+
+      setStep("success");
+      
+      // ✅ CORRECTION : Forcer un rechargement complet de la page
+      // pour que Layout détecte la connexion
+      setTimeout(() => {
+        window.location.href = "/"; // Au lieu de navigate
+      }, 2000);
+      
+    } else {
+      setError("Token d'accès manquant dans la réponse");
+    }
+
+  } catch (error) {
+    console.error("Erreur:", error);
+    setError(error.message || "Erreur de vérification");
+    setOtp(["", "", "", "", "", ""]);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // 🔁 Renvoyer le code OTP
+  const handleResendOTP = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const formattedPhoneNumber = `225${phoneNumber}`;
+      const response = await ConsumApi.sendOTP(formattedPhoneNumber);
+      
+      if (response.success) {
+        setCountdown(60);
+        setIsResendDisabled(true);
+        setOtp(["", "", "", "", "", ""]);
+        
+        if (response.testCode) {
+          console.log("Nouveau code OTP de test:", response.testCode);
+        }
+        
+        setError(""); // Clear any previous errors
+      } else {
+        setError(response.message || "Erreur lors du renvoi du code");
+      }
+    } catch (error) {
+      console.error("Erreur renvoi OTP:", error);
+      setError("Erreur lors du renvoi du code");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleVerifyOTP = (otpCode) => {
-    setLoading(true);
-    setError('');
-    setTimeout(() => {
+  // 🟢 Connexion Google via ConsumApi
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      await ConsumApi.loginWithGoogle();
+    } catch (error) {
+      console.error("Erreur Google Login:", error);
+      setError("Impossible de lancer la connexion avec Google.");
       setLoading(false);
-      if (otpCode === '123456') {
-        setStep('success');
-        navigate('/', { state: { isConnect: true } });
-        // setTimeout(() => {
-        //   alert('Connexion réussie!');
-        // }, 2000);
-      } else {
-        setError('Code incorrect. Veuillez réessayer.');
-        setOtp(['', '', '', '', '', '']);
-        otpRefs[0].current?.focus();
-      }
-    }, 1500);
+    }
   };
 
-  const handleResendOTP = () => {
-    setCountdown(60);
-    setIsResendDisabled(true);
-    setOtp(['', '', '', '', '', '']);
-    setError('');
-  };
-
+  // ⚪ (Optionnel) Exemple de bouton Facebook (simulation)
   const handleSocialLogin = (provider) => {
     setLoading(true);
     setTimeout(() => {
@@ -114,6 +232,7 @@ const LoginPage = () => {
 
   return (
     <>
+      {/* Le CSS reste identique */}
       <style>{`
         @import url('https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css');
         
@@ -523,48 +642,28 @@ const LoginPage = () => {
 
       <div className="auth-page">
         <div className="auth-container">
+          {/* 🟧 Colonne gauche */}
           <div className="auth-left">
             <div className="auth-logo">
               <i className="ph-graduation-cap-fill"></i>
-              <span>EduConnect</span>
+              <span>AlloEcole</span>
             </div>
             <div className="auth-hero">
               <h1>Bienvenue dans l'écosystème éducatif</h1>
               <p>Connectez-vous pour accéder à des milliers d'établissements et ressources éducatives.</p>
             </div>
-            <div className="auth-features">
-              <div className="feature-item">
-                <div className="feature-icon"><i className="ph-shield-check"></i></div>
-                <div className="feature-text">
-                  <h3>Sécurisé</h3>
-                  <p>Authentification sécurisée par OTP</p>
-                </div>
-              </div>
-              <div className="feature-item">
-                <div className="feature-icon"><i className="ph-lightning"></i></div>
-                <div className="feature-text">
-                  <h3>Rapide</h3>
-                  <p>Connexion en quelques secondes</p>
-                </div>
-              </div>
-              <div className="feature-item">
-                <div className="feature-icon"><i className="ph-devices"></i></div>
-                <div className="feature-text">
-                  <h3>Multi-plateformes</h3>
-                  <p>Accessible partout, sur tous vos appareils</p>
-                </div>
-              </div>
-            </div>
           </div>
 
+          {/* 🟦 Colonne droite */}
           <div className="auth-right">
             <div className="auth-card">
-              {step === 'phone' && (
+              {step === "phone" && (
                 <>
                   <div className="auth-header">
                     <h2>Connexion</h2>
                     <p>Entrez votre numéro de téléphone pour continuer</p>
                   </div>
+
                   <div className="auth-form">
                     {error && (
                       <div className="error-message">
@@ -572,6 +671,7 @@ const LoginPage = () => {
                         {error}
                       </div>
                     )}
+
                     <div className="form-group">
                       <label className="form-label">Numéro de téléphone</label>
                       <div className="phone-input-container">
@@ -586,29 +686,49 @@ const LoginPage = () => {
                         />
                       </div>
                     </div>
-                    <button className="submit-btn" onClick={handleSendOTP} disabled={loading || phoneNumber.length < 10}>
+
+                    <button
+                      className="submit-btn"
+                      onClick={handleSendOTP}
+                      disabled={loading || phoneNumber.length < 10}
+                    >
                       {loading ? (
-                        <><div className="btn-spinner"></div>Envoi en cours...</>
+                        <>
+                          <div className="btn-spinner"></div>
+                          Envoi en cours...
+                        </>
                       ) : (
-                        <><i className="ph-paper-plane-tilt"></i>Recevoir le code</>
+                        <>
+                          <i className="ph-paper-plane-tilt"></i>
+                          Recevoir le code
+                        </>
                       )}
                     </button>
+
                     <div className="divider">OU</div>
+
                     <div className="social-buttons">
-                      <button className="social-btn google" onClick={() => handleSocialLogin('Google')} disabled={loading}>
-                        <i className="ph-google-logo"></i>Google
+                      <button className="social-btn google" onClick={handleGoogleLogin} disabled={loading}>
+                        <i className="ph-google-logo"></i>
+                        Google
                       </button>
-                      <button className="social-btn facebook" onClick={() => handleSocialLogin('Facebook')} disabled={loading}>
-                        <i className="ph-facebook-logo"></i>Facebook
+                      <button
+                        className="social-btn facebook"
+                        onClick={() => handleSocialLogin("Facebook")}
+                        disabled={loading}
+                      >
+                        <i className="ph-facebook-logo"></i>
+                        Facebook
                       </button>
                     </div>
                   </div>
                 </>
               )}
 
-              {step === 'otp' && (
+              {/* 🔹 Étape OTP */}
+              {step === "otp" && (
                 <>
-                  <button className="back-btn" onClick={() => setStep('phone')}>
+                  <button className="back-btn" onClick={() => setStep("phone")}>
                     <i className="ph-arrow-left"></i>Retour
                   </button>
                   <div className="auth-header">
@@ -641,25 +761,44 @@ const LoginPage = () => {
                         ))}
                       </div>
                     </div>
+                    
+                    <button
+                      className="submit-btn"
+                      onClick={() => handleVerifyOTP(otp.join(""))}
+                      disabled={loading || otp.some(digit => digit === "")}
+                    >
+                      {loading ? (
+                        <>
+                          <div className="btn-spinner"></div>
+                          Vérification...
+                        </>
+                      ) : (
+                        <>
+                          <i className="ph-check-circle"></i>
+                          Vérifier le code
+                        </>
+                      )}
+                    </button>
+
                     <div className="resend-section">
                       {isResendDisabled ? (
                         <span>Renvoyer le code dans {countdown}s</span>
                       ) : (
-                        <button className="resend-btn" onClick={handleResendOTP}>
-                          Renvoyer le code
+                        <button 
+                          className="resend-btn" 
+                          onClick={handleResendOTP}
+                          disabled={loading}
+                        >
+                          {loading ? "Envoi..." : "Renvoyer le code"}
                         </button>
                       )}
                     </div>
-                    {loading && (
-                      <button className="submit-btn" disabled>
-                        <div className="btn-spinner"></div>Vérification...
-                      </button>
-                    )}
                   </div>
                 </>
               )}
 
-              {step === 'success' && (
+              {/* 🔹 Étape succès */}
+              {step === "success" && (
                 <div className="success-animation">
                   <div className="success-checkmark">
                     <i className="ph-check-bold"></i>

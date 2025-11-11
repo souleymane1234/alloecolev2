@@ -18,7 +18,7 @@ const Permutation = () => {
     <Actuality /> */}
     <Animation />
     <PermutationRequestForm />
-    <PermutationList />
+    {/* <PermutationList /> */}
     </>
   );
 };

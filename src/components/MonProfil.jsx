@@ -1,113 +1,533 @@
-'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import './MonProfil.css';
+import data from '../helper/data.json';
+
+const API_BASE = 'https://alloecoleapi-dev.up.railway.app/api/v1';
 
 const MonProfil = () => {
+  const token = localStorage.getItem("access_token");
   const [activeTab, setActiveTab] = useState('informations');
+  const [user, setUser] = useState(null);
+  const [dossierError, setDossierError] = useState();
+  const [dossier, setDossier] = useState();
+  const [scholarships, setScholarships] = useState();
+  const [idScholarships, setIdScholarships] = useState();
+  const [myScholarships, setMyScholarships] = useState();
+  // etude 
+  const [DossierEtudiant, setDossierEtudiant] = useState();
+  const [foreignStudies, setForeignStudies] = useState();
+  const [loading, setLoading] = useState(true);
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    bio: '',
+    dateOfBirth: '',
+    gender: '',
+    nationality: '',
+    address: '',
+    city: '',
+    country: '',
+    academicLevel: '',
+    interests: []
+  });
+  const [showCreateDossier, setShowCreateDossier] = useState(false);
+  const [creatingDossier, setCreatingDossier] = useState(false);
+  const [dossierForm, setDossierForm] = useState({
+    currentLevel: '',
+    cvUrl: '',
+    // Vous pouvez ajouter d'autres champs si nécessaire
+  });
 
-  // Données utilisateur (en réalité, ces données viendraient d'une API)
-  const userData = {
-    nom: 'Albert',
-    prenom: 'Kala',
-    email: 'albert.kala@email.com',
-    telephone: '+225 07 00 00 00 00',
-    dateNaissance: '2000-01-01',
-    nationalite: 'Ivoirienne',
-    adresse: '493 Rue de Brazzaville, Abidjan-marcory',
-    photo: '/images/poster/albert.jpg'
+  // États pour la gestion des images
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedProfileImage, setSelectedProfileImage] = useState(null);
+  const [selectedCoverImage, setSelectedCoverImage] = useState(null);
+
+  /** 🔄 Rafraîchir le token d'accès **/
+  const getNewAccessToken = async () => {
+    const storedRefresh = localStorage.getItem('refresh_token');
+    if (!storedRefresh) throw new Error('Aucun refresh token');
+
+    const resp = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: storedRefresh })
+    });
+
+    if (!resp.ok) throw new Error('Échec du refresh token');
+    const data = await resp.json();
+    const newAccess = data?.accessToken || data?.data?.accessToken || data?.token;
+    if (!newAccess) throw new Error('Réponse refresh invalide');
+    localStorage.setItem('access_token', newAccess);
+    return newAccess;
   };
 
-  const dossiers = [
-    {
-      id: 1,
-      type: 'Études à l\'étranger',
-      pays: 'Canada',
-      universite: 'Université de Toronto',
-      programme: 'Master en Informatique',
-      dateCreation: '2024-01-15',
-      statut: 'En cours de traitement',
-      priorite: 'Haute',
-      derniereMiseAJour: '2024-01-20',
-      documents: 5,
-      etape: 'Évaluation des documents'
-    },
-    {
-      id: 2,
-      type: 'Bourse d\'étude',
-      pays: 'France',
-      universite: 'Sorbonne Université',
-      programme: 'Master en Littérature',
-      dateCreation: '2024-01-10',
-      statut: 'Approuvé',
-      priorite: 'Moyenne',
-      derniereMiseAJour: '2024-01-18',
-      documents: 3,
-      etape: 'Prêt pour inscription'
-    }
-  ];
+  /** 🧩 Requête API avec gestion automatique du token **/
+  const apiRequest = async (path, options = {}) => {
+    let access = localStorage.getItem('access_token');
+    const headers = { 'Content-Type': 'application/json', ...options.headers };
+    if (access) headers.Authorization = `Bearer ${access}`;
 
-  const demandesBourses = [
-    {
-      id: 1,
-      titre: 'Bourse d\'excellence Eiffel 2024-2025',
-      universite: 'Sorbonne Université',
-      montant: '1 181€/mois',
-      dateDemande: '2024-01-10',
-      statut: 'En cours',
-      echeance: '2024-03-15'
-    },
-    {
-      id: 2,
-      titre: 'Bourse Chevening 2024-2025',
-      universite: 'University of Cambridge',
-      montant: '£18,000/an',
-      dateDemande: '2024-01-05',
-      statut: 'Approuvée',
-      echeance: '2024-02-28'
-    }
-  ];
+    const doFetch = async () =>
+      fetch(`${API_BASE}${path}`, { ...options, headers });
 
-  const demandesPermutation = [
-    {
-      id: 1,
-      niveau: 'BTS 1',
-      filiere: 'Génie Informatique',
-      etablissementActuel: 'Grande école ASTC',
-      villeActuelle: 'Abidjan',
-      etablissementSouhaite: 'Université de Amérique',
-      villeSouhaitee: 'Abidjan',
-      anneeAcademique: '2024-2025',
-      dateCreation: '2024-01-15',
-      statut: 'En cours',
-      motif: 'Rapprochement familial et meilleure qualité d\'enseignement',
-      vues: 45,
-      correspondances: 3
-    },
-    {
-      id: 2,
-      niveau: 'Master 1',
-      filiere: 'Commerce',
-      etablissementActuel: 'Université Félix Houphouët Boigny',
-      villeActuelle: 'Abidjan',
-      etablissementSouhaite: 'Université de Strasbourg',
-      villeSouhaitee: 'Strasbourg, France',
-      anneeAcademique: '2024-2025',
-      dateCreation: '2024-01-12',
-      statut: 'En cours',
-      motif: 'Poursuite d\'études à l\'étranger pour spécialisation',
-      vues: 78,
-      correspondances: 1
-    }
-  ];
+    let response = await doFetch();
 
-  const tabs = [
-    { id: 'informations', label: 'Mes informations', icon: 'ph-user' },
-    { id: 'dossiers', label: 'Mes dossiers', icon: 'ph-folder' },
-    { id: 'bourses', label: 'Demandes de bourses', icon: 'ph-graduation-cap' },
-    { id: 'permutations', label: 'Mes permutations', icon: 'ph-arrows-clockwise' },
-    { id: 'documents', label: 'Mes documents', icon: 'ph-file-text' },
-    { id: 'parametres', label: 'Paramètres', icon: 'ph-gear' }
-  ];
+    // si token expiré → on rafraîchit
+    if (response.status === 401) {
+      const newAccess = await getNewAccessToken();
+      headers.Authorization = `Bearer ${newAccess}`;
+      response = await doFetch();
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Erreur HTTP ${response.status}`);
+    }
+
+    return response.json();
+  };
+
+  /** 📤 Uploader une image */
+  const uploadImage = async (file, category = 'profiles') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('category', category);
+
+    let access = localStorage.getItem('access_token');
+    const headers = { 
+      'Authorization': `Bearer ${access}` 
+      // Note: Ne pas mettre 'Content-Type' pour FormData
+    };
+
+    const doFetch = async () =>
+      fetch(`${API_BASE}/uploads/image`, {
+        method: 'POST',
+        headers: headers,
+        body: formData,
+      });
+
+    let response = await doFetch();
+
+    // Si token expiré → on rafraîchit
+    if (response.status === 401) {
+      const newAccess = await getNewAccessToken();
+      headers.Authorization = `Bearer ${newAccess}`;
+      response = await doFetch();
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Erreur upload ${response.status}`);
+    }
+
+    const json = await response.json();
+    return json?.data?.url || json?.url || json;
+  };
+
+  /** 🖼️ Mettre à jour la photo de profil */
+  const handleUpdateProfileImage = async (file) => {
+    if (!file) return;
+    
+    setUploadingImage(true);
+    try {
+      // Uploader l'image
+      const imageUrl = await uploadImage(file, 'profiles');
+      
+      // Mettre à jour le profil avec la nouvelle URL
+      const payload = {
+        ...form,
+        profileImage: imageUrl
+      };
+
+      const json = await apiRequest('/profile/student', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      
+      console.log('✅ Photo de profil mise à jour:', json);
+      setUser(json?.data ?? json);
+      setForm(prev => ({ ...prev, profileImage: imageUrl }));
+      
+      // Réinitialiser la sélection
+      setSelectedProfileImage(null);
+      
+    } catch (err) {
+      console.error('❌ Erreur upload photo:', err.message || err);
+      alert('Erreur lors du téléchargement de la photo');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  /** 🖼️ Mettre à jour l'image de couverture */
+  const handleUpdateCoverImage = async (file) => {
+    if (!file) return;
+    
+    setUploadingImage(true);
+    try {
+      // Uploader l'image
+      const imageUrl = await uploadImage(file, 'covers');
+      
+      // Mettre à jour le profil avec la nouvelle URL
+      const payload = {
+        ...form,
+        coverImage: imageUrl
+      };
+
+      const json = await apiRequest('/profile/student', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      
+      console.log('✅ Image de couverture mise à jour:', json);
+      setUser(json?.data ?? json);
+      setForm(prev => ({ ...prev, coverImage: imageUrl }));
+      
+      // Réinitialiser la sélection
+      setSelectedCoverImage(null);
+      
+    } catch (err) {
+      console.error('❌ Erreur upload couverture:', err.message || err);
+      alert('Erreur lors du téléchargement de l\'image de couverture');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  /** 📁 Gérer la sélection de photo de profil */
+  const handleProfileImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Vérifier le type de fichier
+      if (!file.type.startsWith('image/')) {
+        alert('Veuillez sélectionner une image valide');
+        return;
+      }
+      
+      // Vérifier la taille (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('L\'image ne doit pas dépasser 5MB');
+        return;
+      }
+      
+      setSelectedProfileImage(file);
+      handleUpdateProfileImage(file);
+    }
+  };
+
+  /** 📁 Gérer la sélection d'image de couverture */
+  const handleCoverImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Vérifier le type de fichier
+      if (!file.type.startsWith('image/')) {
+        alert('Veuillez sélectionner une image valide');
+        return;
+      }
+      
+      // Vérifier la taille (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('L\'image ne doit pas dépasser 5MB');
+        return;
+      }
+      
+      setSelectedCoverImage(file);
+      handleUpdateCoverImage(file);
+    }
+  };
+
+  /** 📦 Charger le profil utilisateur **/
+  useEffect(() => {
+    if (!token) return;
+
+    const loadUser = async () => {
+      setLoading(true);
+      try {
+        const json = await apiRequest('/profile/student');
+        const u = json?.data ?? json;
+        setUser(u);
+        setForm({
+          firstName: u?.firstName || '',
+          lastName: u?.lastName || '',
+          bio: u?.bio || '',
+          dateOfBirth: (u?.dateOfBirth || '').slice(0, 10),
+          gender: u?.gender || '',
+          nationality: u?.nationality || '',
+          address: u?.address || '',
+          city: u?.city || '',
+          country: u?.country || '',
+          academicLevel: u?.academicLevel || '',
+          interests: u?.interests || [],
+          profileImage: u?.profileImage || '',
+          coverImage: u?.coverImage || ''
+        });
+      } catch (err) {
+        console.error('❌ Erreur profil:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const loadFile = async () => {
+      setLoading(true);
+      try {
+        const json = await apiRequest('/students/scholarships/file');
+        const u = json?.data ?? json;
+        setDossier(u);
+        console.log('✅ Dossier chargé:', u);
+      } catch (err) {
+        console.error('❌ Erreur dossier:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const loadFileEtranger = async () => {
+      setLoading(true);
+      try {
+        const json = await apiRequest('/students/foreign-studies/file');
+        const u = json?.data ?? json;
+        setDossierEtudiant(u);
+        console.log('✅ Dossier chargé:', u);
+      } catch (err) {
+        console.error('❌ Erreur dossier:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const loadscholarships = async () => {
+      setLoading(true);
+      try {
+        const json = await apiRequest('/students/scholarships/applications/me');
+        const u = json?.data ?? json;
+        setScholarships(u);
+      } catch (err) {
+        console.error('❌ Erreur bourse:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const loadForeignStudies = async () => {
+      setLoading(true);
+      try {
+        const json = await apiRequest('/students/foreign-studies/applications/me');
+        const u = json?.data ?? json;
+        setForeignStudies(u);
+      } catch (err) {
+        console.error('❌ Erreur bourse:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const loadMyScholarships = async () => {
+      setLoading(true);
+      try {
+          const json = await apiRequest('/students/scholarships/' + scholarshipId);
+          const u = json?.data ?? json;
+          setMyScholarships(u);
+          console.log('✅ Ma bourse myScholarships:', u);
+      } catch (err) {
+        console.error('❌ Erreur ma bourse myScholarships:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUser();
+    loadFile();
+    loadscholarships();
+  }, [token]);
+
+  console.log('✅ Bourse chargéeeee:', scholarships);
+
+  /** ✏️ Gestion du formulaire **/
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  /** ✅ Soumettre la mise à jour **/
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsUpdating(true);
+    const payload = {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      bio: form.bio,
+      dateOfBirth: form.dateOfBirth,
+      gender: form.gender,
+      nationality: form.nationality,
+      address: form.address,
+      city: form.city,
+      country: form.country,
+      academicLevel: form.academicLevel,
+      profileImage: form.profileImage,
+      coverImage: form.coverImage
+    };
+
+    try {
+      const json = await apiRequest('/profile/student', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      console.log('✅ Profil mis à jour:', json);
+      setUser(json?.data ?? json);
+      setShowUpdateForm(false);
+    } catch (err) {
+      console.error('❌ Erreur update profil:', err.message || err);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Fonction pour gérer la création du dossier
+  const handleCreateDossier = async (e) => {
+    e.preventDefault();
+    setCreatingDossier(true);
+    setDossierError('');
+
+    try {
+      // Validation des champs requis
+      if (!dossierForm.currentLevel || !dossierForm.cvUrl) {
+        throw new Error('Tous les champs sont obligatoires');
+      }
+
+      const payload = {
+        currentLevel: dossierForm.currentLevel,
+        cvUrl: dossierForm.cvUrl,
+        // Ajoutez les autres champs requis par votre API
+      };
+
+      console.log('📤 Envoi du dossier:', payload);
+
+      const json = await apiRequest('/students/scholarships/file', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+
+      console.log('✅ Dossier créé:', json);
+      
+      // Afficher un message de succès
+      alert('Dossier créé avec succès!');
+      
+      setShowCreateDossier(false);
+      setDossierForm({ currentLevel: '', cvUrl: '' });
+      
+      // Optionnel: Recharger les données utilisateur si nécessaire
+      // await loadUserData();
+      
+    } catch (err) {
+      console.error('❌ Erreur création dossier:', err);
+      const errorMessage = err.message || 'Erreur lors de la création du dossier';
+      setDossierError(errorMessage);
+      alert('Erreur: ' + errorMessage);
+    } finally {
+      setCreatingDossier(false);
+    }
+  };
+
+  // Fonction pour gérer les changements dans le formulaire de dossier
+  const handleDossierChange = (e) => {
+    const { name, value } = e.target;
+    setDossierForm(prev => ({ ...prev, [name]: value }));
+    // Effacer l'erreur quand l'utilisateur modifie le champ
+    if (dossierError) setDossierError('');
+  };
+
+  // Fonction pour réinitialiser le formulaire de dossier
+  const handleCancelDossier = () => {
+    setDossierForm({ currentLevel: '', cvUrl: '' });
+    setDossierError('');
+    setShowCreateDossier(false);
+  };
+
+  const handleUpdateProfile = async () => {
+    setShowUpdateForm(true);
+  };
+
+  /** 🎨 Générer les initiales pour l'avatar **/
+  const getInitials = () => {
+    const firstName = user?.firstName || '';
+    const lastName = user?.lastName || '';
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
+
+  /** 🎨 Générer une couleur basée sur le nom **/
+  const getAvatarColor = () => {
+    const name = `${user?.firstName || ''}${user?.lastName || ''}`;
+    const colors = [
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', 
+      '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+      '#F8B739', '#52B788', '#E07A5F', '#81B29A'
+    ];
+    const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+    return colors[index];
+  };
+
+  /** 🖼️ Component Avatar **/
+  const Avatar = ({ size = 'large', className = '' }) => {
+    const hasImage = user?.profileImage;
+    
+    if (uploadingImage) {
+      return (
+        <div 
+          className={className}
+          style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: '50%',
+            backgroundColor: '#f3f4f6',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <i className="ph-spinner-gap ph-spin" style={{ color: '#f97316' }}></i>
+        </div>
+      );
+    }
+    
+    if (hasImage) {
+      return (
+        <img 
+          src={user.profileImage} 
+          alt="Photo de profil"
+          className={className}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          }}
+        />
+      );
+    }
+    
+    const isLarge = size === 'large';
+    const fontSize = isLarge ? '3rem' : '1.5rem';
+    
+    return (
+      <div 
+        className={className}
+        style={{
+          width: '100%',
+          height: '100%',
+          borderRadius: '50%',
+          backgroundColor: getAvatarColor(),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontSize: fontSize,
+          fontWeight: '600',
+          userSelect: 'none'
+        }}
+      >
+        {getInitials()}
+      </div>
+    );
+  };
 
   const getStatutBadge = (statut) => {
     const badges = {
@@ -138,29 +558,98 @@ const MonProfil = () => {
       case 'informations':
         return (
           <div className="tab-content-wrapper">
+            {/* Section image de couverture */}
+            {/* <div className="profile-cover-section">
+              {user?.coverImage ? (
+                <div className="profile-cover">
+                  <img src={user.coverImage} alt="Cover" className="cover-image" />
+                  <input
+                    type="file"
+                    id="cover-image-input"
+                    accept="image/*"
+                    onChange={handleCoverImageSelect}
+                    style={{ display: 'none' }}
+                  />
+                  <label 
+                    htmlFor="cover-image-input" 
+                    className="btn-cover-edit"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <i className="ph-camera icon-margin-right"></i>
+                    Modifier la couverture
+                  </label>
+                </div>
+              ) : (
+                <div className="cover-placeholder">
+                  <input
+                    type="file"
+                    id="cover-image-input"
+                    accept="image/*"
+                    onChange={handleCoverImageSelect}
+                    style={{ display: 'none' }}
+                  />
+                  <label 
+                    htmlFor="cover-image-input" 
+                    className="btn-cover-add"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <i className="ph-plus icon-margin-right"></i>
+                    Ajouter une image de couverture
+                  </label>
+                </div>
+              )}
+            </div> */}
+
             <div className="profile-row">
               <div className="profile-col-left">
                 <div className="profile-card">
                   <div className="profile-avatar">
-                    <img src={userData.photo} alt="Photo de profil" />
-                    <button className="btn-avatar-edit">
-                      <i className="ph-camera icon-margin-right"></i>
-                    </button>
+                    {uploadingImage ? (
+                      <div style={{
+                        width: '120px',
+                        height: '120px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#f3f4f6'
+                      }}>
+                        <i className="ph-spinner-gap ph-spin" style={{ fontSize: '2rem', color: '#f97316' }}></i>
+                      </div>
+                    ) : (
+                      <>
+                        <Avatar size="large" className="profile-avatar-img" />
+                        <input
+                          type="file"
+                          id="profile-image-input"
+                          accept="image/*"
+                          onChange={handleProfileImageSelect}
+                          style={{ display: 'none' }}
+                        />
+                        <label 
+                          htmlFor="profile-image-input" 
+                          className="btn-avatar-edit"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <i className="ph-camera icon-margin-right"></i>
+                        </label>
+                      </>
+                    )}
                   </div>
                   <div className="profile-info">
-                    <h4>{userData.prenom} {userData.nom}</h4>
-                    <p className="text-muted">{userData.email}</p>
+                    <h4>{user?.firstName || 'Prénom'} {user?.lastName || 'Nom'}</h4>
+                    <p className="text-muted">{user?.city ? `${user.city}${user.country ? ', ' + user.country : ''}` : user?.address || 'Ville non renseignée'}</p>
                     <div className="profile-stats">
                       <div className="stat-item">
-                        <span className="stat-number">{dossiers.length}</span>
+                        <span className="stat-number">{data.dossiers.length}</span>
                         <span className="stat-label">Dossiers</span>
                       </div>
                       <div className="stat-item">
-                        <span className="stat-number">{demandesBourses.length}</span>
+                        <span className="stat-number">{data.demandesBourses.length}</span>
                         <span className="stat-label">Bourses</span>
                       </div>
                       <div className="stat-item">
-                        <span className="stat-number">{demandesPermutation.length}</span>
+                        <span className="stat-number">{data.demandesPermutation.length}</span>
                         <span className="stat-label">Permutations</span>
                       </div>
                     </div>
@@ -173,38 +662,54 @@ const MonProfil = () => {
                   <div className="form-row">
                     <div className="form-col">
                       <label className="form-label">Nom</label>
-                      <input type="text" className="form-control" value={userData.nom} readOnly />
+                      <input type="text" className="form-control" value={user?.lastName || ''} readOnly />
                     </div>
                     <div className="form-col">
                       <label className="form-label">Prénom</label>
-                      <input type="text" className="form-control" value={userData.prenom} readOnly />
+                      <input type="text" className="form-control" value={user?.firstName || ''} readOnly />
                     </div>
                   </div>
                   <div className="form-row">
                     <div className="form-col">
-                      <label className="form-label">Email</label>
-                      <input type="email" className="form-control" value={userData.email} readOnly />
+                      <label className="form-label">Genre</label>
+                      <input type="text" className="form-control" value={user?.gender || 'Non renseigné'} readOnly />
                     </div>
-                    <div className="form-col">
-                      <label className="form-label">Téléphone</label>
-                      <input type="tel" className="form-control" value={userData.telephone} readOnly />
-                    </div>
-                  </div>
-                  <div className="form-row">
                     <div className="form-col">
                       <label className="form-label">Date de naissance</label>
-                      <input type="date" className="form-control" value={userData.dateNaissance} readOnly />
+                      <input type="date" className="form-control" value={(user?.dateOfBirth || '').slice(0,10)} readOnly />
                     </div>
+                  </div>
+                  <div className="form-row">
                     <div className="form-col">
                       <label className="form-label">Nationalité</label>
-                      <input type="text" className="form-control" value={userData.nationalite} readOnly />
+                      <input type="text" className="form-control" value={user?.nationality || 'Non renseignée'} readOnly />
+                    </div>
+                    <div className="form-col">
+                      <label className="form-label">Niveau académique</label>
+                      <input type="text" className="form-control" value={user?.academicLevel || 'Non renseigné'} readOnly />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-col">
+                      <label className="form-label">Ville</label>
+                      <input type="text" className="form-control" value={user?.city || 'Non renseignée'} readOnly />
+                    </div>
+                    <div className="form-col">
+                      <label className="form-label">Pays</label>
+                      <input type="text" className="form-control" value={user?.country || 'Non renseigné'} readOnly />
                     </div>
                   </div>
                   <div className="form-group-full">
                     <label className="form-label">Adresse</label>
-                    <textarea className="form-control" rows="2" value={userData.adresse} readOnly />
+                    <textarea className="form-control" rows="2" value={user?.address || 'Non renseignée'} readOnly />
                   </div>
-                  <button className="btn-orange">
+                  {user?.bio && (
+                    <div className="form-group-full">
+                      <label className="form-label">Biographie</label>
+                      <textarea className="form-control" rows="3" value={user?.bio || ''} readOnly />
+                    </div>
+                  )}
+                  <button className="btn-orange" onClick={handleUpdateProfile}>
                     <i className="ph-pencil icon-margin-right"></i>
                     Modifier mes informations
                   </button>
@@ -219,13 +724,16 @@ const MonProfil = () => {
           <div className="tab-content-wrapper">
             <div className="header-section">
               <h5>Mes dossiers d'études</h5>
-              <Link to="/etudes-etranger" className="btn-orange">
+              <button 
+                className="btn-orange" 
+                onClick={() => setShowCreateDossier(true)}
+              >
                 <i className="ph-plus icon-margin-right"></i>
                 Nouveau dossier
-              </Link>
+              </button>
             </div>
             <div className="cards-grid">
-              {dossiers.map(dossier => (
+              {data.dossiers.map(dossier => (
                 <div key={dossier.id} className="grid-col">
                   <div className="dossier-card">
                     <div className="dossier-header">
@@ -281,65 +789,115 @@ const MonProfil = () => {
           </div>
         );
 
-      case 'bourses':
-        return (
-          <div className="tab-content-wrapper">
-            <div className="header-section">
-              <h5>Mes demandes de bourses</h5>
-              <Link to="/course" className="btn-orange">
-                <i className="ph-plus icon-margin-right"></i>
-                Nouvelle demande
-              </Link>
-            </div>
-            <div className="cards-grid">
-              {demandesBourses.map(demande => (
-                <div key={demande.id} className="grid-col">
-                  <div className="bourse-card">
-                    <div className="bourse-header">
-                      <div className="bourse-title">
-                        <h6>{demande.titre}</h6>
-                        <p className="bourse-universite">{demande.universite}</p>
-                      </div>
-                      <div className="bourse-montant">
-                        <span className="montant">{demande.montant}</span>
-                      </div>
+case 'bourses':
+  return (
+    <div className="tab-content-wrapper">
+      <div className="header-section">
+        <h5>Mes demandes de bourses</h5>
+        {dossier && Object.keys(dossier).length > 0 ? (
+          <Link to={`/dossier/${dossier.id}`} className="btn-orange">
+            <i className="ph-eye icon-margin-right"></i>
+            Voir mon dossier
+          </Link>
+        ) : (
+          <button 
+            className="btn-orange" 
+            onClick={() => setShowCreateDossier(true)}
+          >
+            <i className="ph-plus icon-margin-right"></i>
+            Créer un dossier
+          </button>
+        )}
+      </div>
+
+      {dossier && Object.keys(dossier).length > 0 ? (
+        // Si le dossier existe, afficher les demandes de bourses
+        scholarships && scholarships.length > 0 ? (
+          <div className="cards-grid">
+            {scholarships.map(demande => (
+              <div key={demande.id} className="grid-col">
+                <div className="bourse-card">
+                  <div className="bourse-header">
+                    <div className="bourse-title">
+                      <h6 className="bourse-title-text">{demande.scholarship?.title || 'Titre non disponible'}</h6>
                     </div>
-                    <div className="bourse-content">
-                      <div className="bourse-meta">
-                        <div className="meta-item">
-                          <i className="ph-calendar icon-margin-right"></i>
-                          <span>Demandée le {new Date(demande.dateDemande).toLocaleDateString('fr-FR')}</span>
-                        </div>
-                        <div className="meta-item">
-                          <i className="ph-clock icon-margin-right"></i>
-                          <span>Échéance: {new Date(demande.echeance).toLocaleDateString('fr-FR')}</span>
-                        </div>
-                      </div>
+                    <div className="bourse-montant">
+                      <span className="montant">
+                        {demande.scholarship?.amount || 'N/A'}
+                      </span>
                     </div>
-                    <div className="bourse-footer">
-                      <div className="bourse-status">
-                        <span className={`badge ${getStatutBadge(demande.statut)}`}>
-                          <i className={`${getStatutIcon(demande.statut)} icon-margin-right-small`}></i>
-                          {demande.statut}
+                  </div>
+                  <div className="bourse-content">
+                    <div className="bourse-meta">
+                      <div className="meta-item">
+                        <i className="ph-calendar icon-margin-right"></i>
+                        <span className="bourse-universite">
+                          Pays: {demande.scholarship?.country || 'Non spécifié'} 
                         </span>
                       </div>
-                      <div className="bourse-actions">
-                        <button className="btn-sm-outline">
-                          <i className="ph-eye icon-margin-right-small"></i>
-                          Voir
-                        </button>
-                        <button className="btn-sm-secondary">
-                          <i className="ph-download icon-margin-right-small"></i>
-                          PDF
-                        </button>
+                      <div className="meta-item">
+                        <i className="ph-clock icon-margin-right"></i>
+                        <span className="bourse-universite">
+                          Université: {demande.scholarship?.university || 'Non précisée'}
+                        </span>
                       </div>
                     </div>
                   </div>
+                  <div className="bourse-footer">
+                    <div className="bourse-status">
+                      <span className={`badge ${getStatutBadge(demande.status || 'En attente')}`}>
+                        <i className={`${getStatutIcon(demande.status || 'En attente')} icon-margin-right-small`}></i>
+                        {demande.status || 'En attente'}
+                      </span>
+                    </div>
+                    <div className="bourse-actions">
+                      <button className="btn-sm-outline">
+                        <i className="ph-eye icon-margin-right-small"></i>
+                        Voir
+                      </button>
+                      <button className="btn-sm-secondary">
+                        <i className="ph-download icon-margin-right-small"></i>
+                        PDF
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        );
+        ) : (
+          <div className="empty-state">
+            <i className="ph-wallet display-4 text-muted icon-margin-bottom"></i>
+            <h5>Aucune demande de bourse</h5>
+            <p className="text-muted">
+              Vous n'avez pas encore fait de demande de bourse.
+            </p>
+            <Link to="/course" className="btn-orange">
+              <i className="ph-plus icon-margin-right"></i>
+              Faire une demande
+            </Link>
+          </div>
+        )
+      ) : (
+        // Si le dossier n'existe pas, afficher le message explicatif
+        <div className="empty-state">
+          <i className="ph-folder-notch-open display-4 text-muted icon-margin-bottom"></i>
+          <h5>Créez d'abord votre dossier</h5>
+          <p className="text-muted">
+            C'est ici que vos demandes de bourses seront affichées. 
+            Pour commencer, vous devez d'abord créer votre dossier d'étudiant.
+          </p>
+          <button 
+            className="btn-orange" 
+            onClick={() => setShowCreateDossier(true)}
+          >
+            <i className="ph-plus icon-margin-right"></i>
+            Créer mon dossier
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
       case 'permutations':
         return (
@@ -352,7 +910,7 @@ const MonProfil = () => {
               </Link>
             </div>
             <div className="cards-grid">
-              {demandesPermutation.map(demande => (
+              {data.demandesPermutation.map(demande => (
                 <div key={demande.id} className="grid-col">
                   <div className="permutation-card">
                     <div className="permutation-header">
@@ -423,7 +981,7 @@ const MonProfil = () => {
                 </div>
               ))}
             </div>
-            {demandesPermutation.length === 0 && (
+            {data.demandesPermutation.length === 0 && (
               <div className="empty-state">
                 <i className="ph-arrows-clockwise display-4 text-muted icon-margin-bottom"></i>
                 <h5>Aucune demande de permutation</h5>
@@ -569,1027 +1127,6 @@ const MonProfil = () => {
 
   return (
     <>
-      <style>{`
-        /* Reset et base */
-        * {
-          box-sizing: border-box;
-        }
-
-        /* Variables CSS */
-        :root {
-          --orange-primary: #f97316;
-          --orange-hover: #ea580c;
-          --gray-50: #f9fafb;
-          --gray-100: #f3f4f6;
-          --gray-200: #e5e7eb;
-          --gray-300: #d1d5db;
-          --gray-400: #9ca3af;
-          --gray-500: #6b7280;
-          --gray-700: #374151;
-          --gray-900: #1f2937;
-          --blue-500: #3b82f6;
-          --green-500: #22c55e;
-          --yellow-500: #eab308;
-          --red-500: #ef4444;
-          --white: #ffffff;
-        }
-
-        /* Section principale */
-        .mon-profil-section {
-          padding: 3rem 0;
-          background-color: var(--gray-50);
-          min-height: 100vh;
-        }
-
-        .container {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 0 1rem;
-        }
-
-        .row {
-          display: flex;
-          flex-wrap: wrap;
-          margin: 0 -0.5rem;
-        }
-
-        .col-lg-3 {
-          flex: 0 0 25%;
-          max-width: 25%;
-          padding: 0 0.5rem;
-        }
-
-        .col-lg-9 {
-          flex: 0 0 75%;
-          max-width: 75%;
-          padding: 0 0.5rem;
-        }
-
-        /* Sidebar */
-        .profile-sidebar {
-          background: var(--white);
-          border-radius: 0.75rem;
-          padding: 1.5rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          position: sticky;
-          top: 1rem;
-        }
-
-        .profile-summary {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          margin-bottom: 2rem;
-          padding-bottom: 1.5rem;
-          background-color: red;
-        }
-
-        .profile-avatar-small {
-          width: 80px;
-          height: 80px;
-          border-radius: 50%;
-          overflow: hidden;
-          margin-bottom: 1rem;
-          border: 3px solid var(--orange-primary);
-        }
-
-        .profile-avatar-small img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .profile-info-small {
-          text-align: center;
-        }
-
-        .profile-info-small h5 {
-          font-size: 1.125rem;
-          font-weight: 600;
-          color: var(--gray-900);
-          margin: 0 0 0.25rem 0;
-        }
-
-        .profile-info-small p {
-          font-size: 0.875rem;
-          margin: 0;
-        }
-
-        .profile-nav {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .nav-item {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem 1rem;
-          background: transparent;
-          border: none;
-          border-radius: 0.5rem;
-          color: var(--gray-700);
-          font-size: 0.875rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          width: 100%;
-          text-align: left;
-        }
-
-        .nav-item:hover {
-          background: var(--gray-100);
-          color: var(--orange-primary);
-        }
-
-        .nav-item.active {
-          background: rgba(249, 115, 22, 0.1);
-          color: var(--orange-primary);
-        }
-
-        .nav-item i {
-          font-size: 1.25rem;
-        }
-
-        /* Contenu principal */
-        .profile-content {
-          background: var(--white);
-          border-radius: 0.75rem;
-          padding: 2rem;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .tab-content-wrapper {
-          width: 100%;
-        }
-
-        /* Layout en grille */
-        .profile-row {
-          display: flex;
-          gap: 1.5rem;
-        }
-
-        .profile-col-left {
-          flex: 0 0 calc(33.333% - 1rem);
-        }
-
-        .profile-col-right {
-          flex: 0 0 calc(66.667% - 0.5rem);
-        }
-
-        /* Carte de profil */
-        .profile-card {
-          background: var(--white);
-          border-radius: 0.75rem;
-          padding: 2rem;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          text-align: center;
-        }
-
-        .profile-avatar {
-          position: relative;
-          width: 150px;
-          height: 150px;
-          margin: 0 auto 1.5rem;
-          border-radius: 50%;
-          overflow: hidden;
-          border: 4px solid var(--orange-primary);
-        }
-
-        .profile-avatar img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .btn-avatar-edit {
-          position: absolute;
-          bottom: 0;
-          right: 0;
-          background: var(--orange-primary);
-          color: var(--white);
-          border: 2px solid var(--white);
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .btn-avatar-edit:hover {
-          background: var(--orange-hover);
-        }
-
-        .profile-info h4 {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: var(--gray-900);
-          margin: 0 0 0.5rem 0;
-        }
-
-        .profile-stats {
-          display: flex;
-          justify-content: space-around;
-          margin-top: 2rem;
-          padding-top: 1.5rem;
-          border-top: 1px solid var(--gray-200);
-        }
-
-        .stat-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.25rem;
-        }
-
-        .stat-number {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: var(--orange-primary);
-        }
-
-        .stat-label {
-          font-size: 0.5rem;
-          color: var(--gray-500);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        /* Carte d'informations */
-        .info-card {
-          background: var(--white);
-          border-radius: 0.75rem;
-          padding: 2rem;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .card-title {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: var(--gray-900);
-          margin: 0 0 1.5rem 0;
-        }
-
-        .form-row {
-          display: flex;
-          gap: 1rem;
-          margin-bottom: 1rem;
-        }
-
-        .form-col {
-          flex: 1;
-        }
-
-        .form-group {
-          margin-bottom: 1rem;
-        }
-
-        .form-group-full {
-          margin-bottom: 1rem;
-        }
-
-        .form-label {
-          display: block;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--gray-700);
-          margin-bottom: 0.5rem;
-        }
-
-        .form-control {
-          width: 100%;
-          padding: 0.625rem 0.875rem;
-          font-size: 0.875rem;
-          border: 1px solid var(--gray-300);
-          border-radius: 0.5rem;
-          background: var(--gray-50);
-          color: var(--gray-700);
-          transition: all 0.2s ease;
-        }
-
-        .form-control:focus {
-          outline: none;
-          border-color: var(--orange-primary);
-          background: var(--white);
-          box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
-        }
-
-        textarea.form-control {
-          resize: vertical;
-        }
-
-        /* Boutons */
-        .btn-orange {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.625rem 1.5rem;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--white);
-          background: var(--orange-primary);
-          border: none;
-          border-radius: 0.5rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          text-decoration: none;
-        }
-
-        .btn-orange:hover {
-          background: var(--orange-hover);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(249, 115, 22, 0.3);
-        }
-
-        .btn-icon-outline,
-        .btn-sm-outline {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.5rem 1rem;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--orange-primary);
-          background: transparent;
-          border: 1px solid var(--orange-primary);
-          border-radius: 0.375rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          text-decoration: none;
-        }
-
-        .btn-icon-outline {
-          padding: 0.5rem;
-        }
-
-        .btn-icon-outline:hover,
-        .btn-sm-outline:hover {
-          background: var(--orange-primary);
-          color: var(--white);
-        }
-
-        .btn-icon-secondary,
-        .btn-sm-secondary {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.5rem 1rem;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--gray-700);
-          background: transparent;
-          border: 1px solid var(--gray-300);
-          border-radius: 0.375rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .btn-icon-secondary {
-          padding: 0.5rem;
-        }
-
-        .btn-icon-secondary:hover,
-        .btn-sm-secondary:hover {
-          background: var(--gray-100);
-        }
-
-        .btn-sm-danger {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.5rem 1rem;
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--red-500);
-          background: transparent;
-          border: 1px solid var(--red-500);
-          border-radius: 0.375rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .btn-sm-danger:hover {
-          background: var(--red-500);
-          color: var(--white);
-        }
-
-        /* Header section */
-        .header-section {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1.5rem;
-        }
-
-        .header-section h5 {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: var(--gray-900);
-          margin: 0;
-        }
-
-        .section-title {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: var(--gray-900);
-          margin: 0 0 1.5rem 0;
-        }
-
-        /* Grilles de cartes */
-        .cards-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 1.5rem;
-        }
-
-        .cards-grid-three {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1.5rem;
-          margin-bottom: 2rem;
-        }
-
-        .grid-col {
-          width: 100%;
-        }
-
-        /* Carte de dossier */
-        .dossier-card {
-          background: var(--white);
-          border-radius: 0.75rem;
-          padding: 1.5rem;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          border-left: 4px solid var(--orange-primary);
-          transition: all 0.3s ease;
-        }
-
-        .dossier-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-        }
-
-        .dossier-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1rem;
-        }
-
-        .dossier-type {
-          display: flex;
-          align-items: center;
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--orange-primary);
-        }
-
-        .dossier-actions {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .dossier-content {
-          margin-bottom: 1rem;
-        }
-
-        .dossier-title {
-          font-size: 1.125rem;
-          font-weight: 600;
-          color: var(--gray-900);
-          margin: 0 0 0.5rem 0;
-        }
-
-        .dossier-programme {
-          font-size: 0.875rem;
-          color: var(--gray-600);
-          margin: 0 0 0.75rem 0;
-        }
-
-        .dossier-pays {
-          display: flex;
-          align-items: center;
-          font-size: 0.875rem;
-          color: var(--gray-500);
-          margin: 0 0 1rem 0;
-        }
-
-        .dossier-meta {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .dossier-footer {
-          border-top: 1px solid var(--gray-200);
-          padding-top: 1rem;
-        }
-
-        .dossier-status {
-          display: flex;
-          gap: 0.5rem;
-          margin-bottom: 0.5rem;
-          flex-wrap: wrap;
-        }
-
-        .dossier-etape small {
-          font-size: 0.75rem;
-        }
-
-        /* Carte de bourse */
-        .bourse-card {
-          background: var(--white);
-          border-radius: 0.75rem;
-          padding: 1.5rem;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          border-left: 4px solid var(--orange-primary);
-          transition: all 0.3s ease;
-        }
-
-        .bourse-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-        }
-
-        .bourse-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 1rem;
-        }
-
-        .bourse-title h6 {
-          font-size: 1.125rem;
-          font-weight: 600;
-          color: var(--gray-900);
-          margin: 0 0 0.5rem 0;
-        }
-
-        .bourse-universite {
-          font-size: 0.875rem;
-          color: var(--gray-600);
-          margin: 0;
-        }
-
-        .bourse-montant {
-          text-align: right;
-        }
-
-        .montant {
-          font-size: 1.25rem;
-          font-weight: 700;
-          color: var(--orange-primary);
-        }
-
-        .bourse-content {
-          margin-bottom: 1rem;
-        }
-
-        .bourse-meta {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .bourse-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          border-top: 1px solid var(--gray-200);
-          padding-top: 1rem;
-        }
-
-        .bourse-status {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .bourse-actions {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        /* Meta items */
-        .meta-item {
-          display: flex;
-          align-items: center;
-          font-size: 0.875rem;
-          color: var(--gray-600);
-        }
-
-        /* Badges */
-        .badge {
-          display: inline-flex;
-          align-items: center;
-          padding: 0.375rem 0.75rem;
-          font-size: 0.75rem;
-          font-weight: 600;
-          border-radius: 9999px;
-          text-transform: uppercase;
-          letter-spacing: 0.025em;
-        }
-
-        .badge-success {
-          background: #dcfce7;
-          color: #166534;
-        }
-
-        .badge-warning {
-          background: #fef3c7;
-          color: #92400e;
-        }
-
-        .badge-danger {
-          background: #fee2e2;
-          color: #991b1b;
-        }
-
-        .badge-info {
-          background: #dbeafe;
-          color: #1e40af;
-        }
-
-        .badge-secondary {
-          background: var(--gray-200);
-          color: var(--gray-700);
-        }
-
-        /* Carte de permutation */
-        .permutation-card {
-          background: var(--white);
-          border-radius: 0.75rem;
-          padding: 1.5rem;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          border-left: 4px solid var(--orange-primary);
-          transition: all 0.3s ease;
-        }
-
-        .permutation-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-        }
-
-        .permutation-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 1.5rem;
-        }
-
-        .permutation-niveau {
-          font-size: 1.25rem;
-          font-weight: 700;
-          color: var(--gray-900);
-          margin: 0 0 0.25rem 0;
-        }
-
-        .permutation-filiere {
-          color: var(--gray-600);
-          margin: 0;
-          font-size: 0.875rem;
-        }
-
-        .permutation-path {
-          margin-bottom: 1.5rem;
-        }
-
-        .path-item {
-          display: flex;
-          align-items: flex-start;
-          margin-bottom: 1rem;
-        }
-
-        .path-dot {
-          width: 12px;
-          height: 12px;
-          background: var(--orange-primary);
-          border-radius: 50%;
-          margin-top: 0.5rem;
-          margin-right: 1rem;
-          flex-shrink: 0;
-        }
-
-        .path-content {
-          flex: 1;
-        }
-
-        .path-label {
-          font-size: 0.875rem;
-          color: var(--gray-600);
-          margin-bottom: 0.25rem;
-        }
-
-        .path-value {
-          font-weight: 600;
-          color: var(--gray-900);
-          margin-bottom: 0.25rem;
-        }
-
-        .path-location {
-          font-size: 0.75rem;
-          color: var(--gray-500);
-        }
-
-        .path-arrow {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0.5rem 0;
-          color: var(--orange-primary);
-        }
-
-        .permutation-meta {
-          display: flex;
-          gap: 1rem;
-          margin-bottom: 1rem;
-          flex-wrap: wrap;
-        }
-
-        .permutation-motif {
-          background: var(--gray-50);
-          padding: 1rem;
-          border-radius: 0.5rem;
-          margin-bottom: 1.5rem;
-          font-size: 0.875rem;
-          line-height: 1.5;
-        }
-
-        .permutation-actions {
-          display: flex;
-          gap: 0.5rem;
-          flex-wrap: wrap;
-        }
-
-        /* Carte de document */
-        .document-card {
-          background: var(--white);
-          border-radius: 0.75rem;
-          padding: 1.5rem;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          transition: all 0.3s ease;
-        }
-
-        .document-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-        }
-
-        .document-icon {
-          width: 60px;
-          height: 60px;
-          background: rgba(249, 115, 22, 0.1);
-          border-radius: 0.75rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 1rem;
-        }
-
-        .document-icon i {
-          font-size: 2rem;
-          color: var(--orange-primary);
-        }
-
-        .document-info h6 {
-          font-size: 1rem;
-          font-weight: 600;
-          color: var(--gray-900);
-          margin: 0 0 0.5rem 0;
-        }
-
-        .document-info p {
-          font-size: 0.875rem;
-          margin: 0 0 1rem 0;
-        }
-
-        .document-actions {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        /* Section de téléchargement */
-        .upload-section {
-          background: var(--gray-50);
-          border-radius: 0.75rem;
-          padding: 2rem;
-          border: 2px dashed var(--gray-300);
-        }
-
-        .upload-section h6 {
-          font-size: 1rem;
-          font-weight: 600;
-          color: var(--gray-900);
-          margin: 0 0 1rem 0;
-        }
-
-        .upload-area {
-          text-align: center;
-          padding: 2rem;
-          background: var(--white);
-          border-radius: 0.5rem;
-        }
-
-        .upload-area i {
-          font-size: 3rem;
-          color: var(--gray-400);
-          margin-bottom: 1rem;
-        }
-
-        .upload-area p {
-          color: var(--gray-600);
-          margin-bottom: 1rem;
-        }
-
-        /* Settings */
-        .settings-row {
-          display: flex;
-          gap: 1.5rem;
-          flex-wrap: wrap;
-        }
-
-        .settings-col {
-          flex: 1;
-          min-width: 300px;
-        }
-
-        .settings-card {
-          background: var(--gray-50);
-          border-radius: 0.75rem;
-          padding: 1.5rem;
-        }
-
-        .settings-card h6 {
-          font-size: 1.125rem;
-          font-weight: 600;
-          color: var(--gray-900);
-          margin: 0 0 1.5rem 0;
-        }
-
-        .form-check-group {
-          display: flex;
-          align-items: center;
-          margin-bottom: 1rem;
-        }
-
-        .form-check-input {
-          width: 1.125rem;
-          height: 1.125rem;
-          margin-right: 0.75rem;
-          cursor: pointer;
-          accent-color: var(--orange-primary);
-        }
-
-        .form-check-label {
-          font-size: 0.875rem;
-          color: var(--gray-700);
-          cursor: pointer;
-        }
-
-        /* État vide */
-        .empty-state {
-          text-align: center;
-          padding: 3rem 2rem;
-          background: var(--gray-50);
-          border-radius: 0.75rem;
-          border: 2px dashed var(--gray-300);
-        }
-
-        .empty-state i {
-          font-size: 3rem;
-          color: var(--gray-400);
-          margin-bottom: 1rem;
-        }
-
-        .empty-state h5 {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: var(--gray-900);
-          margin: 0 0 0.5rem 0;
-        }
-
-        .empty-state p {
-          margin: 0 0 1.5rem 0;
-        }
-
-        /* Utilitaires */
-        .text-muted {
-          color: var(--gray-500);
-        }
-
-        .display-4 {
-          font-size: 3rem;
-        }
-
-        .icon-margin-right {
-          margin-right: 0.5rem;
-        }
-
-        .icon-margin-right-small {
-          margin-right: 0.25rem;
-        }
-
-        .icon-margin-bottom {
-          margin-bottom: 1rem;
-        }
-
-        /* Responsive */
-        @media (max-width: 992px) {
-          .col-lg-3,
-          .col-lg-9 {
-            flex: 0 0 100%;
-            max-width: 100%;
-          }
-
-          .profile-sidebar {
-            position: static;
-            margin-bottom: 1.5rem;
-          }
-
-          .profile-col-left,
-          .profile-col-right {
-            flex: 0 0 100%;
-          }
-
-          .cards-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .cards-grid-three {
-            grid-template-columns: 1fr;
-          }
-
-          .settings-row {
-            flex-direction: column;
-          }
-
-          .settings-col {
-            width: 100%;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .mon-profil-section {
-            padding: 1.5rem 0;
-          }
-
-          .profile-content {
-            padding: 1.5rem;
-          }
-
-          .profile-sidebar {
-            padding: 1rem;
-          }
-
-          .form-row {
-            flex-direction: column;
-            gap: 0;
-          }
-
-          .header-section {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-          }
-
-          .header-section .btn-orange {
-            width: 100%;
-          }
-
-          .permutation-meta {
-            flex-direction: column;
-            gap: 0.5rem;
-          }
-
-          .permutation-actions {
-            flex-direction: column;
-          }
-
-          .permutation-actions .btn-sm-outline,
-          .permutation-actions .btn-sm-secondary,
-          .permutation-actions .btn-sm-danger {
-            width: 100%;
-          }
-
-          .bourse-footer {
-            flex-direction: column;
-            gap: 1rem;
-            align-items: flex-start;
-          }
-
-          .document-actions {
-            flex-direction: column;
-          }
-
-          .document-actions .btn-sm-outline,
-          .document-actions .btn-sm-secondary {
-            width: 100%;
-          }
-        }
-      `}</style>
-
       <section className="mon-profil-section">
         <div className="container">
           <div className="row">
@@ -1598,15 +1135,15 @@ const MonProfil = () => {
               <div className="profile-sidebar">
                 <div className="profile-summary">
                   <div className="profile-avatar-small">
-                    <img src={userData.photo} alt="Photo de profil" />
+                    <Avatar size="small" />
                   </div>
                   <div className="profile-info-small">
-                    <h5>{userData.prenom} {userData.nom}</h5>
-                    <p className="text-muted">{userData.email}</p>
+                    <h5>{user?.firstName || 'Prénom'} {user?.lastName || 'Nom'}</h5>
+                    <p className="text-muted">{user?.city || 'Ville'}</p>
                   </div>
                 </div>
                 <nav className="profile-nav">
-                  {tabs.map(tab => (
+                  {data.tabs.map(tab => (
                     <button
                       key={tab.id}
                       className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
@@ -1628,6 +1165,426 @@ const MonProfil = () => {
           </div>
         </div>
       </section>
+
+      {/* Modal de mise à jour du profil */}
+      {showUpdateForm && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '1rem',
+            padding: '2rem',
+            maxWidth: '700px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1.5rem'
+            }}>
+              <h3 style={{ margin: 0, color: '#1f2937' }}>Mettre à jour mon profil</h3>
+              <button 
+                onClick={() => setShowUpdateForm(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#6b7280'
+                }}
+              >
+                <i className="ph-x"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>
+                  Photo de profil
+                </label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={handleProfileImageSelect}
+                  className="form-control"
+                  disabled={uploadingImage}
+                />
+                {uploadingImage && (
+                  <small style={{ color: '#f97316' }}>
+                    <i className="ph-spinner-gap ph-spin icon-margin-right"></i>
+                    Téléchargement en cours...
+                  </small>
+                )}
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>
+                  Image de couverture
+                </label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={handleCoverImageSelect}
+                  className="form-control"
+                  disabled={uploadingImage}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}>Nom</label>
+                  <input 
+                    type="text" 
+                    name="lastName"
+                    className="form-control" 
+                    value={form.lastName}
+                    onChange={handleChange}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}>Prénom</label>
+                  <input 
+                    type="text" 
+                    name="firstName"
+                    className="form-control" 
+                    value={form.firstName}
+                    onChange={handleChange}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}>Genre</label>
+                  <select 
+                    name="gender"
+                    className="form-control" 
+                    value={form.gender}
+                    onChange={handleChange}
+                    style={{ width: '100%' }}
+                  >
+                    <option value="">Sélectionner</option>
+                    <option value="male">Homme</option>
+                    <option value="female">Femme</option>
+                    <option value="other">Autre</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}>Date de naissance</label>
+                  <input 
+                    type="date" 
+                    name="dateOfBirth"
+                    className="form-control" 
+                    value={form.dateOfBirth}
+                    onChange={handleChange}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}>Nationalité</label>
+                  <input 
+                    type="text" 
+                    name="nationality"
+                    className="form-control" 
+                    value={form.nationality}
+                    onChange={handleChange}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}>Niveau académique</label>
+                  <input 
+                    type="text" 
+                    name="academicLevel"
+                    className="form-control" 
+                    value={form.academicLevel}
+                    onChange={handleChange}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}>Ville</label>
+                  <input 
+                    type="text" 
+                    name="city"
+                    className="form-control" 
+                    value={form.city}
+                    onChange={handleChange}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#374151'
+                  }}>Pays</label>
+                  <input 
+                    type="text" 
+                    name="country"
+                    className="form-control" 
+                    value={form.country}
+                    onChange={handleChange}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>Adresse</label>
+                <textarea 
+                  className="form-control" 
+                  name="address"
+                  rows="2"
+                  value={form.address}
+                  onChange={handleChange}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: '600',
+                  color: '#374151'
+                }}>Biographie</label>
+                <textarea 
+                  className="form-control" 
+                  name="bio"
+                  rows="3"
+                  value={form.bio}
+                  onChange={handleChange}
+                  placeholder="Parlez-nous de vous..."
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowUpdateForm(false)}
+                  className="btn-orange"
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#e5e7eb',
+                    color: '#374151'
+                  }}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="btn-orange"
+                  style={{ flex: 1 }}
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showCreateDossier && (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000
+  }}>
+    <div style={{
+      backgroundColor: 'white',
+      borderRadius: '1rem',
+      padding: '2rem',
+      maxWidth: '500px',
+      width: '90%',
+      maxHeight: '90vh',
+      overflowY: 'auto'
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '1.5rem'
+      }}>
+        <h3 style={{ margin: 0, color: '#1f2937' }}>Créer un nouveau dossier</h3>
+        <button 
+          onClick={() => setShowCreateDossier(false)}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '1.5rem',
+            cursor: 'pointer',
+            color: '#6b7280'
+          }}
+        >
+          <i className="ph-x"></i>
+        </button>
+      </div>
+
+      <form onSubmit={handleCreateDossier}>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={{
+            display: 'block',
+            marginBottom: '0.5rem',
+            fontWeight: '600',
+            color: '#374151'
+          }}>
+            Niveau actuel
+          </label>
+          <select 
+            name="currentLevel"
+            className="form-control" 
+            value={dossierForm.currentLevel}
+            onChange={handleDossierChange}
+            style={{ width: '100%' }}
+            required
+          >
+            <option value="">Sélectionnez votre niveau</option>
+            <option value="Licence 1">Licence 1</option>
+            <option value="Licence 2">Licence 2</option>
+            <option value="Licence 3">Licence 3</option>
+            <option value="Master 1">Master 1</option>
+            <option value="Master 2">Master 2</option>
+            <option value="Doctorat">Doctorat</option>
+          </select>
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={{
+            display: 'block',
+            marginBottom: '0.5rem',
+            fontWeight: '600',
+            color: '#374151'
+          }}>
+            URL du CV
+          </label>
+          <input 
+            type="url" 
+            name="cvUrl"
+            className="form-control" 
+            value={dossierForm.cvUrl}
+            onChange={handleDossierChange}
+            placeholder="https://example.com/cv.pdf"
+            style={{ width: '100%' }}
+            required
+          />
+          <small style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+            Lien vers votre CV (Google Drive, Dropbox, etc.)
+          </small>
+        </div>
+
+        {/* Vous pouvez ajouter d'autres champs ici selon les besoins de votre API */}
+
+        <div style={{ 
+          display: 'flex', 
+          gap: '1rem',
+          marginTop: '2rem'
+        }}>
+          <button
+            type="button"
+            onClick={() => setShowCreateDossier(false)}
+            className="btn-orange"
+            style={{
+              flex: 1,
+              backgroundColor: '#e5e7eb',
+              color: '#374151'
+            }}
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            className="btn-orange"
+            style={{ flex: 1 }}
+            disabled={creatingDossier}
+          >
+            {creatingDossier ? 'Création...' : 'Créer le dossier'}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </>
   );
 };

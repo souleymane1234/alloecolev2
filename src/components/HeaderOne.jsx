@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from "react-router-dom";
+import { checkAuthStatus, logout } from '../helper/auth';
 
 // Icons
 import HomeIcon from '@mui/icons-material/Home';
@@ -19,6 +20,20 @@ const HeaderOne = () => {
   const [scroll, setScroll] = useState(false);
   const [isMenuActive, setIsMenuActive] = useState(false);
   const [activeSubmenu, setActiveSubmenu] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+    // Vérifie et rafraîchit automatiquement le token
+  useEffect(() => {
+    const verifyAuth = async () => {
+      const status = await checkAuthStatus();
+      setIsAuthenticated(status);
+    };
+    verifyAuth();
+
+    // Recheck toutes les 5 minutes
+    const interval = setInterval(verifyAuth, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     window.onscroll = () => {
@@ -469,11 +484,25 @@ const HeaderOne = () => {
                 <NotificationsIcon className='nav-icon' />
                 <span className='nav-label'>Notifications</span>
               </Link>
+              {isAuthenticated ? (
+                <>
+                  <Link to="/profil" className="nav-link">
+                    <PersonIcon className="nav-icon" />
+                    <span className="nav-label">Vous</span>
+                  </Link>
 
-              <Link to='/profil' className='nav-link'>
-                <PersonIcon className='nav-icon' />
-                <span className='nav-label'>Vous</span>
-              </Link>
+                  {/* 🔴 Bouton Déconnexion */}
+                  <button onClick={logout} className="nav-link" style={{ background: 'none', border: 'none' }}>
+                    <LoginIcon className="nav-icon" />
+                    <span className="nav-label">Déconnexion</span>
+                  </button>
+                </>
+              ) : (
+                <Link to="/login" className="nav-link">
+                  <LoginIcon className="nav-icon" />
+                  <span className="nav-label">Connexion</span>
+                </Link>
+              )}
             </nav>
 
             {/* Mobile Toggle */}
