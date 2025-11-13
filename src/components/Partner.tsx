@@ -15,7 +15,7 @@ function Partner() {
         </Typography>
     </Box>
     <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-        <img src="/img/logo.png" alt="Partner 1" style={{ height: 50 }} />
+        <img src="/img/logo-black.png" alt="Partner 1" style={{ height: 50 }} />
         <img src="/img/zik.jpg" alt="Partner 2" style={{ height: 50 }} />
     </Box>
     <Box sx={{ justifyContent: 'center', flexWrap: 'wrap', gap: 2, mb: 2 , alignItems: 'center', display: 'flex', flexDirection: 'column' }}>

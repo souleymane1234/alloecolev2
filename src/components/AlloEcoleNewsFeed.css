@@ -49,6 +49,13 @@
           flex: 1;
           min-width: 0; /* IMPORTANT: permet au contenu de se réduire correctement */
         }
+        .sidebar-webTV-title {
+          font-size: 1rem;
+          font-weight: 600;
+          color: #1f2937;
+          margin-bottom: 0.25rem;
+          text-align: center;
+        }
 
         /* MOBILE FIRST APPROACH */
         @media (max-width: 991px) {

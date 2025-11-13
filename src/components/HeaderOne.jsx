@@ -65,11 +65,11 @@ const HeaderOne = () => {
   };
 
   const menuItems = [
-    { 
-      href: "/", 
-      label: "Accueil",
-      icon: HomeIcon
-    },
+    // { 
+    //   href: "/", 
+    //   label: "Accueil",
+    //   icon: HomeIcon
+    // },
     {
       label: "Études",
       icon: SchoolIcon,
@@ -96,6 +96,15 @@ const HeaderOne = () => {
       href: "/webtv", 
       label: "WebTV",
       icon: LiveTvIcon
+    },
+    {
+      label: "Play",
+      icon: LiveTvIcon,
+      links: [
+        { href: "/quiz", label: "Quiz" },
+        { href: "/emissions-telerealite", label: "Émissions de téléréalités" },
+        { href: "/magazine", label: "Magazine" },
+      ],
     },
   ];
 
@@ -433,7 +442,7 @@ const HeaderOne = () => {
             {/* Left Section */}
             <div className='header-left'>
               <Link to='/' className='header-logo'>
-                <img src='images/logo/logo.png' alt='AlloEcole' />
+                <img src='images/logo/logo-black.png' alt='AlloEcole' />
               </Link>
 
               {/* <div className='header-search'>
@@ -521,7 +530,7 @@ const HeaderOne = () => {
       <div className={`mobile-menu ${isMenuActive ? 'active' : ''}`}>
         <div className='mobile-header'>
           <Link to='/' className='mobile-logo' onClick={closeMenu}>
-            <img src='assets/images/logo/logo.png' alt='AlloEcole' />
+            <img src='assets/images/logo/logo-black.png' alt='AlloEcole' />
           </Link>
           <button type='button' className='close-button' onClick={closeMenu}>
             <CloseIcon />

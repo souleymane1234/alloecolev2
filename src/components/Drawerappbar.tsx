@@ -239,7 +239,7 @@ function DrawerAppBar(props: DrawerAppBarProps) {
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
       <Box sx={{ my: 2 }}>
-        <img src="/img/logo.png" alt="Logo" style={{ height: 40 }} />
+        <img src="/img/logo-black.png" alt="Logo" style={{ height: 40 }} />
       </Box>
       <Divider />
       <List>
@@ -327,7 +327,7 @@ function DrawerAppBar(props: DrawerAppBarProps) {
             </IconButton>
             
             <Box component={Link} to="/" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-              <img src="/img/logo.png" alt="Logo" style={{ height: 36 }} />
+              <img src="/img/logo-black.png" alt="Logo" style={{ height: 36 }} />
             </Box>
             
             {/* Search Bar */}

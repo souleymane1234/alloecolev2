@@ -1509,7 +1509,7 @@ case 'bourses':
             fontWeight: '600',
             color: '#374151'
           }}>
-            Niveau actuel
+             
           </label>
           <select 
             name="currentLevel"

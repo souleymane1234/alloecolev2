@@ -10,7 +10,7 @@ const Header = () => {
       {/* Logo */}
       <div className="flex items-center">
         <img
-          src="/logo.png" // Remplace par ton chemin réel
+          src="/logo-black.png" // Remplace par ton chemin réel
           alt="Logo"
           className="h-12 w-auto"
         />

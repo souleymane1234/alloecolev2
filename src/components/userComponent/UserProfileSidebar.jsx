@@ -133,6 +133,7 @@ const UserProfileSidebar = () => {
     const hasImage = user?.profileImage || user?.photo || user?.avatar;
 
     return (
+      <>
       <div className="profile-sidebar">
         <div className="profile-header">
           <div className="profile-avatar">
@@ -184,11 +185,27 @@ const UserProfileSidebar = () => {
           </div>
         )}
       </div>
+      <div className="guest-header">
+          <h4>Découvrez nos contenus éducatifs</h4>
+    </div>
+      <a
+        href="https://www.myschooltoon.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn-toon full-width"
+      >
+      <img 
+          src={'/images/schooltoon.png'}
+              alt="Profil"
+        />
+      </a>
+      </>
     );
   }
 
   // 👤 Si utilisateur non connecté
   return (
+    <>
     <div className="profile-sidebar">
       <div className="guest-profile">
         <div className="guest-header">
@@ -203,6 +220,21 @@ const UserProfileSidebar = () => {
         </div>
       </div>
     </div>
+      <div className="guest-header">
+          <h4>Découvrez nos contenus éducatifs</h4>
+    </div>
+      <a
+        href="https://www.myschooltoon.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn-toon full-width"
+      >
+      <img 
+          src={'/images/schooltoon.png'}
+              alt="Profil"
+        />
+      </a>
+    </>
   );
 };
 

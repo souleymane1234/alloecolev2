@@ -16,7 +16,7 @@ function Footer() {
   <Grid container spacing={4}>
     {/* Logo + description + social */}
     <Grid size={{ xs: 12, md: 4 }} sx={{ textAlign: { xs: 'center', md: 'left' } }}>
-      <img src="/img/logo.png" alt="Alloecole" style={{ height: '80px' }} />
+      <img src="/img/logo-black.png" alt="Alloecole" style={{ height: '80px' }} />
       <Typography mt={2} variant="body1" sx={{ color: '#d1d5db' }}>
         ZIK'TALENT est un concept qui permet de détecter, révéler et faire la promotion des talents dans le domaine de la musique.
       </Typography>
