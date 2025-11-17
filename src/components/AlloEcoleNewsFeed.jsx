@@ -500,145 +500,143 @@ const AlloEcoleNewsFeed = () => {
     </div>
   );
 
-  const RightSidebar = () => (
-    <div className="sidebar-right-content">
-      <Banner
-        imageSrc="/images/pub/banniere2.jpg"
-        altText="Alertes SMS - Permutations"
-        size="md"
-        className="sidebar-banner"
-        linkUrl="#"
-      />
-      
-      {/* Section Vidéo */}
-      <div className="sidebar-section">
-        <h3 className="sidebar-title">WebTV</h3>
-        <div className="video-container">
-          <video 
-            controls 
-            className="sidebar-video"
-            poster="/images/poster/poster.jpg"
-          >
-            <source src="/video/video.mp4" type="video/mp4" />
-            Votre navigateur ne supporte pas la lecture de vidéos.
-          </video>
-          <div className="video-description">
-            <h6 className="sidebar-webTV-title">Découvrez notre WebTV</h6>
-          </div>
-        </div>
-      </div>
-
-      {/* Section Écoles recommandées */}
-      <div className="sidebar-section">
-        <h3 className="sidebar-title">Écoles recommandées</h3>
-        <div className="school-ad">
-          <div className="ad-image">
-            <img src="/images/poster/ecole.png" alt="École recommandée" />
-          </div>
-          <div className="ad-content">
-            <h5>COLLÈGE PRIVÉ EXCELLENCE</h5>
-            <p>Abidjan, Plateau</p>
-            <button className="btn-ad">Découvrir</button>
-          </div>
-        </div>
+  const RightSidebar = () => {
+    // Initialiser le SDK Facebook
+    useEffect(() => {
+      // Charger le SDK Facebook
+      if (window.FB) {
+        window.FB.XFBML.parse();
+      } else {
+        window.fbAsyncInit = function() {
+          window.FB.init({
+            xfbml: true,
+            version: 'v18.0'
+          });
+        };
+  
+        // Charger le script Facebook SDK
+        (function(d, s, id) {
+          var js, fjs = d.getElementsByTagName(s)[0];
+          if (d.getElementById(id)) return;
+          js = d.createElement(s);
+          js.id = id;
+          js.src = "https://connect.facebook.net/fr_FR/sdk.js";
+          fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+      }
+    }, []);
+  
+    return (
+      <div className="sidebar-right-content">
+        <Banner
+          imageSrc="/images/pub/banniere2.jpg"
+          altText="Alertes SMS - Permutations"
+          size="md"
+          className="sidebar-banner"
+          linkUrl="#"
+        />
         
-        <div className="school-ad">
-          <div className="ad-image">
-            <img src="/images/poster/ecole.png" alt="École recommandée" />
+        {/* Section Vidéo */}
+        <div className="sidebar-section">
+          <h3 className="sidebar-title">WebTV</h3>
+          <div className="video-container">
+            <video 
+              controls 
+              className="sidebar-video"
+              poster="/images/poster/poster.jpg"
+            >
+              <source src="/video/video.mp4" type="video/mp4" />
+              Votre navigateur ne supporte pas la lecture de vidéos.
+            </video>
+            <div className="video-description">
+              <h6 className="sidebar-webTV-title">Découvrez notre WebTV</h6>
+            </div>
           </div>
-          <div className="ad-content">
-            <h5>INSTITUT MODERNE</h5>
-            <p>Yopougon</p>
-            <button className="btn-ad">Visiter</button>
+        </div>
+  
+        {/* Section Fil d'actualité Facebook */}
+        <div className="sidebar-section">
+          <h3 className="sidebar-title">Suivez-nous sur Facebook</h3>
+          <div className="facebook-feed-container">
+            <div 
+              className="fb-page" 
+              data-href="https://www.facebook.com/alloecole225" 
+              data-tabs="timeline"
+              data-width="340"
+              data-height="500"
+              data-small-header="false"
+              data-adapt-container-width="true"
+              data-hide-cover="false"
+              data-show-facepile="true"
+            >
+              <blockquote 
+                cite="https://www.facebook.com/alloecole225" 
+                className="fb-xfbml-parse-ignore"
+              >
+                <a href="https://www.facebook.com/alloecole225">Allo Ecole</a>
+              </blockquote>
+            </div>
+          </div>
+        </div>
+  
+        {/* Section Actions rapides */}
+        <div className="sidebar-section">
+          <h3 className="sidebar-title">Actions rapides</h3>
+          <div className="quick-actions-grid">
+            <button className="action-card">
+              <GraduationCap className="icon-md" />
+              <span>Postuler à une bourse</span>
+            </button>
+            <button className="action-card">
+              <BookOpen className="icon-md" />
+              <span>Créer un dossier</span>
+            </button>
+            <button className="action-card">
+              <User className="icon-md" />
+              <span>Demande de permutation</span>
+            </button>
+          </div>
+        </div>
+  
+        {/* Section Statistiques */}
+        <div className="sidebar-section">
+          <h3 className="sidebar-title">Statistiques</h3>
+          <div className="stats-cards">
+            <div className="stat-card">
+              <div className="stat-number">1,247</div>
+              <div className="stat-label">Écoles</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-number">89</div>
+              <div className="stat-label">Bourses actives</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-number">456</div>
+              <div className="stat-label">Permutations</div>
+            </div>
+          </div>
+        </div>
+  
+        {/* Footer - Liens utiles */}
+        <div className="sidebar-footer">
+          <div className="footer-links">
+            <a href="/about" className="footer-link">À propos</a>
+            <a href="/help" className="footer-link">Centre d'aide</a>
+            <a href="/privacy" className="footer-link">Confidentialité</a>
+            <a href="/terms" className="footer-link">Conditions</a>
+            <a href="/advertising" className="footer-link">Publicité</a>
+            <a href="/contact" className="footer-link">Nous contacter</a>
+          </div>
+          
+          <div className="footer-brand">
+            <span className="brand-name">Allo Ecole</span>
+            <span className="copyright">© 2025</span>
           </div>
         </div>
       </div>
-
-      {/* Section Actions rapides */}
-      <div className="sidebar-section">
-        <h3 className="sidebar-title">Actions rapides</h3>
-        <div className="quick-actions-grid">
-          <button className="action-card">
-            <GraduationCap className="icon-md" />
-            <span>Postuler à une bourse</span>
-          </button>
-          <button className="action-card">
-            <BookOpen className="icon-md" />
-            <span>Créer un dossier</span>
-          </button>
-          <button className="action-card">
-            <User className="icon-md" />
-            <span>Demande de permutation</span>
-          </button>
-          <button className="action-card">
-            <Settings className="icon-md" />
-            <span>Contacter le support</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Section Statistiques */}
-      <div className="sidebar-section">
-        <h3 className="sidebar-title">Statistiques</h3>
-        <div className="stats-cards">
-          <div className="stat-card">
-            <div className="stat-number">1,247</div>
-            <div className="stat-label">Écoles</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">89</div>
-            <div className="stat-label">Bourses actives</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">456</div>
-            <div className="stat-label">Permutations</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Section Événements à venir */}
-      <div className="sidebar-section">
-        <h3 className="sidebar-title">Événements à venir</h3>
-        <div className="event-item">
-          <div className="event-date">
-            <span className="event-day">15</span>
-            <span className="event-month">NOV</span>
-          </div>
-          <div className="event-details">
-            <h6>Salon de l'orientation</h6>
-            <p>Abidjan, Plateaux</p>
-          </div>
-        </div>
-        <div className="event-item">
-          <div className="event-date">
-            <span className="event-day">20</span>
-            <span className="event-month">NOV</span>
-          </div>
-          <div className="event-details">
-            <h6>Journée portes ouvertes</h6>
-            <p>Université de Cocody</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer - Liens utiles */}
-      <div className="sidebar-footer">
-        <div className="footer-links">
-          <a href="/about" className="footer-link">À propos</a>
-          <a href="/help" className="footer-link">Centre d'aide</a>
-          <a href="/privacy" className="footer-link">Confidentialité</a>
-          <a href="/terms" className="footer-link">Conditions</a>
-          <a href="/advertising" className="footer-link">Publicité</a>
-          <a href="/contact" className="footer-link">Nous contacter</a>
-        </div>
-        
-        <div className="footer-brand">
-          <span className="brand-name">Allo Ecole</span>
-          <span className="copyright">© 2025</span>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
+  
 
   return (
     <>

@@ -7,6 +7,7 @@ import EtudeEtranger from './pages/EtudeEtranger.jsx'
 import Permutation from './pages/Permutation.jsx'
 import Profil from './pages/Profil.jsx'
 import WebTv from './pages/WebTv.jsx'
+import OrientationSimulator from './pages/OrientationSimulator.jsx'
 import Schools from './pages/Schools.jsx'
 import SchoolDetail from './pages/SchoolDetail.jsx'
 import AuthCallback from './pages/AuthCallback.jsx'
@@ -44,6 +45,7 @@ function App() {
             <Route path="schools/:id" element={<SchoolDetail />} />
             <Route path="auth/callback" element={<AuthCallback />} />
             <Route path="webtv/video/:id" element={<VideoDetail />} />
+            <Route path="questionnaires-interactifs" element={<OrientationSimulator />} />
             {/* Ajoute d'autres routes ici si nécessaire */}
             <Route path="*" element={<div>Page Not Found</div>} />
           </Route>
