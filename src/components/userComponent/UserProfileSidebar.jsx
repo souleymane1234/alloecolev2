@@ -116,6 +116,36 @@ const UserProfileSidebar = () => {
     setUser(null);
   };
 
+  /**
+   * 📘 Initialiser le SDK Facebook
+   */
+  useEffect(() => {
+    // Charger le SDK Facebook
+    if (window.FB) {
+      window.FB.XFBML.parse();
+    } else {
+      window.fbAsyncInit = function() {
+        window.FB.init({
+          xfbml: true,
+          version: 'v18.0'
+        });
+      };
+
+      // Charger le script Facebook SDK
+      if (!document.getElementById('facebook-jssdk')) {
+        (function(d, s, id) {
+          var js, fjs = d.getElementsByTagName(s)[0];
+          if (d.getElementById(id)) return;
+          js = d.createElement(s);
+          js.id = id;
+          js.src = "https://connect.facebook.net/fr_FR/sdk.js";
+          js.async = true;
+          fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+      }
+    }
+  }, []);
+
   // 🔄 Affichage pendant le chargement
   if (loading) {
     return (
@@ -135,6 +165,21 @@ const UserProfileSidebar = () => {
     return (
       <>
       <div className="profile-sidebar">
+        <div className="schooltoon-cta">
+          <h4>Découvrez nos contenus éducatifs</h4>
+          <a
+            href="https://www.myschooltoon.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-toon full-width"
+          >
+            <img 
+              src="/images/schooltoon.png"
+              alt="SchoolToon"
+            />
+          </a>
+        </div>
+
         <div className="profile-header">
           <div className="profile-avatar">
             {hasImage ? (
@@ -160,14 +205,14 @@ const UserProfileSidebar = () => {
           </div>
           <div className="profile-info">
             <h4>{user.firstName || user.prenom || 'Prénom'} {user.lastName || user.nom || 'Nom'}</h4>
-            <p>{user.email || 'Email non disponible'}</p>
+            {/* <p>{user.email || 'Email non disponible'}</p>
             {(user.city || user.ville) && (
               <p>📍 {user.city || user.ville}{(user.country || user.pays) ? `, ${user.country || user.pays}` : ''}</p>
-            )}
+            )} */}
           </div>
         </div>
 
-        <div className="profile-quick-actions">
+        {/* <div className="profile-quick-actions">
           <Link to="/profil" className="quick-action-btn">
             <User /> Mon Profil
           </Link>
@@ -177,28 +222,41 @@ const UserProfileSidebar = () => {
           <button onClick={handleLogout} className="quick-action-btn logout-btn">
             <LogOut /> Déconnexion
           </button>
-        </div>
+        </div> */}
 
         {error && (
           <div className="error-message">
             <small>⚠️ {error}</small>
           </div>
         )}
+
+        {/* Fil d'actualité Facebook */}
+        <div className="profile-facebook-section">
+          <h4 className="facebook-section-title">Suivez-nous sur Facebook</h4>
+          <div className="facebook-feed-container">
+            <div 
+              className="fb-page" 
+              data-href="https://www.facebook.com/alloecole225" 
+              data-tabs="timeline"
+              data-width=""
+              data-height="400"
+              data-small-header="false"
+              data-adapt-container-width="true"
+              data-hide-cover="false"
+              data-show-facepile="true"
+            >
+              <blockquote 
+                cite="https://www.facebook.com/alloecole225" 
+                className="fb-xfbml-parse-ignore"
+              >
+                <a href="https://www.facebook.com/alloecole225" target="_blank" rel="noopener noreferrer">
+                  Allo Ecole
+                </a>
+              </blockquote>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="guest-header">
-          <h4>Découvrez nos contenus éducatifs</h4>
-    </div>
-      <a
-        href="https://www.myschooltoon.com/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="btn-toon full-width"
-      >
-      <img 
-          src={'/images/schooltoon.png'}
-              alt="Profil"
-        />
-      </a>
       </>
     );
   }
@@ -207,11 +265,24 @@ const UserProfileSidebar = () => {
   return (
     <>
     <div className="profile-sidebar">
+      <div className="schooltoon-cta">
+        <h4>Découvrez nos contenus éducatifs</h4>
+        <a
+          href="https://www.myschooltoon.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-toon full-width"
+        >
+          <img 
+            src="/images/schooltoon.png"
+            alt="SchoolToon"
+          />
+        </a>
+      </div>
+
       <div className="guest-profile">
         <div className="guest-header">
-          <User className="icon-lg" />
           <h4>Rejoignez-nous</h4>
-          <p>Connectez-vous pour accéder à toutes les fonctionnalités</p>
         </div>
         <div className="guest-actions">
           <Link to="/login" className="btn-primary full-width">
@@ -219,21 +290,34 @@ const UserProfileSidebar = () => {
           </Link>
         </div>
       </div>
+
+      {/* Fil d'actualité Facebook */}
+      <div className="profile-facebook-section">
+        <h4 className="facebook-section-title">Suivez-nous sur Facebook</h4>
+        <div className="facebook-feed-container">
+          <div 
+            className="fb-page" 
+            data-href="https://www.facebook.com/alloecole225" 
+            data-tabs="timeline"
+            data-width=""
+            data-height="400"
+            data-small-header="false"
+            data-adapt-container-width="true"
+            data-hide-cover="false"
+            data-show-facepile="true"
+          >
+            <blockquote 
+              cite="https://www.facebook.com/alloecole225" 
+              className="fb-xfbml-parse-ignore"
+            >
+              <a href="https://www.facebook.com/alloecole225" target="_blank" rel="noopener noreferrer">
+                Allo Ecole
+              </a>
+            </blockquote>
+          </div>
+        </div>
+      </div>
     </div>
-      <div className="guest-header">
-          <h4>Découvrez nos contenus éducatifs</h4>
-    </div>
-      <a
-        href="https://www.myschooltoon.com/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="btn-toon full-width"
-      >
-      <img 
-          src={'/images/schooltoon.png'}
-              alt="Profil"
-        />
-      </a>
     </>
   );
 };

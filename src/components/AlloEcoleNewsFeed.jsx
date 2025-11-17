@@ -501,31 +501,6 @@ const AlloEcoleNewsFeed = () => {
   );
 
   const RightSidebar = () => {
-    // Initialiser le SDK Facebook
-    useEffect(() => {
-      // Charger le SDK Facebook
-      if (window.FB) {
-        window.FB.XFBML.parse();
-      } else {
-        window.fbAsyncInit = function() {
-          window.FB.init({
-            xfbml: true,
-            version: 'v18.0'
-          });
-        };
-  
-        // Charger le script Facebook SDK
-        (function(d, s, id) {
-          var js, fjs = d.getElementsByTagName(s)[0];
-          if (d.getElementById(id)) return;
-          js = d.createElement(s);
-          js.id = id;
-          js.src = "https://connect.facebook.net/fr_FR/sdk.js";
-          fjs.parentNode.insertBefore(js, fjs);
-        }(document, 'script', 'facebook-jssdk'));
-      }
-    }, []);
-  
     return (
       <div className="sidebar-right-content">
         <Banner
@@ -550,31 +525,6 @@ const AlloEcoleNewsFeed = () => {
             </video>
             <div className="video-description">
               <h6 className="sidebar-webTV-title">Découvrez notre WebTV</h6>
-            </div>
-          </div>
-        </div>
-  
-        {/* Section Fil d'actualité Facebook */}
-        <div className="sidebar-section">
-          <h3 className="sidebar-title">Suivez-nous sur Facebook</h3>
-          <div className="facebook-feed-container">
-            <div 
-              className="fb-page" 
-              data-href="https://www.facebook.com/alloecole225" 
-              data-tabs="timeline"
-              data-width="340"
-              data-height="500"
-              data-small-header="false"
-              data-adapt-container-width="true"
-              data-hide-cover="false"
-              data-show-facepile="true"
-            >
-              <blockquote 
-                cite="https://www.facebook.com/alloecole225" 
-                className="fb-xfbml-parse-ignore"
-              >
-                <a href="https://www.facebook.com/alloecole225">Allo Ecole</a>
-              </blockquote>
             </div>
           </div>
         </div>
