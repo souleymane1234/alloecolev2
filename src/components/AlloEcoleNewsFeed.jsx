@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Calendar, Clock, MapPin, ArrowRight, ChevronRight, Eye, User, BookOpen, GraduationCap, Settings } from 'lucide-react';
 import ContactAlloEcoleService from './ContactAlloEcoleService';
@@ -19,6 +19,7 @@ const AlloEcoleNewsFeed = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [user, setUser] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const observerTarget = useRef(null);
 
   // Détection de la taille d'écran
   useEffect(() => {
@@ -42,6 +43,8 @@ const AlloEcoleNewsFeed = () => {
 
   // Fonction pour récupérer une page spécifique du feed
   const fetchFeedPage = async ({ pageParam = 1 }) => {
+    console.log(`📥 Chargement page ${pageParam}...`);
+    
     const response = await fetch(`https://alloecoleapi-dev.up.railway.app/api/v1/students/feed?page=${pageParam}`);
     
     if (!response.ok) throw new Error(`Erreur ${response.status}`);
@@ -103,17 +106,43 @@ const AlloEcoleNewsFeed = () => {
     isLoading,
     isError,
     error,
+    isFetching,
   } = useInfiniteQuery({
     queryKey: ['feed-infinite'],
     queryFn: fetchFeedPage,
     getNextPageParam: (lastPage) => lastPage.nextPage,
+    initialPageParam: 1,
     staleTime: 10 * 60 * 1000,
     cacheTime: 20 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 1,
   });
 
-  // Fonction pour charger plus d'éléments quand on scroll
+  // Observer pour le chargement infini
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          console.log('🎯 Observer déclenche le chargement...');
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  // Fonction pour charger plus d'éléments quand on scroll (fallback)
   const handleScroll = useCallback(() => {
     if (isFetchingNextPage || !hasNextPage) return;
 
@@ -121,13 +150,12 @@ const AlloEcoleNewsFeed = () => {
     const windowHeight = window.innerHeight;
     const documentHeight = document.documentElement.scrollHeight;
 
-    // Charger plus quand on est à 100px du bas
     if (scrollTop + windowHeight >= documentHeight - 100) {
       fetchNextPage();
     }
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  // Ajouter l'écouteur de scroll
+  // Ajouter l'écouteur de scroll (fallback si IntersectionObserver ne fonctionne pas)
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -615,8 +643,15 @@ const AlloEcoleNewsFeed = () => {
   return (
     <>
       {loadingProfile && (
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <p>Chargement du profil...</p>
+        <div className="school-detail-loading">
+          <div className="loading-spinner">
+            <div className="spinner-container">
+              <div className="spinner-ring"></div>
+              <div className="spinner-ring"></div>
+              <div className="spinner-ring"></div>
+            </div>
+            <div className="loading-text">Chargement des détails...</div>
+          </div>
         </div>
       )}
       
@@ -634,8 +669,15 @@ const AlloEcoleNewsFeed = () => {
                 <div className="grid">
                   {/* Chargement initial */}
                   {isLoading && (
-                    <div style={{ textAlign: 'center', padding: '2rem', gridColumn: '1 / -1' }}>
-                      <p>Chargement des actualités...</p>
+                    <div className="school-detail-loading">
+                      <div className="loading-spinner">
+                        <div className="spinner-container">
+                          <div className="spinner-ring"></div>
+                          <div className="spinner-ring"></div>
+                          <div className="spinner-ring"></div>
+                        </div>
+                        <div className="loading-text">Chargement des actualités...</div>
+                      </div>
                     </div>
                   )}
 
@@ -679,18 +721,35 @@ const AlloEcoleNewsFeed = () => {
                     return null;
                   })}
 
-                  {/* Données statiques mélangées */}
-                  {/* {staticData.slice(0, 4).map((item, index) => {
-                    if (item.type === 'bourse') return renderBourseCard(item);
-                    if (item.type === 'ecole') return renderEcoleCard(item);
-                    if (item.type === 'permutation') return renderPermutationCard(item);
-                    return null;
-                  })} */}
+                  {/* Cible pour l'observation du scroll */}
+                  {hasNextPage && (
+                    <div 
+                      ref={observerTarget}
+                      style={{ 
+                        height: '20px', 
+                        gridColumn: '1 / -1',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center'
+                      }}
+                    >
+                      {isFetchingNextPage && (
+                        <div className="loading-text">Chargement...</div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Indicateur de chargement pour les pages suivantes */}
                   {isFetchingNextPage && (
                     <div style={{ textAlign: 'center', padding: '2rem', gridColumn: '1 / -1' }}>
-                      <p>Chargement des actualités suivantes...</p>
+                      <div className="loading-spinner">
+                        <div className="spinner-container">
+                          <div className="spinner-ring"></div>
+                          <div className="spinner-ring"></div>
+                          <div className="spinner-ring"></div>
+                        </div>
+                        <div className="loading-text">Chargement des actualités suivantes...</div>
+                      </div>
                     </div>
                   )}
 
@@ -704,6 +763,18 @@ const AlloEcoleNewsFeed = () => {
                       fontStyle: 'italic'
                     }}>
                       <p>Vous avez vu toutes les actualités</p>
+                    </div>
+                  )}
+
+                  {/* Message si pas de données */}
+                  {!isLoading && allFeedData.length === 0 && (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      padding: '3rem', 
+                      gridColumn: '1 / -1',
+                      color: '#666'
+                    }}>
+                      <p>Aucune actualité disponible pour le moment.</p>
                     </div>
                   )}
                 </div>
