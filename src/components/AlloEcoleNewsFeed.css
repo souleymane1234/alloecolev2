@@ -340,7 +340,7 @@
 
         /* Styles pour la sidebar droite */
         .sidebar-right-content {
-          display: flex;
+          /* display: flex; */
           flex-direction: column;
           gap: 2rem;
         }

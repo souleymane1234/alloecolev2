@@ -12,6 +12,9 @@ import Schools from './pages/Schools.jsx'
 import SchoolDetail from './pages/SchoolDetail.jsx'
 import AuthCallback from './pages/AuthCallback.jsx'
 import VideoDetail from './pages/VideoDetail.jsx'
+import JobSheets from './pages/JobSheets.jsx'
+import JobSheetDetail from './pages/JobSheetDetail.jsx'
+import MyOrientationJobs from './pages/MyOrientationJobs.jsx'
 
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
@@ -46,6 +49,9 @@ function App() {
             <Route path="auth/callback" element={<AuthCallback />} />
             <Route path="webtv/video/:id" element={<VideoDetail />} />
             <Route path="questionnaires-interactifs" element={<OrientationSimulator />} />
+            <Route path="fiches-metiers" element={<JobSheets />} />
+            <Route path="fiches-metiers/:id" element={<JobSheetDetail />} />
+            <Route path="mes-metiers-orientation" element={<MyOrientationJobs />} />
             {/* Ajoute d'autres routes ici si nécessaire */}
             <Route path="*" element={<div>Page Not Found</div>} />
           </Route>

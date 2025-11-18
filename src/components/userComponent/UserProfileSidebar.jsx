@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { User, Settings, LogIn, LogOut } from 'lucide-react';
+import { User, Settings, LogIn, LogOut, BookOpen, Code, X } from 'lucide-react';
 import tokenManager from '../../helper/tokenManager';
 import './UserProfileSidebar.css';
 
@@ -10,6 +11,7 @@ const UserProfileSidebar = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showSyntaxModal, setShowSyntaxModal] = useState(false);
 
   /**
    * 📦 Charger le profil utilisateur avec auto-refresh
@@ -158,6 +160,295 @@ const UserProfileSidebar = () => {
     );
   }
 
+  const syntaxSections = [
+    {
+      title: 'Inscription lycées et collèges',
+      intro: 'Paiement des frais de préinscription et d’inscription dans les lycées/ collèges.',
+      operators: [
+        {
+          operator: 'MOOV',
+          code: '*155*7*6#',
+          summary: 'Paiement direct via MOOV Money.',
+          steps: ['Composer *155*7*6#', 'Suivre les instructions à l’écran', 'Valider le paiement'],
+        },
+      ],
+    }, 
+    {
+      title: 'Préinscription bacheliers',
+      intro:
+        'Permet aux nouveaux bacheliers de se préinscrire dans les universités et grandes écoles.',
+      operators: [
+        {
+          operator: 'MOOV',
+          code: '*155*7*3*1#',
+          summary: 'Parcours rapide MOOV.',
+          steps: ['Composer *155*7*3*1#', 'Sélectionner le menu indiqué', 'Confirmer'],
+        },
+        {
+          operator: 'MTN',
+          code: '*133*6*6#',
+          summary: 'Processus guidé via MTN Mobile Money.',
+          steps: ['Composer *133#', 'Option 6', 'Option 3', 'Option 2', 'Renseigner le matricule'],
+        },
+        {
+          operator: 'ORANGE',
+          code: '#144*13*2#',
+          summary: 'Paiement express via Orange Money.',
+          steps: ['Composer #144*13*2#', 'Suivre les étapes du menu', 'Valider'],
+        },
+      ],
+    },
+    {
+      title: 'Frais d’examen & soutenance BTS',
+      intro: 'Réglez vos frais d’examen ou de soutenance du BTS via mobile money.',
+      operators: [
+        {
+          operator: 'MOOV',
+          code: '*155*7# → option 5',
+          summary: 'Menu Écoles & concours (option 7) puis BTS.',
+          steps: ['Composer *155#', 'Option 7 : Écoles & concours', 'Option 5 : BTS', 'Saisir le matricule'],
+        },
+        {
+          operator: 'MTN',
+          code: '*133#',
+          summary: 'Inscription : options 6 puis 3. Soutenance : 6 puis 2.',
+          steps: ['Composer *133#', 'Choisir 6', 'Choisir 3 (inscription) ou 2 (soutenance)', 'Confirmer le paiement'],
+        },
+        {
+          operator: 'ORANGE',
+          code: '#144*13*3*1#',
+          summary: 'Parcours multi-étapes Orange Money.',
+          steps: ['Composer #144#', 'Sélectionner 1 → 3 → 3 → 1', 'Valider le paiement'],
+        },
+        {
+          operator: 'MTN (Accès direct)',
+          code: '*133*6*3*1#',
+          summary: 'Raccourci vers la catégorie BTS.',
+          steps: ['Composer *133#', 'Entrer 6 puis 3 puis 1', 'Choisir la catégorie correspondante'],
+        },
+        {
+          operator: 'ORANGE (Inscription & vérification)',
+          code: '#144*13*11# / #144*13*12#',
+          summary: 'Paiement et vérification depuis Orange Money.',
+          steps: ['Composer le code souhaité', 'Suivre les étapes', 'Confirmer'],
+        },
+      ],
+    },
+    {
+      title: 'Universités & grandes écoles',
+      intro: 'Inscriptions et paiements pour les établissements d’enseignement supérieur.',
+      operators: [
+        {
+          operator: 'MOOV',
+          code: '*155*7*3*2#',
+          summary: 'Accès direct aux universités publiques.',
+          steps: ['Composer *155*7*3*2#', 'Choisir l’établissement', 'Valider'],
+        },
+        {
+          operator: 'MTN',
+          code: '*133# → 6 → 3 → 2',
+          summary: 'Chemin Mobile Money pour universités / grandes écoles.',
+          steps: ['Composer *133#', 'Option 6', 'Option 3', 'Option 2', 'Renseigner le matricule'],
+        },
+        {
+          operator: 'ORANGE',
+          code: '#144*4*2*4#',
+          summary: 'Parcours Orange Money en trois étapes.',
+          steps: ['Composer #144#', 'Option 4', 'Option 2', 'Option 4', 'Confirmer'],
+        },
+      ],
+    },
+    {
+      title: 'Préinscription INP-HB',
+      intro: 'Paiement des frais de préinscription au sein de l’INP-HB.',
+      operators: [
+        {
+          operator: 'MOOV',
+          code: '*155*7# → option 3',
+          summary: 'Menu INP-HB.',
+          steps: ['Composer *155*7#', 'Sélectionner l’option 3', 'Valider'],
+        },
+        {
+          operator: 'MTN',
+          code: '*133# → 6 → 3 → 2 → 3',
+          summary: 'Processus complet via MTN.',
+          steps: ['Composer *133#', 'Option 6', 'Option 3', 'Option 2', 'Option 3', 'Renseigner le matricule'],
+        },
+        {
+          operator: 'ORANGE',
+          code: '#144*13*2*2#',
+          summary: 'Code direct Orange Money.',
+          steps: ['Composer #144*13*2*2#', 'Suivre les instructions', 'Valider'],
+        },
+      ],
+    },
+    {
+      title: 'Concours CAFOP',
+      intro: 'Paiement des frais de visite médicale pour le concours CAFOP.',
+      operators: [
+        {
+          operator: 'MOOV',
+          code: '*155*7*8#',
+          summary: 'Accès direct MOOV Money.',
+          steps: ['Composer *155*7*8#', 'Suivre le menu', 'Confirmer'],
+        },
+        {
+          operator: 'MTN',
+          code: '*133# → 6 → 3 → 2 → 4',
+          summary: 'Parcours multi-étapes.',
+          steps: ['Composer *133#', 'Option 6', 'Option 3', 'Option 2', 'Option 4'],
+        },
+        {
+          operator: 'ORANGE',
+          code: '#144*4*2*3*2#',
+          summary: 'Syntaxe directe Orange Money.',
+          steps: ['Composer #144*4*2*3*2#', 'Valider'],
+        },
+      ],
+    },
+    {
+      title: 'Concours IPNETP',
+      intro: 'Concours directs et promotions internes du domaine technique et professionnel.',
+      operators: [
+        {
+          operator: 'Site officiel',
+          code: 'www.ipnetp.ci',
+          summary: 'Consulter toutes les filières et concours.',
+          steps: ['Visiter www.ipnetp.ci', 'Choisir le concours', 'Suivre la procédure détaillée'],
+        },
+      ],
+    },
+    {
+      title: 'Concours ENA',
+      intro: 'Concours directs et professionnels de l’École Nationale d’Administration.',
+      operators: [
+        {
+          operator: 'Processus en ligne',
+          code: 'www.ena.ci',
+          summary: 'Inscription + paiement + rendez-vous via l’espace candidat.',
+          steps: [
+            'Remplir le formulaire sur www.ena.ci',
+            'Payer via Mobile Money',
+            'Prendre rendez-vous (visite / dépôt)',
+            'Imprimer les reçus',
+          ],
+        },
+        {
+          operator: 'MOOV',
+          code: '*155*7*4#',
+          summary: 'Paiement Mobile Money.',
+          steps: ['Composer *155*7*4#', 'Sélectionner le concours', 'Valider'],
+        },
+      ],
+    },
+    {
+      title: 'Concours INFAS',
+      intro: 'Paiement des frais INFAS (visite médicale, inscription).',
+      operators: [
+        {
+          operator: 'MOOV',
+          code: '*155*7*2#',
+          summary: 'Paiement direct.',
+          steps: ['Composer *155*7*2#', 'Suivre les instructions'],
+        },
+        {
+          operator: 'Plateforme en ligne',
+          code: 'www.infas.ci',
+          summary: 'Préinscription + paiement Orange/ Moov via le site.',
+          steps: ['Se rendre sur www.infas.ci', 'Choisir le concours et la date', 'Payer en ligne'],
+        },
+      ],
+    },
+  ];
+
+  const QuickLinksPanel = () => (
+    <div className="quick-links-panel">
+      <a
+        href="https://www.myschooltoon.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="quick-link-card"
+      >
+        <div className="quick-link-icon">
+          <BookOpen size={24} />
+        </div>
+        <span className="quick-link-label">Postuler à une bourse</span>
+      </a>
+
+      <button
+        type="button"
+        className="quick-link-card"
+        onClick={() => setShowSyntaxModal(true)}
+      >
+        <div className="quick-link-icon secondary">
+          <Code size={24} />
+        </div>
+        <span className="quick-link-label">Syntaxe opérateur</span>
+      </button>
+    </div>
+  );
+
+  const SyntaxModal = () =>
+    createPortal(
+      <div className="syntax-modal-overlay">
+        <div className="syntax-modal">
+        <button
+          className="syntax-modal-close"
+          onClick={() => setShowSyntaxModal(false)}
+          aria-label="Fermer"
+        >
+          <X size={20} />
+        </button>
+          <div className="syntax-modal-header">
+            <h3>Syntaxes opérateurs</h3>
+            <p className="syntax-modal-subtitle">
+              Composez ces syntaxes sur votre téléphone pour régler vos frais d’inscription et de concours.
+            </p>
+          </div>
+          <div className="syntax-scrollable">
+            {syntaxSections.map((section, index) => (
+              <div className="syntax-section" key={section.title}>
+                <div className="syntax-section-header">
+                  <span className="syntax-section-index">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <div>
+                    <h4>{section.title}</h4>
+                    <p>{section.intro}</p>
+                  </div>
+                </div>
+                <div className="syntax-operators">
+                  {section.operators.map((op, opIndex) => (
+                    <div className="syntax-operator-card" key={`${op.operator}-${opIndex}`}>
+                      <div className="syntax-operator-header">
+                        <span className="syntax-operator-name">{op.operator}</span>
+                        <code className="syntax-operator-code">{op.code}</code>
+                      </div>
+                      {op.summary && <p className="syntax-operator-summary">{op.summary}</p>}
+                      {op.steps && op.steps.length > 0 && (
+                        <ul className="syntax-steps">
+                          {op.steps.map((step, stepIndex) => (
+                            <li key={`${op.operator}-${stepIndex}`}>{step}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            className="syntax-modal-action"
+            onClick={() => setShowSyntaxModal(false)}
+          >
+            Compris !
+          </button>
+        </div>
+      </div>,
+      document.body
+    );
+
   // ✅ Si utilisateur connecté
   if (user) {
     const hasImage = user?.profileImage || user?.photo || user?.avatar;
@@ -165,20 +456,7 @@ const UserProfileSidebar = () => {
     return (
       <>
       <div className="profile-sidebar">
-        <div className="schooltoon-cta">
-          <h4>Découvrez nos contenus éducatifs</h4>
-          <a
-            href="https://www.myschooltoon.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-toon full-width"
-          >
-            <img 
-              src="/images/schooltoon.png"
-              alt="SchoolToon"
-            />
-          </a>
-        </div>
+        <QuickLinksPanel />
 
         <div className="profile-header">
           <div className="profile-avatar">
@@ -257,6 +535,7 @@ const UserProfileSidebar = () => {
           </div>
         </div>
       </div>
+        {showSyntaxModal && <SyntaxModal />}
       </>
     );
   }
@@ -265,20 +544,7 @@ const UserProfileSidebar = () => {
   return (
     <>
     <div className="profile-sidebar">
-      <div className="schooltoon-cta">
-        <h4>Découvrez nos contenus éducatifs</h4>
-        <a
-          href="https://www.myschooltoon.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-toon full-width"
-        >
-          <img 
-            src="/images/schooltoon.png"
-            alt="SchoolToon"
-          />
-        </a>
-      </div>
+      <QuickLinksPanel />
 
       <div className="guest-profile">
         <div className="guest-header">
@@ -318,6 +584,7 @@ const UserProfileSidebar = () => {
         </div>
       </div>
     </div>
+      {showSyntaxModal && <SyntaxModal />}
     </>
   );
 };

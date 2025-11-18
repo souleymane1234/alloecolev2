@@ -340,23 +340,228 @@
   min-height: 300px;
 }
 
-.schooltoon-cta {
-  padding: 1rem;
+.quick-links-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  padding: 1.25rem 1rem;
   border-bottom: 1px solid #f3f4f6;
+}
+
+.quick-link-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.1rem 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #edf0f5;
+  border-radius: 1.25rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
   text-align: center;
 }
 
-.schooltoon-cta h4 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 0.75rem;
+.quick-link-card:hover {
+  border-color: #d0dbff;
+  background: #fffefd;
+  transform: translateY(-2px);
 }
 
-.schooltoon-cta img {
+.quick-link-card:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+}
+
+.quick-link-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+}
+
+.quick-link-icon.secondary {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.quick-link-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.syntax-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20000;
+  padding: 1.5rem;
+}
+
+.syntax-modal {
+  background: #ffffff;
+  border-radius: 1.25rem;
+  padding: 2rem;
+  max-width: 720px;
   width: 100%;
-  border-radius: 10px;
-  object-fit: cover;
+  max-height: 90vh;
+  position: relative;
+  box-shadow: 0 35px 80px rgba(15, 23, 42, 0.35);
+  display: flex;
+  flex-direction: column;
+}
+
+.syntax-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.syntax-modal-close:hover {
+  color: #111827;
+}
+
+.syntax-modal-header h3 {
+  margin: 0 0 0.35rem 0;
+  font-size: 1.65rem;
+  color: #111827;
+}
+
+.syntax-modal-subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.syntax-scrollable {
+  margin-top: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.75rem;
+}
+
+.syntax-section {
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: #f9fafb;
+  margin-bottom: 1rem;
+}
+
+.syntax-section-header {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.syntax-section-index {
+  width: 36px;
+  height: 36px;
+  border-radius: 0.85rem;
+  background: #1f4ed8;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.syntax-section-header h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #111827;
+}
+
+.syntax-section-header p {
+  margin: 0.15rem 0 0 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.syntax-operators {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.syntax-operator-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 0.9rem;
+}
+
+.syntax-operator-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+  gap: 0.5rem;
+}
+
+.syntax-operator-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.syntax-operator-code {
+  font-weight: 700;
+  color: #f97316;
+  font-size: 0.85rem;
+  background: #fff7ed;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.5rem;
+}
+
+.syntax-operator-summary {
+  margin: 0 0 0.5rem 0;
+  color: #4b5563;
+  font-size: 0.85rem;
+}
+
+.syntax-steps {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #4b5563;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.syntax-steps li {
+  margin-bottom: 0.35rem;
+}
+
+.syntax-modal-action {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.85rem 1.5rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #f97316, #fb923c);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.syntax-modal-action:hover {
+  transform: translateY(-2px);
 }
 
 /* Responsive */
@@ -380,6 +585,19 @@
 
   .guest-profile {
     padding: 1rem;
+  }
+
+  .quick-links-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .schooltoon-cta {
+    padding: 1rem 0.75rem;
+  }
+
+  .schooltoon-cta h4 {
+    font-size: 0.9rem;
+    margin-bottom: 0.875rem;
   }
 
   .guest-icon {
