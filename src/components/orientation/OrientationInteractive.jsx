@@ -13,6 +13,9 @@ const OrientationInteractive = () => {
   const [sessionLoading, setSessionLoading] = useState(null);
   const [sessionState, setSessionState] = useState(null);
   const [answers, setAnswers] = useState({});
+  const [latestProfile, setLatestProfile] = useState(null);
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [userOpenedQuestionnaire, setUserOpenedQuestionnaire] = useState(false);
 
   const [actionError, setActionError] = useState('');
   const [actionMessage, setActionMessage] = useState('');
@@ -21,7 +24,12 @@ const OrientationInteractive = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeBlockIndex, setActiveBlockIndex] = useState(0);
 
-  const profile = sessionState?.profile || null;
+  const profile = sessionState?.profile || latestProfile || null;
+  const recommendedCareers = profile?.aiAnalysis?.recommendedCareers || [];
+  const topCareer = recommendedCareers[0] || null;
+  const strengths = profile?.aiAnalysis?.strengths || [];
+  const weaknesses = profile?.aiAnalysis?.weaknesses || [];
+  const generalRecommendations = profile?.aiAnalysis?.generalRecommendations || [];
   const saveTimeoutRef = useRef(null);
 
   const notifyAuthChanges = useCallback(() => {
@@ -93,9 +101,28 @@ const OrientationInteractive = () => {
     }
   }, [apiCall, isAuthenticated]);
 
+  const fetchLatestProfile = useCallback(async () => {
+    if (!isAuthenticated) {
+      setLatestProfile(null);
+      return;
+    }
+
+    try {
+      const json = await apiCall('/students/orientation/profile');
+      const data = json?.data ?? json;
+      setLatestProfile(data || null);
+    } catch (error) {
+      console.error('Erreur chargement profil orientation:', error);
+    }
+  }, [apiCall, isAuthenticated]);
+
   useEffect(() => {
     fetchQuestionnaires();
   }, [fetchQuestionnaires]);
+
+  useEffect(() => {
+    fetchLatestProfile();
+  }, [fetchLatestProfile]);
 
   const normalizeResponses = (payload) => {
     if (!payload) return {};
@@ -113,6 +140,9 @@ const OrientationInteractive = () => {
 
   const handleStartSession = async (questionnaireId, resumeLast = true) => {
     if (!questionnaireId || sessionLoading === questionnaireId) return;
+
+    setShowQuestionnaire(true);
+    setUserOpenedQuestionnaire(true);
     
     setSessionLoading(questionnaireId);
     setActionError('');
@@ -207,15 +237,31 @@ const OrientationInteractive = () => {
         }
       );
       const data = json?.data ?? json;
-      setSessionState((prev) => ({
-        ...prev,
-        progress: data.progress || prev?.progress,
-        profile: data.profile || prev?.profile || null,
-      }));
+      setSessionState((prev) => {
+        if (finalize) {
+          return null;
+        }
+        return {
+          ...prev,
+          progress: data.progress || prev?.progress,
+          profile: data.profile || prev?.profile || null,
+        };
+      });
+      if (data.profile) {
+        setLatestProfile(data.profile);
+      } else if (finalize) {
+        await fetchLatestProfile();
+      }
       if (data.profileGenerated || data.profile) {
         setActionMessage('Profil généré avec succès !');
       } else {
         setActionMessage(finalize ? 'Questionnaire finalisé.' : 'Progression sauvegardée.');
+      }
+      if (finalize) {
+        setAnswers({});
+        setActiveBlockIndex(0);
+        setUserOpenedQuestionnaire(false);
+        setShowQuestionnaire(false);
       }
     } catch (error) {
       console.error('Erreur envoi réponses:', error);
@@ -232,12 +278,15 @@ const OrientationInteractive = () => {
   };
 
   const handleResetSession = () => {
+    const hadProfile = Boolean(sessionState?.profile || latestProfile);
     setSessionState(null);
     setAnswers({});
     setActionError('');
     setActionMessage('');
     setActiveBlockIndex(0);
     setIsSubmitting(false);
+    setUserOpenedQuestionnaire(false);
+    setShowQuestionnaire(!hadProfile);
   };
 
   const renderOption = (question, option) => {
@@ -284,6 +333,43 @@ const OrientationInteractive = () => {
       return Array.isArray(selected) && selected.length > 0;
     }) || false;
   }, [activeBlock, answers]);
+
+  const totalQuestionsInSession = useMemo(() => {
+    if (sessionState?.progress?.totalQuestions) {
+      return sessionState.progress.totalQuestions;
+    }
+    return currentBlocks.reduce(
+      (total, block) => total + (block.questions?.length || 0),
+      0
+    );
+  }, [sessionState?.progress?.totalQuestions, currentBlocks]);
+
+  const answeredQuestionsCount = useMemo(() => {
+    if (sessionState?.progress?.answeredQuestions) {
+      return sessionState.progress.answeredQuestions;
+    }
+    return answeredCount;
+  }, [sessionState?.progress?.answeredQuestions, answeredCount]);
+
+  const canFinalize =
+    totalQuestionsInSession > 0 &&
+    answeredQuestionsCount >= totalQuestionsInSession;
+
+  useEffect(() => {
+    if (sessionState) {
+      setShowQuestionnaire(true);
+      return;
+    }
+
+    if (!profile) {
+      setShowQuestionnaire(true);
+      return;
+    }
+
+    if (profile && !userOpenedQuestionnaire) {
+      setShowQuestionnaire(false);
+    }
+  }, [sessionState, profile, userOpenedQuestionnaire]);
 
   const heroSection = (
     <div className="orientation-hero">
@@ -359,99 +445,102 @@ const OrientationInteractive = () => {
       {heroSection}
 
       <div className="orientation-content container">
-        <div className="orientation-section">
-          <div className="section-header">
-            <div>
-              <h2>Questionnaires disponibles</h2>
-              <p>Chaque parcours explore vos motivations, compétences et ambitions.</p>
-            </div>
-            <button 
-              className="btn-sm-outline" 
-              onClick={fetchQuestionnaires}
-              disabled={questionnairesLoading}
-            >
-              <i className={`ph-arrow-clockwise ${questionnairesLoading ? 'ph-spin' : ''}`}></i>
-              Actualiser
-            </button>
-          </div>
-
-          {questionnairesLoading && (
-            <div className="orientation-empty">
-              <i className="ph-spinner-gap ph-spin"></i>
-              <p>Chargement des questionnaires...</p>
-            </div>
-          )}
-
-          {questionnairesError && (
-            <div className="orientation-empty error">
-              <i className="ph-warning-circle"></i>
-              <p>{questionnairesError}</p>
-            </div>
-          )}
-
-          {!questionnairesLoading && !questionnairesError && questionnaires.length === 0 && (
-            <div className="orientation-empty">
-              <i className="ph-list"></i>
-              <p>Aucun questionnaire n'est disponible pour le moment.</p>
-            </div>
-          )}
-
-          <div className="questionnaire-grid">
-            {questionnaires.map((item) => (
-              <div key={item.id} className="questionnaire-card">
-                <div className="card-header">
-                  <div>
-                    <p className="card-badge">Parcours {item.totalBlocks || 0} blocs</p>
-                    <h3>{item.title}</h3>
-                    <p>{item.description}</p>
-                  </div>
-                </div>
-                <div className="card-metrics">
-                  <div>
-                    <span>{item.totalQuestions}</span>
-                    <small>Questions</small>
-                  </div>
-                  <div>
-                    <span>{item.totalBlocks}</span>
-                    <small>Thématiques</small>
-                  </div>
-                  <div>
-                    <span>{item.active ? 'Actif' : 'Inactif'}</span>
-                    <small>Statut</small>
-                  </div>
-                </div>
-                <div className="card-actions">
-                  <button
-                    className="btn-orange"
-                    disabled={!item.active || sessionLoading === item.id}
-                    onClick={() => handleStartSession(item.id, true)}
-                  >
-                    {sessionLoading === item.id ? (
-                      <>
-                        <i className="ph-spinner-gap ph-spin"></i>
-                        Chargement...
-                      </>
-                    ) : (
-                      <>
-                        <i className="ph-play"></i>
-                        {sessionState?.questionnaire?.id === item.id ? 'Reprendre' : 'Commencer'}
-                      </>
-                    )}
-                  </button>
-                  <button
-                    className="btn-sm-secondary"
-                    disabled={sessionLoading === item.id}
-                    onClick={() => handleStartSession(item.id, false)}
-                  >
-                    <i className="ph-arrows-counter-clockwise"></i>
-                    Recommencer
-                  </button>
-                </div>
+        {!sessionState && showQuestionnaire && (
+          <div className="orientation-section">
+            <div className="section-header">
+              <div>
+                <h2>Questionnaires disponibles</h2>
+                <p>Chaque parcours explore vos motivations, compétences et ambitions.</p>
               </div>
-            ))}
-          </div>
-        </div>
+              <button 
+                className="btn-sm-outline" 
+                onClick={fetchQuestionnaires}
+                disabled={questionnairesLoading}
+              >
+                <i className={`ph-arrow-clockwise ${questionnairesLoading ? 'ph-spin' : ''}`}></i>
+                Actualiser
+              </button>
+            </div>
 
+            {questionnairesLoading && (
+              <div className="orientation-empty">
+                <i className="ph-spinner-gap ph-spin"></i>
+                <p>Chargement des questionnaires...</p>
+              </div>
+            )}
+
+            {questionnairesError && (
+              <div className="orientation-empty error">
+                <i className="ph-warning-circle"></i>
+                <p>{questionnairesError}</p>
+              </div>
+            )}
+
+            {!questionnairesLoading && !questionnairesError && questionnaires.length === 0 && (
+              <div className="orientation-empty">
+                <i className="ph-list"></i>
+                <p>Aucun questionnaire n'est disponible pour le moment.</p>
+              </div>
+            )}
+
+            <div className="questionnaire-grid">
+              {questionnaires.map((item) => (
+                <div key={item.id} className="questionnaire-card">
+                  <div className="card-header">
+                    <div>
+                      <p className="card-badge">Parcours {item.totalBlocks || 0} blocs</p>
+                      <h3>{item.title}</h3>
+                      <p>{item.description}</p>
+                    </div>
+                  </div>
+                  <div className="card-metrics">
+                    <div>
+                      <span>{item.totalQuestions}</span>
+                      <small>Questions</small>
+                    </div>
+                    <div>
+                      <span>{item.totalBlocks}</span>
+                      <small>Thématiques</small>
+                    </div>
+                    <div>
+                      <span>{item.active ? 'Actif' : 'Inactif'}</span>
+                      <small>Statut</small>
+                    </div>
+                  </div>
+                  <div className="card-actions">
+                    <button
+                      className="btn-orange"
+                      disabled={!item.active || sessionLoading === item.id}
+                      onClick={() => handleStartSession(item.id, true)}
+                    >
+                      {sessionLoading === item.id ? (
+                        <>
+                          <i className="ph-spinner-gap ph-spin"></i>
+                          Chargement...
+                        </>
+                      ) : (
+                        <>
+                          <i className="ph-play"></i>
+                          {sessionState?.questionnaire?.id === item.id ? 'Reprendre' : 'Commencer'}
+                        </>
+                      )}
+                    </button>
+                    <button
+                      className="btn-sm-secondary"
+                      disabled={sessionLoading === item.id}
+                      onClick={() => handleStartSession(item.id, false)}
+                    >
+                      <i className="ph-arrows-counter-clockwise"></i>
+                      Recommencer
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(showQuestionnaire || sessionState) && (
         <div className="orientation-section">
           <div className="section-header">
             <div>
@@ -477,15 +566,17 @@ const OrientationInteractive = () => {
           )}
 
           {sessionState && (
-            <div className="session-layout">
-              <div className="session-main">
-                <div className="session-progress">
-                  <div>
-                    <p className="label">Session</p>
-                    <h4>{sessionState.questionnaire.title}</h4>
-                    {sessionState.resumed && (
-                      <span className="resume-badge">Session reprise automatiquement</span>
-                    )}
+            <div className="session-dashboard">
+              <div className="session-header-grid">
+                <article className="session-card session-progress-card">
+                  <div className="session-card-header">
+                    <div>
+                      <p className="label">Session active</p>
+                      <h4>{sessionState.questionnaire.title}</h4>
+                      {sessionState.resumed && (
+                        <span className="resume-badge">Session reprise automatiquement</span>
+                      )}
+                    </div>
                   </div>
                   <div className="progress-info">
                     <div className="progress-bar">
@@ -495,239 +586,383 @@ const OrientationInteractive = () => {
                         }}
                       ></span>
                     </div>
-                    <p>
-                      {sessionState?.progress?.answeredQuestions || 0}/
-                      {sessionState?.progress?.totalQuestions || 0} questions répondues
-                    </p>
+                    <div className="progress-stats">
+                      <div>
+                        <strong>{sessionState?.progress?.completionRate || 0}%</strong>
+                        <small>Taux de complétion</small>
+                      </div>
+                      <div>
+                        <strong>
+                          {sessionState?.progress?.answeredQuestions || 0}/
+                          {sessionState?.progress?.totalQuestions || 0}
+                        </strong>
+                        <small>Questions répondues</small>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </article>
 
-                <div className="block-tabs">
-                  {currentBlocks.map((block, index) => (
-                    <button
-                      key={block.id}
-                      className={`block-tab ${activeBlockIndex === index ? 'active' : ''}`}
-                      onClick={() => setActiveBlockIndex(index)}
-                    >
-                      <small>Bloc {block.order}</small>
-                      <strong>{block.title}</strong>
-                    </button>
-                  ))}
+                <article className="session-card session-summary-card">
+                  <div className="session-card-header">
+                    <div>
+                      <p className="label">Résumé</p>
+                      <h4>Informations clés</h4>
+                    </div>
+                  </div>
+                  <ul className="session-summary-list">
+                    {sessionState.sessionId && (
+                      <li>
+                        <span>ID session</span>
+                        <strong>{sessionState.sessionId.slice(0, 8)}...</strong>
+                      </li>
+                    )}
+                    <li>
+                      <span>Blocs restants</span>
+                      <strong>
+                        {currentBlocks.length - activeBlockIndex - (isCurrentBlockComplete ? 0 : 1)}
+                      </strong>
+                    </li>
+                    <li>
+                      <span>Dernière sauvegarde</span>
+                      <strong>
+                        {sessionState.progress?.updatedAt
+                          ? new Date(sessionState.progress.updatedAt).toLocaleString()
+                          : '—'}
+                      </strong>
+                    </li>
+                  </ul>
+                </article>
+
+                <article className="session-card session-analysis-card">
+                  <div className="session-card-header">
+                    <div>
+                      <p className="label">Analyse IA</p>
+                      <h4>{profile ? 'Profil généré' : 'En attente de finalisation'}</h4>
+                    </div>
+                    {profile && (
+                      <a href="#orientation-profile" className="btn-sm-secondary">
+                        Voir le détail
+                      </a>
+                    )}
+                  </div>
+                  {profile ? (
+                    <div className="analysis-content">
+                      <p>Total score&nbsp;: <strong>{profile?.summary?.totalScore}</strong></p>
+                      <p>Métiers recommandés&nbsp;: <strong>{profile?.aiAnalysis?.recommendedCareers?.length || 0}</strong></p>
+                      <p className="analysis-note">Analyse basée sur vos réponses complètes.</p>
+                    </div>
+                  ) : (
+                    <div className="analysis-placeholder">
+                      <p>Finalisez le questionnaire pour débloquer les insights personnalisés.</p>
+                      <small>Vos réponses doivent être envoyées dans chaque bloc.</small>
+                    </div>
+                  )}
+                </article>
+              </div>
+
+              <div className="session-body">
+                <div className="session-block-row">
+                  <div className="session-block-info">
+                    <span>Blocs du parcours</span>
+                    <small>{currentBlocks.length} thématiques</small>
+                  </div>
+                  <div className="block-tabs">
+                    {currentBlocks.map((block, index) => (
+                      <button
+                        key={block.id}
+                        className={`block-tab ${activeBlockIndex === index ? 'active' : ''}`}
+                        onClick={() => setActiveBlockIndex(index)}
+                      >
+                        <small>Bloc {block.order}</small>
+                        <strong>{block.title}</strong>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {activeBlock ? (
-                  <div className="block-content">
-                    <div className="block-header">
-                      <div>
-                        <p className="label">Bloc {activeBlock.order}</p>
-                        <h3>{activeBlock.title}</h3>
-                        <p>{activeBlock.description}</p>
-                      </div>
-                      <div className="block-meta">
-                        <span>{activeBlock.questions?.length || 0} questions</span>
-                      </div>
-                    </div>
-                    <div className="block-questions">
-                      {activeBlock.questions?.map((question) => renderQuestion(question))}
-                    </div>
-                    {canGoNextBlock && (
-                      <div className="block-navigation">
-                        <button
-                          type="button"
-                          className="btn-orange"
-                          onClick={() => setActiveBlockIndex((prev) => Math.min(prev + 1, currentBlocks.length - 1))}
-                          disabled={!isCurrentBlockComplete}
-                        >
-                          Page suivante
-                          <i className="ph-arrow-right"></i>
-                        </button>
-                        {!isCurrentBlockComplete && (
-                          <small>Répondez à toutes les questions de ce bloc pour continuer.</small>
+                  <>
+                    <div className="session-questions">
+                      <div className="block-content block-content-full">
+                        <div className="block-header">
+                          <div>
+                            <p className="label">Bloc {activeBlock.order}</p>
+                            <h3>{activeBlock.title}</h3>
+                            <p>{activeBlock.description}</p>
+                          </div>
+                          <div className="block-meta">
+                            <span>{activeBlock.questions?.length || 0} questions</span>
+                          </div>
+                        </div>
+                        <div className="block-questions">
+                          {activeBlock.questions?.map((question) => renderQuestion(question))}
+                        </div>
+                        {canGoNextBlock && (
+                          <div className="block-navigation">
+                            <button
+                              type="button"
+                              className="btn-orange"
+                              onClick={() => setActiveBlockIndex((prev) => Math.min(prev + 1, currentBlocks.length - 1))}
+                              disabled={!isCurrentBlockComplete}
+                            >
+                              Page suivante
+                              <i className="ph-arrow-right"></i>
+                            </button>
+                            {!isCurrentBlockComplete && (
+                              <small>Répondez à toutes les questions de ce bloc pour continuer.</small>
+                            )}
+                          </div>
                         )}
                       </div>
+                    </div>
+
+                    {(actionError || actionMessage) && (
+                      <div className={`session-alert ${actionError ? 'error' : 'success'}`}>
+                        <i className={actionError ? 'ph-warning-circle' : 'ph-check-circle'}></i>
+                        <span>{actionError || actionMessage}</span>
+                      </div>
                     )}
-                  </div>
+
+                    <div className="session-actions">
+                      <button
+                        className="btn-sm-outline"
+                        onClick={() => handleSubmitResponses(false)}
+                        disabled={saving || finalizing || isSubmitting}
+                      >
+                        {saving ? (
+                          <>
+                            <i className="ph-spinner-gap ph-spin"></i>
+                            Sauvegarde...
+                          </>
+                        ) : (
+                          <>
+                            <i className="ph-floppy-disk"></i>
+                            Sauvegarder la progression
+                          </>
+                        )}
+                      </button>
+                      <div className="finalize-wrapper">
+                        <button
+                          className={`btn-orange ${!canFinalize ? 'btn-disabled' : ''}`}
+                          onClick={() => handleSubmitResponses(true)}
+                          disabled={!canFinalize || finalizing || saving || isSubmitting}
+                        >
+                          {finalizing ? (
+                            <>
+                              <i className="ph-spinner-gap ph-spin"></i>
+                              Finalisation...
+                            </>
+                          ) : (
+                            <>
+                              <i className="ph-check-circle"></i>
+                              Finaliser et générer mon profil
+                            </>
+                          )}
+                        </button>
+                        {!canFinalize && (
+                          <small className="finalize-hint">
+                            Complétez toutes les questions pour activer ce bouton.
+                          </small>
+                        )}
+                      </div>
+                    </div>
+                  </>
                 ) : (
                   <div className="orientation-empty">
                     <p>Sélectionnez un bloc pour afficher les questions.</p>
                   </div>
                 )}
-
-                {(actionError || actionMessage) && (
-                  <div className={`session-alert ${actionError ? 'error' : 'success'}`}>
-                    <i className={actionError ? 'ph-warning-circle' : 'ph-check-circle'}></i>
-                    <span>{actionError || actionMessage}</span>
-                  </div>
-                )}
-
-                <div className="session-actions">
-                  <button
-                    className="btn-sm-outline"
-                    onClick={() => handleSubmitResponses(false)}
-                    disabled={saving || finalizing || isSubmitting}
-                  >
-                    {saving ? (
-                      <>
-                        <i className="ph-spinner-gap ph-spin"></i>
-                        Sauvegarde...
-                      </>
-                    ) : (
-                      <>
-                        <i className="ph-floppy-disk"></i>
-                        Sauvegarder la progression
-                      </>
-                    )}
-                  </button>
-                  <button
-                    className="btn-orange"
-                    onClick={() => handleSubmitResponses(true)}
-                    disabled={finalizing || saving || isSubmitting}
-                  >
-                    {finalizing ? (
-                      <>
-                        <i className="ph-spinner-gap ph-spin"></i>
-                        Finalisation...
-                      </>
-                    ) : (
-                      <>
-                        <i className="ph-check-circle"></i>
-                        Finaliser et générer mon profil
-                      </>
-                    )}
-                  </button>
-                </div>
               </div>
-
-              <aside className="session-side">
-                <div className="side-card">
-                  <h4>Résumé</h4>
-                  <ul>
-                    {sessionState.sessionId && (
-                      <li>
-                        <span>Session ID</span>
-                        <strong>{sessionState.sessionId.slice(0, 8)}...</strong>
-                      </li>
-                    )}
-                    <li>
-                      <span>Questions répondues</span>
-                      <strong>
-                        {sessionState?.progress?.answeredQuestions || answeredCount} /
-                        {sessionState?.progress?.totalQuestions || currentBlocks.reduce(
-                          (total, block) => total + (block.questions?.length || 0),
-                          0
-                        )}
-                      </strong>
-                    </li>
-                    <li>
-                      <span>Complétion</span>
-                      <strong>{sessionState?.progress?.completionRate || 0}%</strong>
-                    </li>
-                  </ul>
-                </div>
-
-                {profile ? (
-                  <div className="side-card">
-                    <h4>Profil généré</h4>
-                    <p>Total score: {profile?.summary?.totalScore}</p>
-                    <p>Métiers recommandés: {profile?.aiAnalysis?.recommendedCareers?.length || 0}</p>
-                    <a href="#orientation-profile" className="btn-sm-secondary">
-                      Voir les détails
-                    </a>
-                  </div>
-                ) : (
-                  <div className="side-card muted">
-                    <h4>Analyse IA</h4>
-                    <p>
-                      Finalisez le questionnaire pour générer votre profil avec les métiers
-                      recommandés.
-                    </p>
-                  </div>
-                )}
-              </aside>
             </div>
           )}
         </div>
+        )}
 
-        {profile && (
-          <div className="orientation-section" id="orientation-profile">
-            <div className="section-header">
+        {profile && !showQuestionnaire && (
+          <div className="orientation-section orientation-profile-showcase" id="orientation-profile">
+            <div className="section-header profile-main-header">
               <div>
-                <h2>Analyse personnalisée</h2>
-                <p>Basée sur vos réponses et générée automatiquement.</p>
+                <h2>Mon profil d'orientation</h2>
+                <p>Analyse générée par Allo École à partir de vos réponses.</p>
               </div>
-            </div>
-            <div className="profile-grid">
-              <div className="profile-card">
-                <h4>Résumé</h4>
-                <ul>
-                  <li>
-                    <span>Score total</span>
-                    <strong>{profile.summary?.totalScore}</strong>
-                  </li>
-                  <li>
-                    <span>Questions complétées</span>
-                    <strong>{profile.summary?.answeredQuestions}</strong>
-                  </li>
-                </ul>
-              </div>
-              <div className="profile-card">
-                <h4>Points forts</h4>
-                <ul>
-                  {profile.aiAnalysis?.strengths?.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="profile-card">
-                <h4>Axes d'amélioration</h4>
-                <ul>
-                  {profile.aiAnalysis?.weaknesses?.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
+              <button
+                className="btn-sm-outline"
+                onClick={() => {
+                  setShowQuestionnaire(true);
+                  setUserOpenedQuestionnaire(true);
+                }}
+              >
+                <i className="ph-repeat"></i>
+                Reprendre le questionnaire
+              </button>
             </div>
 
-            <div className="profile-block-scores">
-              {profile.blockScores?.map((block) => (
-                <div key={block.blockId} className="block-score-card">
-                  <h5>{block.title}</h5>
-                  <div className="score-bar">
-                    <span style={{ width: `${Math.min(100, (block.score / (block.maxScore || 1)) * 100)}%` }}></span>
+            <div className="profile-hero">
+              <div className="profile-hero-main">
+                <span className="profile-pill">
+                  <i className="ph-sparkle"></i>
+                  Profil Allo École mis à jour
+                </span>
+                <h3>{profile.aiAnalysis?.profileSummary || 'Vos talents prennent forme'}</h3>
+                <p>
+                  {recommendedCareers.length
+                    ? `Nous avons identifié ${recommendedCareers.length} métier${recommendedCareers.length > 1 ? 's' : ''} aligné${recommendedCareers.length > 1 ? 's' : ''} avec vos forces.`
+                    : 'Complétez davantage de blocs pour obtenir des propositions personnalisées.'}
+                </p>
+                <div className="profile-hero-stats">
+                  <div className="profile-stat-card">
+                    <span>Score global</span>
+                    <strong>{profile.summary?.totalScore ?? 0}</strong>
+                    <small>{profile.summary?.completionRate ?? 0}% de complétion</small>
                   </div>
-                  <p>
-                    {block.score} / {block.maxScore}
-                  </p>
+                  <div className="profile-stat-card">
+                    <span>Métiers proposés</span>
+                    <strong>{recommendedCareers.length}</strong>
+                    <small>Basés sur votre potentiel</small>
+                  </div>
+                  <div className="profile-stat-card">
+                    <span>Questions répondues</span>
+                    <strong>{profile.summary?.answeredQuestions ?? 0}</strong>
+                    <small>sur {profile.summary?.totalQuestions ?? 0}</small>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            <div className="recommended-careers">
-              <h3>Métiers recommandés</h3>
-              <div className="careers-grid">
-                {profile.aiAnalysis?.recommendedCareers?.map((career) => (
-                  <div key={career.metier} className="career-card">
-                    <div className="career-header">
-                      <h4>{career.metier}</h4>
-                      <span>{career.successPercentage}%</span>
+              {topCareer && (
+                <div className="profile-hero-side">
+                  <div className="profile-spotlight">
+                    <div className="spotlight-header">
+                      <span>Focus métier</span>
+                      <span className="spotlight-score">{topCareer.successPercentage}% de réussite</span>
                     </div>
-                    <p>{career.description}</p>
+                    <h4>{topCareer.metier}</h4>
+                    <p>{topCareer.description}</p>
+                    <div className="spotlight-progress">
+                      <span style={{ width: `${Math.min(topCareer.successPercentage, 100)}%` }}></span>
+                    </div>
                     <ul>
-                      {career.reasons?.map((reason) => (
-                        <li key={reason}>{reason}</li>
+                      {(topCareer.reasons || []).slice(0, 3).map((reason) => (
+                        <li key={reason}>
+                          <i className="ph-check-circle"></i>
+                          {reason}
+                        </li>
                       ))}
                     </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="profile-section">
+              <div className="profile-section-title">
+                <i className="ph-briefcase"></i>
+                <div>
+                  <h4>Métiers recommandés</h4>
+                <span>Allo École met en avant les pistes qui vous correspondent le mieux.</span>
+                </div>
+              </div>
+              {recommendedCareers.length ? (
+                <div className="profile-careers-grid">
+                  {recommendedCareers.map((career) => (
+                    <article key={career.metier} className="career-card">
+                      <div className="career-card-top">
+                        <div>
+                          <p className="career-label">Proposition</p>
+                          <h5>{career.metier}</h5>
+                        </div>
+                        <span className="career-score">{career.successPercentage}%</span>
+                      </div>
+                      <p className="career-description">{career.description}</p>
+                      <ul className="career-reasons">
+                        {(career.reasons || []).map((reason) => (
+                          <li key={reason}>
+                            <i className="ph-star-four"></i>
+                            {reason}
+                          </li>
+                        ))}
+                      </ul>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="orientation-empty">
+                  <i className="ph-briefcase"></i>
+                  <p>Aucun métier n'a encore été suggéré. Finalisez un questionnaire pour lancer l’analyse.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="profile-dual-grid">
+              <div className="profile-card profile-list-card">
+                <h4>
+                  <i className="ph-thumbs-up"></i>
+                  Points forts
+                </h4>
+                {strengths.length ? (
+                  <ul className="profile-chip-list">
+                    {strengths.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                    <p className="profile-placeholder">Aucun point fort évalué pour le moment.</p>
+                )}
+              </div>
+              <div className="profile-card profile-list-card">
+                <h4>
+                  <i className="ph-warning-circle"></i>
+                  Axes d'amélioration
+                </h4>
+                {weaknesses.length ? (
+                  <ul className="profile-chip-list profile-chip-list--warning">
+                    {weaknesses.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                    <p className="profile-placeholder">Aucun axe identifié pour le moment.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="profile-section">
+              <div className="profile-section-title">
+                <i className="ph-graph"></i>
+                <div>
+                  <h4>Scores par bloc</h4>
+                  <span>Comparatif de vos performances thématiques.</span>
+                </div>
+              </div>
+              <div className="profile-block-scores">
+                {profile.blockScores?.map((block) => (
+                  <div key={block.blockId} className="block-score-card">
+                    <div className="block-score-header">
+                      <h5>{block.title}</h5>
+                      <span>{block.score} / {block.maxScore}</span>
+                    </div>
+                    <div className="score-bar score-bar-accent">
+                      <span style={{ width: `${Math.min(100, (block.score / (block.maxScore || 1)) * 100)}%` }}></span>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {profile.aiAnalysis?.generalRecommendations?.length > 0 && (
-              <div className="profile-card">
-                <h4>Recommandations générales</h4>
-                <ul>
-                  {profile.aiAnalysis.generalRecommendations.map((item) => (
-                    <li key={item}>{item}</li>
+            {generalRecommendations.length > 0 && (
+              <div className="profile-section">
+                <div className="profile-section-title">
+                  <i className="ph-note"></i>
+                  <div>
+                    <h4>Recommandations d’Allo École</h4>
+                    <span>Idées pour aller plus loin.</span>
+                  </div>
+                </div>
+                <ul className="profile-recommendations">
+                  {generalRecommendations.map((item) => (
+                    <li key={item}>
+                      <i className="ph-arrow-right"></i>
+                      {item}
+                    </li>
                   ))}
                 </ul>
               </div>

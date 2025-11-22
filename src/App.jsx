@@ -15,6 +15,12 @@ import VideoDetail from './pages/VideoDetail.jsx'
 import JobSheets from './pages/JobSheets.jsx'
 import JobSheetDetail from './pages/JobSheetDetail.jsx'
 import MyOrientationJobs from './pages/MyOrientationJobs.jsx'
+import Quiz from './pages/Quiz.jsx'
+import QuizPlay from './pages/QuizPlay.jsx'
+import TeleReality from './pages/TeleReality.jsx'
+import Toon from './pages/Toon.jsx'
+import Magazine from './pages/Magazine.jsx'
+import MagazineReader from './pages/MagazineReader.jsx'
 
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
@@ -52,6 +58,12 @@ function App() {
             <Route path="fiches-metiers" element={<JobSheets />} />
             <Route path="fiches-metiers/:id" element={<JobSheetDetail />} />
             <Route path="mes-metiers-orientation" element={<MyOrientationJobs />} />
+            <Route path="quiz" element={<Quiz />} />
+            <Route path="quiz/:id" element={<QuizPlay />} />
+            <Route path="emissions-telerealite" element={<TeleReality />} />
+            <Route path="toon" element={<Toon />} />
+            <Route path="magazine" element={<Magazine />} />
+            <Route path="magazine/read/:id" element={<MagazineReader />} />
             {/* Ajoute d'autres routes ici si nécessaire */}
             <Route path="*" element={<div>Page Not Found</div>} />
           </Route>

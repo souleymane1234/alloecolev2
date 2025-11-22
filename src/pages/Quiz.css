@@ -1,0 +1,403 @@
+/* Quiz Page Styles */
+.quiz-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #7B2CBF 0%, #E91E63 100%);
+  padding: 40px 0;
+}
+
+/* Main Content */
+.quiz-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.quiz-content .rank-card {
+  grid-column: 1 / -1;
+}
+
+/* Rank Card */
+.rank-card {
+  background: linear-gradient(135deg, #9D4EDD 0%, #E91E63 100%);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.rank-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+}
+
+.rank-icon {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.rank-icon svg {
+  font-size: 32px;
+}
+
+.rank-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rank-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.rank-value {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.rank-badge {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #E91E63 0%, #F06292 100%);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.rank-badge svg {
+  color: #ffffff;
+  font-size: 28px;
+}
+
+.badge-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #D32F2F;
+  color: #ffffff;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Quiz Card */
+.quiz-card {
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.quiz-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+}
+
+.quiz-card-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.quiz-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.quiz-icon svg {
+  font-size: 32px;
+}
+
+.quiz-title-section {
+  width: 100%;
+}
+
+.quiz-title {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.quiz-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Quiz Details */
+.quiz-details {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.quiz-detail-item {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 12px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.quiz-detail-item.difficulty {
+  background: #E91E63;
+}
+
+.detail-icon {
+  font-size: 16px !important;
+}
+/* Ajoutez ces styles dans votre fichier Quiz.css */
+
+/* Play Button */
+.play-buttons {
+  /* background: rgba(255, 255, 255, 0.25); */
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  /* color: #ffffff; */
+  padding: 14px 20px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: auto;
+  backdrop-filter: blur(10px);
+  width: 100%;
+}
+
+.play-buttons:hover {
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.play-buttons:active {
+  transform: translateY(0);
+}
+
+.play-icon {
+  font-size: 22px !important;
+}
+
+/* Ajustement de la carte pour accommoder le bouton */
+.quiz-card {
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+  .quiz-content {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .quiz-page {
+    padding: 24px 0;
+  }
+
+  .quiz-content {
+    padding: 0 20px;
+    gap: 20px;
+    grid-template-columns: 1fr;
+  }
+
+  .rank-card {
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .rank-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .rank-icon svg {
+    font-size: 28px;
+  }
+
+  .rank-value {
+    font-size: 20px;
+  }
+
+  .rank-badge {
+    width: 48px;
+    height: 48px;
+  }
+
+  .rank-badge svg {
+    font-size: 24px;
+  }
+
+  .quiz-card {
+    padding: 24px;
+  }
+
+  .quiz-card-header {
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .quiz-icon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .quiz-icon svg {
+    font-size: 28px;
+  }
+
+  .quiz-title {
+    font-size: 18px;
+  }
+
+  .quiz-description {
+    font-size: 13px;
+  }
+
+  .quiz-details {
+    gap: 8px;
+  }
+
+  .quiz-detail-item {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .play-button {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  .play-icon {
+    font-size: 20px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .quiz-page {
+    padding: 20px 0;
+  }
+
+  .quiz-content {
+    padding: 0 16px;
+    gap: 16px;
+  }
+
+  .rank-card {
+    padding: 18px;
+    gap: 14px;
+  }
+
+  .rank-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .rank-icon svg {
+    font-size: 26px;
+  }
+
+  .rank-value {
+    font-size: 18px;
+  }
+
+  .rank-badge {
+    width: 44px;
+    height: 44px;
+  }
+
+  .rank-badge svg {
+    font-size: 22px;
+  }
+
+  .badge-count {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .quiz-card {
+    padding: 20px;
+  }
+
+  .quiz-card-header {
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .quiz-icon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .quiz-icon svg {
+    font-size: 30px;
+  }
+
+  .quiz-title {
+    font-size: 18px;
+  }
+
+  .quiz-description {
+    font-size: 13px;
+  }
+}
+

@@ -236,6 +236,11 @@
         .btn-primary:hover {
           box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
           transform: scale(1.05);
+          color: white;
+        }
+
+        .btn-primary:focus {
+          color: white;
         }
 
         .btn-disabled {
@@ -255,6 +260,26 @@
           box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
           border: 1px solid #e5e7eb;
           overflow: hidden;
+        }
+
+        .application-note {
+          font-size: 0.9rem;
+          color: #4b5563;
+          background: #f8fafc;
+          border: 1px solid #e5e7eb;
+          border-radius: 0.75rem;
+          padding: 0.85rem 1rem;
+          margin-bottom: 1rem;
+          line-height: 1.5;
+        }
+
+        .application-note.secondary {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: #fff7ed;
+          border-color: #fed7aa;
+          color: #9a3412;
         }
 
         .tabs-header {

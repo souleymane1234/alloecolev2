@@ -1,25 +1,11 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import './BourseDetailsComponent.css';
 
 const BourseDetailsComponent = () => {
-    const { id } = useParams(); // Récupère l'id dans l'URL
+  const { id } = useParams(); // Récupère l'id dans l'URL
   const [activeTab, setActiveTab] = useState('description');
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  // --- Vérifier si l'utilisateur est connecté ---
-  const isAuthenticated = () => {
-    const token = localStorage.getItem('access_token');
-    return !!token;
-  };
-
-  // --- Récupérer le token ---
-  const getAuthToken = () => {
-    return localStorage.getItem('access_token');
-  };
 
   // --- Fonction de récupération des détails depuis l'API ---
   const fetchBourseDetails = async () => {
@@ -30,31 +16,6 @@ const BourseDetailsComponent = () => {
     throw new Error('Aucune donnée trouvée');
   };
 
-    // --- Fonction de candidature à la bourse ---
-  const applyToScholarship = async () => {
-    const token = getAuthToken();
-    
-    const response = await fetch(
-      `https://alloecoleapi-dev.up.railway.app/api/v1/students/scholarships/${id}/apply`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({}),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Erreur ${response.status}`);
-    }
-
-    return await response.json();
-  };
-
-
   // --- Utilisation de React Query ---
   const { data: bourse, isLoading, isError, error } = useQuery({
     queryKey: ['bourse', id],
@@ -62,41 +23,6 @@ const BourseDetailsComponent = () => {
     staleTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
   });
-
-    // --- Mutation pour la candidature ---
-  const applyMutation = useMutation({
-    mutationFn: applyToScholarship,
-    onSuccess: (data) => {
-      console.log('Candidature réussie:', data);
-      alert('Votre candidature a été soumise avec succès !');
-      queryClient.invalidateQueries(['bourse', id]);
-    },
-    onError: (error) => {
-      console.error('Erreur lors de la candidature:', error);
-      alert(`Erreur: ${error.message}`);
-    },
-  });
-
-  // --- Gestionnaire de candidature ---
-  const handleApply = () => {
-    // Vérifier si l'utilisateur est connecté
-    if (!isAuthenticated()) {
-      // Sauvegarder l'URL actuelle pour rediriger après connexion
-      const currentPath = location.pathname;
-      
-      if (window.confirm('Vous devez être connecté pour postuler à cette bourse. Voulez-vous vous connecter maintenant ?')) {
-        // Rediriger vers la page de connexion avec l'URL de retour
-        navigate(`/login?redirect=${encodeURIComponent(currentPath)}`);
-      }
-      return;
-    }
-
-    // Si connecté, procéder à la candidature
-    if (window.confirm('Êtes-vous sûr de vouloir postuler à cette bourse ?')) {
-      applyMutation.mutate();
-    }
-  };
-
 
   console.log('Détails de la bours:', bourse);
 
@@ -136,6 +62,7 @@ const BourseDetailsComponent = () => {
   const deadline = new Date(bourse.dateLimite);
   const daysLeft = Math.ceil((deadline - new Date()) / (1000 * 60 * 60 * 24));
   const isExpired = deadline < new Date();
+  const applicationLink = bourse?.officialWebsite || bourse?.applicationLink || bourse?.applyUrl || bourse?.website;
 
 
 
@@ -216,24 +143,25 @@ const BourseDetailsComponent = () => {
                 <div className="lg-col-span-1">
                   <div className="sidebar">
                     <h5 className="sidebar-title">Actions</h5>
-                      {/* <button className="btn btn-primary">
-                        <i className="ph ph-paper-plane-tilt"></i>
-                        Postuler maintenant
-                      </button> */}
-                    {!isExpired ? (
-                      <button 
+                    <p className="application-note">
+                      Les candidatures se font directement auprès de l’organisme qui propose la bourse. Utilisez le lien officiel pour soumettre votre dossier.
+                    </p>
+
+                    {applicationLink ? (
+                      <a
+                        href={applicationLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="btn btn-primary"
-                        onClick={handleApply}
-                        disabled={applyMutation.isPending}
                       >
-                        <i className="ph ph-paper-plane-tilt"></i>
-                        {applyMutation.isPending ? 'Envoi en cours...' : 'Postuler maintenant'}
-                      </button>
+                        <i className="ph ph-link-simple"></i>
+                        Accéder au site officiel
+                      </a>
                     ) : (
-                      <button className="btn btn-disabled" disabled>
-                        <i className="ph ph-clock"></i>
-                        Bourse expirée
-                      </button>
+                      <div className="application-note secondary">
+                        <i className="ph ph-info"></i>
+                        Aucun lien officiel n’a été fourni pour cette bourse. Merci de vous référer aux informations ci-dessus.
+                      </div>
                     )}
                   </div>
                 </div>

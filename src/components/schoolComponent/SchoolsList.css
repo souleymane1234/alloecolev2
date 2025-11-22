@@ -302,6 +302,43 @@
       opacity: 0.5;
     }
 
+    .pagination-controls {
+      margin-top: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .pagination-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 9999px;
+      border: none;
+      background: rgba(255,255,255,0.12);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+      background: rgba(255,255,255,0.22);
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pagination-info {
+      color: rgba(255,255,255,0.9);
+      font-weight: 600;
+    }
+
     .schools-loading {
       display: flex;
       justify-content: center;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { User, Settings, LogIn, LogOut, BookOpen, Code, X } from 'lucide-react';
+import { User, Settings, LogIn, LogOut, BookOpen, Code, X, GraduationCap, Smartphone, PlayCircle } from 'lucide-react';
 import tokenManager from '../../helper/tokenManager';
 import './UserProfileSidebar.css';
 
@@ -367,23 +367,29 @@ const UserProfileSidebar = () => {
         href="https://www.myschooltoon.com/"
         target="_blank"
         rel="noopener noreferrer"
-        className="quick-link-card"
+        className="quick-link-card scholarship-card"
       >
-        <div className="quick-link-icon">
-          <BookOpen size={24} />
+        <div className="quick-link-image-wrapper scholarship-bg">
+          <PlayCircle size={28} className="quick-link-image-icon" />
         </div>
-        <span className="quick-link-label">Postuler à une bourse</span>
+        <div className="quick-link-content">
+          <span className="quick-link-label">Visitez MySchoolToon</span>
+          <span className="quick-link-subtitle">Plateforme de cartoon éducatif</span>
+        </div>
       </a>
 
       <button
         type="button"
-        className="quick-link-card"
+        className="quick-link-card syntax-card"
         onClick={() => setShowSyntaxModal(true)}
       >
-        <div className="quick-link-icon secondary">
-          <Code size={24} />
+        <div className="quick-link-image-wrapper syntax-bg">
+          <Smartphone size={28} className="quick-link-image-icon" />
         </div>
-        <span className="quick-link-label">Syntaxe opérateur</span>
+        <div className="quick-link-content">
+          <span className="quick-link-label">Syntaxe opérateur</span>
+          <span className="quick-link-subtitle">Codes USSD</span>
+        </div>
       </button>
     </div>
   );
@@ -458,7 +464,7 @@ const UserProfileSidebar = () => {
       <div className="profile-sidebar">
         <QuickLinksPanel />
 
-        <div className="profile-header">
+        {/* <div className="profile-header">
           <div className="profile-avatar">
             {hasImage ? (
               <>
@@ -483,12 +489,12 @@ const UserProfileSidebar = () => {
           </div>
           <div className="profile-info">
             <h4>{user.firstName || user.prenom || 'Prénom'} {user.lastName || user.nom || 'Nom'}</h4>
-            {/* <p>{user.email || 'Email non disponible'}</p>
+            <p>{user.email || 'Email non disponible'}</p>
             {(user.city || user.ville) && (
               <p>📍 {user.city || user.ville}{(user.country || user.pays) ? `, ${user.country || user.pays}` : ''}</p>
-            )} */}
+            )}
           </div>
-        </div>
+        </div> */}
 
         {/* <div className="profile-quick-actions">
           <Link to="/profil" className="quick-action-btn">
@@ -546,7 +552,7 @@ const UserProfileSidebar = () => {
     <div className="profile-sidebar">
       <QuickLinksPanel />
 
-      <div className="guest-profile">
+      {/* <div className="guest-profile">
         <div className="guest-header">
           <h4>Rejoignez-nous</h4>
         </div>
@@ -555,7 +561,7 @@ const UserProfileSidebar = () => {
             <LogIn /> S'authentifier
           </Link>
         </div>
-      </div>
+      </div> */}
 
       {/* Fil d'actualité Facebook */}
       <div className="profile-facebook-section">

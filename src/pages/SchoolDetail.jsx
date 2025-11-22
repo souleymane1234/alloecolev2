@@ -82,8 +82,9 @@ const SchoolDetail = () => {
           name: apiData.name,
           level,
           filiere,
-          logo: "/images/poster/ecole.png",
+          logo: apiData.logoUrl || "/images/poster/ecole.png",
           banner: apiData.bannerUrl || "/images/poster/ecole.png",
+          videoPresentationUrl: apiData.videoPresentationUrl || "/video/video.mp4",
           address: apiData.address || `${apiData.city}, ${apiData.region}`,
           phone: apiData.phone || null,
           email: apiData.email || null,
@@ -401,18 +402,41 @@ const SchoolDetail = () => {
         }
 
         .school-banner {
-          height: 300px;
+          height: 500px;
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           position: relative;
           display: flex;
           align-items: center;
           justify-content: center;
+          overflow: hidden;
         }
 
         .school-banner img {
           width: 100%;
           height: 100%;
           object-fit: cover;
+        }
+
+        .school-banner video {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .school-banner .video-placeholder {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          font-size: 1.125rem;
+        }
+
+        .school-banner .video-placeholder i {
+          font-size: 3rem;
+          margin-right: 1rem;
         }
 
         .school-info {
@@ -942,7 +966,18 @@ const SchoolDetail = () => {
         <div className="school-detail-container">
           <div className="school-header">
             <div className="school-banner">
-              <img src={school.banner} alt={`Bannière ${school.name}`} />
+              <video 
+                controls 
+                autoPlay 
+                muted 
+                loop
+                poster={school.banner}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              >
+                <source src={school.videoPresentationUrl} type="video/mp4" />
+                <source src={school.videoPresentationUrl} type="video/webm" />
+                Votre navigateur ne supporte pas la lecture de vidéos.
+              </video>
             </div>
             <div className="school-info">
               <div className="school-header-content">

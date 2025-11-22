@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Calendar, Clock, MapPin, ArrowRight, ChevronRight, Eye, User, BookOpen, GraduationCap, Settings } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowRight, ChevronLeft, ChevronRight, Eye, User, BookOpen, GraduationCap, Settings } from 'lucide-react';
 import ContactAlloEcoleService from './ContactAlloEcoleService';
 import { Link, useOutletContext } from "react-router-dom";
 import axios from 'axios';
@@ -20,6 +20,69 @@ const AlloEcoleNewsFeed = () => {
   const [user, setUser] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const observerTarget = useRef(null);
+  const promoSlides = useMemo(() => [
+    {
+      id: 1,
+      image: '/images/pub/banniere2.jpg',
+      eyebrow: 'Alertes concours',
+      title: 'Soyez averti avant tout le monde',
+      description: 'Recevez des notifications SMS et e-mail sur les concours et bourses qui vous concernent.',
+      cta: 'Activer les alertes',
+      linkUrl: '#'
+    },
+    {
+      id: 2,
+      image: '/images/pub/banniere1.jpg',
+      eyebrow: 'Orientation',
+      title: 'Sessions express avec nos coachs',
+      description: '30 minutes pour clarifier votre projet de formation et décrocher l’école idéale.',
+      cta: 'Réserver un créneau',
+      linkUrl: '#'
+    },
+    {
+      id: 3,
+      image: '/images/pub/banniere3.jpg',
+      eyebrow: 'Permutations',
+      title: 'Publiez votre demande premium',
+      description: 'Mettez votre dossier en avant et doublez vos chances de trouver un correspondant.',
+      cta: 'Voir les offres',
+      linkUrl: '#'
+    }
+  ], []);
+  const statsHighlights = useMemo(() => [
+    {
+      label: 'Écoles partenaires',
+      value: '1 247',
+      sub: '+32 cette semaine',
+      trend: '+18%'
+    },
+    {
+      label: 'Bourses actives',
+      value: '89',
+      sub: '12 nouvelles',
+      trend: '+6%'
+    },
+    {
+      label: 'Permutations publiées',
+      value: '456',
+      sub: '34 en attente',
+      trend: '+11%'
+    }
+  ], []);
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  const handleNextSlide = useCallback(() => {
+    setActiveSlide((prev) => (prev + 1) % promoSlides.length);
+  }, [promoSlides.length]);
+
+  const handlePrevSlide = useCallback(() => {
+    setActiveSlide((prev) => (prev - 1 + promoSlides.length) % promoSlides.length);
+  }, [promoSlides.length]);
+
+  useEffect(() => {
+    const timer = setInterval(handleNextSlide, 7000);
+    return () => clearInterval(timer);
+  }, [handleNextSlide]);
 
   // Détection de la taille d'écran
   useEffect(() => {
@@ -503,20 +566,16 @@ const AlloEcoleNewsFeed = () => {
   const RightSidebar = () => {
     return (
       <div className="sidebar-right-content">
-        <Banner
-          imageSrc="/images/pub/banniere2.jpg"
-          altText="Alertes SMS - Permutations"
-          size="md"
-          className="sidebar-banner"
-          linkUrl="#"
-        />
-        
         {/* Section Vidéo */}
         <div className="sidebar-section">
           <h3 className="sidebar-title">WebTV</h3>
           <div className="video-container">
             <video 
-              controls 
+              controls
+              autoPlay
+              muted
+              loop
+              playsInline
               className="sidebar-video"
               poster="/images/poster/poster.jpg"
             >
@@ -528,9 +587,61 @@ const AlloEcoleNewsFeed = () => {
             </div>
           </div>
         </div>
+
+        <div className="sidebar-section promo-slider">
+          <div className="slider-viewport">
+            {promoSlides.map((slide, index) => (
+              <article
+                key={slide.id}
+                className={`promo-slide ${index === activeSlide ? 'is-active' : ''}`}
+                style={{ backgroundImage: `url(${slide.image})` }}
+                aria-hidden={index !== activeSlide}
+              >
+                <div className="promo-overlay"></div>
+                <div className="promo-content">
+                  {/* <span className="promo-eyebrow">{slide.eyebrow}</span> */}
+                  {/* <h4 className="promo-title">{slide.title}</h4>
+                  <p className="promo-description">{slide.description}</p> */}
+                  <a href={slide.linkUrl} className="promo-cta">
+                    {slide.cta}
+                    <ArrowRight size={16} />
+                  </a>
+                </div>
+              </article>
+            ))}
+            <button
+              className="slider-nav nav-prev"
+              type="button"
+              onClick={handlePrevSlide}
+              aria-label="Voir la slide précédente"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              className="slider-nav nav-next"
+              type="button"
+              onClick={handleNextSlide}
+              aria-label="Voir la slide suivante"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+          <div className="slider-dots" role="tablist">
+            {promoSlides.map((slide, index) => (
+              <button
+                key={slide.id}
+                type="button"
+                className={`slider-dot ${index === activeSlide ? 'is-active' : ''}`}
+                onClick={() => setActiveSlide(index)}
+                aria-label={`Afficher ${slide.title}`}
+                aria-selected={index === activeSlide}
+              />
+            ))}
+          </div>
+        </div>
   
         {/* Section Actions rapides */}
-        <div className="sidebar-section">
+        {/* <div className="sidebar-section">
           <h3 className="sidebar-title">Actions rapides</h3>
           <div className="quick-actions-grid">
             <button className="action-card">
@@ -546,24 +657,22 @@ const AlloEcoleNewsFeed = () => {
               <span>Demande de permutation</span>
             </button>
           </div>
-        </div>
+        </div> */}
   
         {/* Section Statistiques */}
         <div className="sidebar-section">
-          <h3 className="sidebar-title">Statistiques</h3>
-          <div className="stats-cards">
-            <div className="stat-card">
-              <div className="stat-number">1,247</div>
-              <div className="stat-label">Écoles</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-number">89</div>
-              <div className="stat-label">Bourses actives</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-number">456</div>
-              <div className="stat-label">Permutations</div>
-            </div>
+          <h3 className="sidebar-title">Statistiques & insights</h3>
+          <div className="insights-grid">
+            {statsHighlights.map((insight) => (
+              <div className="insight-card" key={insight.label}>
+                <div className="insight-top">
+                  <span className="insight-label">{insight.label}</span>
+                  <span className="insight-trend">{insight.trend}</span>
+                </div>
+                <div className="insight-value">{insight.value}</div>
+                <p className="insight-sub">{insight.sub}</p>
+              </div>
+            ))}
           </div>
         </div>
   

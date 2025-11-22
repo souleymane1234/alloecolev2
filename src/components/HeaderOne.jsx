@@ -103,6 +103,7 @@ const HeaderOne = () => {
       links: [
         { href: "/quiz", label: "Quiz" },
         { href: "/emissions-telerealite", label: "Émissions de téléréalités" },
+        { href: "/toon", label: "Toon" },
         { href: "/magazine", label: "Magazine" },
       ],
     },
@@ -118,7 +119,7 @@ const HeaderOne = () => {
           position: sticky;
           top: 0;
           z-index: 1000;
-          transition: box-shadow 0.2s ease;
+          transition: all 0.3s ease;
         }
 
         .header-linkedin.scrolled {

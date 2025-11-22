@@ -9,6 +9,8 @@ const EtudesEtrangerComponent = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showBoursePopup, setShowBoursePopup] = useState(false);
   const [createdDossierId, setCreatedDossierId] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('access_token'));
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     targetCountry: '',
     niveauEtude: '',
@@ -32,6 +34,7 @@ const EtudesEtrangerComponent = () => {
     besoinBourse: false,
     typeBourse: '',
     autresFinancements: '',
+    cabinet: '',
     cv: '',
     lettreMotivation: '',
     relevesNotes: '',
@@ -40,6 +43,15 @@ const EtudesEtrangerComponent = () => {
   });
 
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setIsAuthenticated(!!localStorage.getItem('access_token'));
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Query pour récupérer le dossier existant
   const { data: existingDossier, isLoading: isLoadingDossier, refetch } = useQuery({
@@ -69,6 +81,7 @@ const EtudesEtrangerComponent = () => {
       const result = await response.json();
       return result.data;
     },
+    enabled: isAuthenticated,
     retry: false
   });
 
@@ -129,8 +142,9 @@ const EtudesEtrangerComponent = () => {
     },
     onSuccess: (data) => {
       console.log('Dossier créé:', data);
-      setCreatedDossierId(data.id || data.foreignFileId);
+      setCreatedDossierId(data.data?.id || data.id || data.foreignFileId);
       setShowBoursePopup(true);
+      setIsEditing(false);
       refetch();
     },
     onError: (error) => {
@@ -175,12 +189,12 @@ const EtudesEtrangerComponent = () => {
       alert('Votre candidature de bourse a été soumise avec succès !');
       console.log('Candidature soumise:', data);
       setShowBoursePopup(false);
-      navigate('/dossiers');
+      navigate('/etudes-etranger');
     },
     onError: (error) => {
       console.error('Erreur:', error);
       alert(`Erreur lors de la soumission: ${error.message}`);
-      navigate('/dossiers');
+      navigate('/etudes-etranger');
     }
   });
 
@@ -276,14 +290,14 @@ const EtudesEtrangerComponent = () => {
       submitBourseMutation.mutate(dossierId);
     } else {
       alert('Erreur: ID du dossier non trouvé');
-      navigate('/dossiers');
+      navigate('/etudes-etranger');
     }
   };
 
   const handleSkipBourse = () => {
     alert('Votre dossier d\'études à l\'étranger a été créé avec succès !');
     setShowBoursePopup(false);
-    navigate('/dossiers');
+    navigate('/etudes-etranger');
   };
 
   const handleEditDossier = () => {
@@ -311,12 +325,15 @@ const EtudesEtrangerComponent = () => {
         besoinBourse: existingDossier.besoinBourse || false,
         typeBourse: existingDossier.typeBourse || '',
         autresFinancements: existingDossier.autresFinancements || '',
+        cabinet: existingDossier.cabinet || '',
         cv: existingDossier.cv || '',
         lettreMotivation: existingDossier.lettreMotivation || '',
         relevesNotes: existingDossier.relevesNotes || '',
         diplomes: existingDossier.diplomes || '',
         certificatsLanguesFile: existingDossier.certificatsLanguesFile || ''
       });
+      setIsEditing(true);
+      setCurrentStep(1);
     }
   };
 
@@ -660,6 +677,24 @@ const EtudesEtrangerComponent = () => {
                 </div>
               </div>
             )}
+            <div className="form-group">
+              <label className="form-label">Cabinet de traitement (optionnel)</label>
+              <select
+                className="form-select"
+                name="cabinet"
+                value={formData.cabinet}
+                onChange={handleInputChange}
+              >
+                <option value="">Sélectionnez un cabinet (optionnel)</option>
+                <option value="Cabinet A">Cabinet A</option>
+                <option value="Cabinet B">Cabinet B</option>
+                <option value="Cabinet C">Cabinet C</option>
+                <option value="Autre">Autre</option>
+              </select>
+              <small className="form-text text-muted" style={{ display: 'block', marginTop: '0.25rem', color: '#6b7280', fontSize: '0.875rem' }}>
+                Choisissez le cabinet qui doit traiter votre dossier. Ce champ est optionnel.
+              </small>
+            </div>
           </div>
         );
 
@@ -738,6 +773,32 @@ const EtudesEtrangerComponent = () => {
     }
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="etudes-etranger-section">
+        <div className="container">
+          <div className="auth-guard-card">
+            <div className="auth-guard-icon">
+              <i className="ph-lock-key"></i>
+            </div>
+            <h2 className="auth-guard-title">Connectez-vous pour accéder à Études à l'Étranger</h2>
+            <p className="auth-guard-text">
+              Vous devez être authentifié pour créer ou consulter votre dossier d'études internationales.
+            </p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => navigate('/login?redirect=/etudes-etranger')}
+            >
+              <i className="ph-user-circle"></i>
+              Me connecter
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Afficher le loading pendant la vérification du dossier
   if (isLoadingDossier) {
     return (
@@ -752,8 +813,8 @@ const EtudesEtrangerComponent = () => {
     );
   }
 
-  // Si un dossier existe, afficher la vue du dossier existant
-  if (existingDossier) {
+  // Si un dossier existe et qu'on n'est pas en mode édition, afficher la vue du dossier existant
+  if (existingDossier && !isEditing) {
     return (
       <>
         <style>{`
@@ -1088,6 +1149,35 @@ const EtudesEtrangerComponent = () => {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
           gap: 1rem;
+        }
+
+        .auth-guard-card {
+          max-width: 600px;
+          margin: 4rem auto;
+          padding: 2.5rem;
+          background: white;
+          border-radius: 1.25rem;
+          text-align: center;
+          box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        }
+
+        .auth-guard-icon {
+          font-size: 3rem;
+          color: #ea580c;
+          margin-bottom: 1rem;
+        }
+
+        .auth-guard-title {
+          font-size: 1.75rem;
+          font-weight: 700;
+          color: #1f2937;
+          margin-bottom: 0.75rem;
+        }
+
+        .auth-guard-text {
+          color: #6b7280;
+          margin-bottom: 1.5rem;
+          line-height: 1.6;
         }
 
         .step-item {

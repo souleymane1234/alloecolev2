@@ -93,7 +93,7 @@ const AlloEcoleBourses = () => {
           <div className="col-lg-8 mx-auto mb-5">
             <h2 className="section-title" data-aos="fade-up">Bourses d'études</h2>
             <p className="section-subtitle text-muted" data-aos="fade-up" data-aos-delay="100">
-              Découvrez les opportunités de bourses d'études disponibles et passées
+              Consultez les fiches de bourses avec toutes les informations utiles. Les candidatures se font directement auprès des organismes annonceurs.
             </p>
           </div>
         </div>
@@ -176,7 +176,7 @@ const AlloEcoleBourses = () => {
                     to={`/bourses/details/${bourse.id}`}
                     className={`btn w-100 ${!isCurrent(bourse) ? 'btn-outline-secondary' : 'btn-primary'}`}
                   >
-                    {!isCurrent(bourse) ? 'Voir détails' : 'Postuler maintenant'}
+                    Consulter la fiche
                   </Link>
                 </div>
               </div>

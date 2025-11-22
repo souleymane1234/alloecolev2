@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import './SchoolsList.css';
+
+const API_BASE_URL = 'https://alloecoleapi-dev.up.railway.app/api/v1';
+const DEFAULT_LOGO = '/images/poster/ecole.png';
+const levelToType = {
+  université: 'Université',
+  lycée: 'Lycée',
+  collège: 'Collège',
+  primaire: 'École Supérieure'
+};
 
 const SchoolsList = () => {
   const [filteredSchools, setFilteredSchools] = useState([]);
@@ -12,11 +21,32 @@ const SchoolsList = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [proximityRadius, setProximityRadius] = useState(10);
   const [navigating, setNavigating] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit] = useState(12);
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
   const navigate = useNavigate();
+  const normalizedSearch = useMemo(() => searchTerm.trim(), [searchTerm]);
 
   // Fonction pour récupérer les écoles depuis l'API
-  const fetchSchools = async () => {
-    const response = await fetch('https://alloecoleapi-dev.up.railway.app/api/v1/students/schools');
+  const fetchSchools = async ({ queryKey }) => {
+    const [_key, page, search, levelSelection, sort, order] = queryKey;
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('limit', limit);
+    params.append('sortBy', sort);
+    params.append('sortOrder', order);
+
+    if (search && search.length >= 2) {
+      params.append('search', search);
+    }
+
+    const apiType = levelSelection !== 'all' ? levelToType[levelSelection] : null;
+    if (apiType) {
+      params.append('type', apiType);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/students/schools?${params.toString()}`);
     
     if (!response.ok) throw new Error(`Erreur ${response.status}`);
     
@@ -24,7 +54,7 @@ const SchoolsList = () => {
 
     if (result.success && result.data) {
       const formattedSchools = result.data.map((item) => {
-        const name = item.name.toLowerCase();
+        const name = (item.name || '').toLowerCase();
         let level = 'université';
         if (name.includes('primaire') || name.includes('école primaire')) level = 'primaire';
         else if (name.includes('collège') || name.includes('college')) level = 'collège';
@@ -42,17 +72,17 @@ const SchoolsList = () => {
           name: item.name,
           level,
           filiere,
-          logo: item.logoUrl || "/images/poster/ecole.png",
-          banner: item.bannerUrl || "/images/poster/ecole.png",
-          address: `${item.city}, ${item.region}`,
+          logo: item.logoUrl || DEFAULT_LOGO,
+          banner: item.bannerUrl || DEFAULT_LOGO,
+          address: item.city && item.region ? `${item.city}, ${item.region}` : item.city || item.region || 'Adresse indisponible',
           description: item.description || item.slogan || "",
           rating: item.isVerified ? 4.5 : 4.0,
           foundedYear: item.createdAt ? new Date(item.createdAt).getFullYear() : null,
           slogan: item.slogan,
           hasPaid: item.hasPaid,
           isVerified: item.isVerified,
-          region: item.region,
-          city: item.city
+          region: item.region || 'Non précisée',
+          city: item.city || 'Non précisée'
         };
       });
 
@@ -63,13 +93,14 @@ const SchoolsList = () => {
   };
 
   // Utilisation de React Query
-  const { data, isLoading, error, isError } = useQuery({
-    queryKey: ['schools'],
+  const { data, isLoading, error, isError, isFetching } = useQuery({
+    queryKey: ['schools', currentPage, normalizedSearch, selectedLevel, sortBy, sortOrder],
     queryFn: fetchSchools,
-    staleTime: 20 * 60 * 1000, // Les données restent fraîches pendant 5 minutes
-    cacheTime: 30 * 60 * 1000, // Les données sont gardées en cache pendant 10 minutes
-    refetchOnWindowFocus: false, // Ne pas recharger quand on revient sur l'onglet
-    retry: 2, // Réessayer 2 fois en cas d'échec
+    keepPreviousData: true,
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 2,
   });
 
   const schools = data?.schools || [];
@@ -94,7 +125,11 @@ const SchoolsList = () => {
 
   useEffect(() => {
     filterSchools();
-  }, [selectedLevel, searchTerm, selectedFiliere, schools]);
+  }, [selectedLevel, selectedFiliere, searchTerm, schools]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [normalizedSearch, selectedLevel, sortBy, sortOrder]);
 
   const filterSchools = () => {
     let filtered = schools;
@@ -109,8 +144,12 @@ const SchoolsList = () => {
       filtered = filtered.filter(school => school.filiere === selectedFiliere);
     }
 
-    // Filtre par recherche textuelle
-    if (searchTerm) {
+    // Filtre par recherche textuelle (côté client si < 2 caractères)
+    if (searchTerm && searchTerm.trim().length < 2) {
+      filtered = filtered.filter(school =>
+        school.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    } else if (searchTerm && searchTerm.trim().length >= 2) {
       filtered = filtered.filter(school =>
         school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (school.address && school.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -362,9 +401,18 @@ const SchoolsList = () => {
               </div>
             )}
             
-            <p style={{ color: 'white', marginBottom: '1rem', textAlign: 'center' }}>
-              {filteredSchools.length} école{filteredSchools.length > 1 ? 's' : ''} trouvée{filteredSchools.length > 1 ? 's' : ''}
-            </p>
+            <div style={{ color: 'white', marginBottom: '1rem', textAlign: 'center' }}>
+              {isFetching ? (
+                'Mise à jour des résultats...'
+              ) : (
+                <>
+                  {filteredSchools.length} école{filteredSchools.length > 1 ? 's' : ''} trouvée{filteredSchools.length > 1 ? 's' : ''}
+                  {pagination && (
+                    <> &middot; Page {pagination.current_page || currentPage} / {pagination.total_pages || '?'} </>
+                  )}
+                </>
+              )}
+            </div>
 
             {filteredSchools.length > 0 ? (
               <div className="schools-grid">
@@ -453,6 +501,30 @@ const SchoolsList = () => {
                 <i className="ph-buildings"></i>
                 <h3>Aucune école trouvée</h3>
                 <p>Essayez de modifier vos critères de recherche</p>
+              </div>
+            )}
+
+            {pagination && pagination.total_pages > 1 && (
+              <div className="pagination-controls">
+                <button
+                  className="pagination-btn"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1 || isFetching}
+                >
+                  <i className="ph-arrow-left"></i>
+                  Précédent
+                </button>
+                <span className="pagination-info">
+                  Page {pagination.current_page || currentPage} sur {pagination.total_pages}
+                </span>
+                <button
+                  className="pagination-btn"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.total_pages))}
+                  disabled={(pagination.current_page || currentPage) >= pagination.total_pages || isFetching}
+                >
+                  Suivant
+                  <i className="ph-arrow-right"></i>
+                </button>
               </div>
             )}
           </div>
