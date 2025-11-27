@@ -84,7 +84,7 @@ const HeaderOne = () => {
       icon: ExploreIcon,
       links: [
         { href: "/questionnaires-interactifs", label: "Questionnaires Intéractifs" },
-        { href: "/questionnaires-interactifs", label: "Simulateur d'orientation" },
+        { href: "/fiches-metiers", label: "Fiches Métiers" },
       ],
     },
     { 
