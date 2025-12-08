@@ -6,7 +6,7 @@ import { styled } from '@mui/material/styles';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
-const apiImageUrl = import.meta.env.VITE_API_URL_IMAGE;
+const apiImageUrl = (import.meta as any).env?.VITE_API_URL_IMAGE;
 
 interface Competition {
   titre_competition: string;
@@ -24,14 +24,15 @@ type CompetBannerProps = {
 };
 
 const StyledButton = styled(Button)(() => ({
-  backgroundColor: '#9b2c9b',
-  color: '#fff',
+  backgroundColor: '#f5f5f5',
+  color: '#333',
   borderRadius: '30px',
-  border: '2px solid #fff',
+  border: '2px solid #e0e0e0',
   fontWeight: 'bold',
   textTransform: 'none',
   '&:hover': {
-    backgroundColor: '#7c217c',
+    backgroundColor: '#e8e8e8',
+    borderColor: '#d0d0d0',
   },
 }));
 
@@ -72,68 +73,72 @@ const CompetBanner: React.FC<CompetBannerProps> = ({ competition, onInscriptionC
           direction={{ xs: 'column', md: 'row' }}
           spacing={2}
           sx={{
-            backgroundColor: '#1a0e24',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
             padding: 3,
             borderRadius: 2,
             width: '100%',
             maxWidth: '1500px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
           }}
           alignItems="center"
         >
           {/* Vidéo */}
-          <Box sx={{ width: { xs: '100%', md: '33%' }, border: '6px solid #351931' }}>
+          <Box sx={{ width: { xs: '100%', md: '33%' }, border: '2px solid #e0e0e0', borderRadius: '8px', overflow: 'hidden' }}>
             <video
               className="w-full h-48 object-cover"
-              src={`${apiImageUrl}/${competition?.url_video_competition}`}
-              poster={`${apiImageUrl}/${competition?.url_photo_competition}`}
+              src={competition?.url_video_competition?.startsWith('http') ? competition.url_video_competition : `${apiImageUrl}/${competition?.url_video_competition}`}
+              poster={competition?.url_photo_competition?.startsWith('http') ? competition.url_photo_competition : `${apiImageUrl}/${competition?.url_photo_competition}`}
               controls
             />
           </Box>
 
           {/* Infos compétition */}
           <Box sx={{ width: { xs: '100%', md: '40%' } }}>
-            <Typography variant="h5" sx={{ color: '#FFD700', fontWeight: 'bold', mb: 2 }}>
+            <Typography variant="h5" sx={{ color: '#333', fontWeight: 'bold', mb: 2, fontSize: '24px', textTransform: 'uppercase' }}>
               🎵 CONCOURS : {competition?.titre_competition || 'IVOIRE ZIK TALENT'}
             </Typography>
 
             <Box
               sx={{
-                backgroundColor: '#2f2f2f',
-                color: '#7f7f7f',
+                backgroundColor: '#f9f9f9',
+                color: '#666',
                 padding: 2,
                 borderRadius: 1,
                 mb: 2,
+                border: '1px solid #e0e0e0',
               }}
             >
               {competition?.description_competition ||
                 '«IVOIRE ZIK TALENT» est un concept qui permet de détecter, révéler et faire la promotion des talents dans le domaine de la musique !'}
             </Box>
 
-            <Typography sx={{ display: 'flex', alignItems: 'center', mb: 1, color: '#7f7f7f' }}>
-              <CalendarMonthIcon sx={{ mr: 1 }} />
+            <Typography sx={{ display: 'flex', alignItems: 'center', mb: 1, color: '#666' }}>
+              <CalendarMonthIcon sx={{ mr: 1, color: '#666' }} />
               <strong>Inscription du</strong>
               <span style={{
-                background: 'black',
-                color: 'white',
+                background: '#f5f5f5',
+                color: '#333',
                 fontWeight: 'bold',
-                padding: '2px 6px',
+                padding: '4px 12px',
                 borderRadius: '6px',
                 marginLeft: '8px',
+                border: '1px solid #e0e0e0',
               }}>
                 {formatDate(competition?.debut_inscription_competition)} au {formatDate(competition?.fin_inscription_competition)}
               </span>
             </Typography>
 
-            <Typography sx={{ display: 'flex', alignItems: 'center', mb: 2, color: '#7f7f7f' }}>
-              <MonetizationOnIcon sx={{ mr: 1 }} />
-              <strong>Coût d’inscription</strong>
+            <Typography sx={{ display: 'flex', alignItems: 'center', mb: 2, color: '#666' }}>
+              <MonetizationOnIcon sx={{ mr: 1, color: '#666' }} />
+              <strong>Coût d'inscription</strong>
               <span style={{
-                background: '#FFD700',
-                color: '#000',
-                padding: '2px 6px',
+                background: '#f5f5f5',
+                color: '#333',
+                padding: '4px 12px',
                 borderRadius: '6px',
                 marginLeft: '8px',
                 fontWeight: 'bold',
+                border: '1px solid #e0e0e0',
               }}>
                 {competition?.cout_inscription ? `${competition.cout_inscription} FCFA` : 'Gratuit'}
               </span>
@@ -143,16 +148,20 @@ const CompetBanner: React.FC<CompetBannerProps> = ({ competition, onInscriptionC
               variant="contained"
               startIcon={<PersonAddAltIcon />}
               sx={{
-                backgroundColor: '#9b2c9b',
+                background: 'linear-gradient(135deg, #f05623 0%, #f78c45 50%, #f9a05f 100%)',
                 px: 4,
                 borderRadius: '30px',
                 fontSize: '16px',
                 textTransform: 'none',
-                '&:hover': { backgroundColor: '#7c217c' },
+                boxShadow: '0 4px 16px rgba(240, 86, 35, 0.3)',
+                '&:hover': { 
+                  background: 'linear-gradient(135deg, #ea580c 0%, #f05623 50%, #f78c45 100%)',
+                  boxShadow: '0 6px 20px rgba(240, 86, 35, 0.4)',
+                },
               }}
               onClick={onInscriptionClick}
             >
-              S’inscrire
+              S'inscrire
             </Button>
           </Box>
 
@@ -170,14 +179,19 @@ const CompetBanner: React.FC<CompetBannerProps> = ({ competition, onInscriptionC
 
       {/* Modal */}
       <Dialog open={!!openModal} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ backgroundColor: '#9b2c9b', color: '#fff' }}>
+        <DialogTitle sx={{ 
+          backgroundColor: '#f5f5f5', 
+          color: '#333',
+          fontWeight: 'bold',
+          borderBottom: '1px solid #e0e0e0'
+        }}>
           {openModal === 'lots' && 'Lots à gagner'}
           {openModal === 'reglement' && 'Règlement du jeu'}
           {openModal === 'principes' && 'Principes du jeu'}
           {openModal === 'sponsors' && 'Nos sponsors'}
         </DialogTitle>
-        <DialogContent dividers sx={{ backgroundColor: '#f9f9f9' }}>
-          <Typography>{openModal ? modalContents[openModal] : ''}</Typography>
+        <DialogContent dividers sx={{ backgroundColor: '#ffffff' }}>
+          <Typography sx={{ color: '#666', lineHeight: 1.8 }}>{openModal ? modalContents[openModal] : ''}</Typography>
         </DialogContent>
       </Dialog>
     </>

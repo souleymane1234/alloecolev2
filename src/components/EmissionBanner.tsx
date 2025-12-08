@@ -1,10 +1,10 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import axios from 'axios';
 import Stack from '@mui/material/Stack';
-const apiUrl = import.meta.env.VITE_API_URL;
-const apiImageUrl = import.meta.env.VITE_API_URL_IMAGE;
+const apiUrl = (import.meta as any).env?.VITE_API_URL;
+const apiImageUrl = (import.meta as any).env?.VITE_API_URL_IMAGE;
 
 
 
@@ -17,20 +17,37 @@ interface Emission {
 
 const EmissionBanner: React.FC = () => {
     const { code_emission } = useParams();
-    const [emissionsInfo, setEmissionsInfo] = useState<Emission | null>(null);
-    const [loading, setLoading] = useState(true);
+    const location = useLocation();
+    const showFromState = location.state?.show;
+    
+    const defaultEmission: Emission = {
+      titre_emission: showFromState?.title || 'Battle of Talents',
+      description_emission: showFromState?.description || 'Une compétition musicale intense où les talents s\'affrontent pour décrocher le titre ultime.',
+      url_video_emission: showFromState?.videoUrl || 'https://www.w3schools.com/html/mov_bbb.mp4',
+      url_photo_emission: showFromState?.poster || 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&q=80',
+    };
+    
+    const [emissionsInfo, setEmissionsInfo] = useState<Emission | null>(defaultEmission);
+    const [loading, setLoading] = useState(false);
 
         useEffect(() => {
-          axios.get(`${apiUrl}/emissions/${code_emission}`)
-            .then((response) => {
-              setEmissionsInfo(response.data.emission);
-              console.log('Emission Info:', response.data.emission); // Log emission info
-              setLoading(false);
-            })
-            .catch((error) => {
-              console.error('Erreur lors de la récupération des émissions :', error);
-              setLoading(false);
-            });
+          // Essayer de récupérer depuis l'API, sinon utiliser les données par défaut
+          if (code_emission && apiUrl) {
+            setLoading(true);
+            axios.get(`${apiUrl}/emissions/${code_emission}`)
+              .then((response) => {
+                setEmissionsInfo(response.data.emission || defaultEmission);
+                console.log('Emission Info:', response.data.emission);
+                setLoading(false);
+              })
+              .catch((error) => {
+                console.error('Erreur lors de la récupération des émissions :', error);
+                setEmissionsInfo(defaultEmission);
+                setLoading(false);
+              });
+          } else {
+            setEmissionsInfo(defaultEmission);
+          }
         }, [code_emission]);
     
         if (loading) return <p>Chargement...</p>;
@@ -66,9 +83,9 @@ const EmissionBanner: React.FC = () => {
         <Box sx={{ width: { xs: '100%' }, padding: 2 }}>
         <div className="w-full  aspect-video">
         <video
-              className="w-full h-64object-cover"
-              src={`${apiImageUrl}/${emissionsInfo?.url_video_emission}`}
-              poster={`${apiImageUrl}/${emissionsInfo?.url_photo_emission}`}
+              className="w-full h-64 object-cover"
+              src={emissionsInfo?.url_video_emission?.startsWith('http') ? emissionsInfo.url_video_emission : `${apiImageUrl}/${emissionsInfo?.url_video_emission}`}
+              poster={emissionsInfo?.url_photo_emission?.startsWith('http') ? emissionsInfo.url_photo_emission : `${apiImageUrl}/${emissionsInfo?.url_photo_emission}`}
               controls
             ></video>
       </div>

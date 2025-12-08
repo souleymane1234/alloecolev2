@@ -6,7 +6,7 @@ import { Play } from 'lucide-react';
 import Button from '@mui/material/Button';
 import { Link } from 'react-router-dom';
 import Dialog from '@mui/material/Dialog';
-const apiImageUrl = import.meta.env.VITE_API_URL_IMAGE;
+const apiImageUrl = (import.meta as any).env?.VITE_API_URL_IMAGE;
 
 interface Participant {
   id: number;
@@ -35,13 +35,39 @@ function ProfileCard({ participants }: Props) {
   };
 
   return (
-    <div className='bg-[#120a1c]'>
+    <div style={{ 
+      background: '#ffffff',
+      minHeight: '100vh',
+      position: 'relative',
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 
+          'radial-gradient(circle at 20% 30%, rgba(240, 86, 35, 0.08) 0%, transparent 40%),' +
+          'radial-gradient(circle at 80% 70%, rgba(249, 160, 95, 0.08) 0%, transparent 40%),' +
+          'radial-gradient(circle at 50% 50%, rgba(255, 177, 153, 0.06) 0%, transparent 50%)',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}></div>
       <Typography
         variant="h4"
         align="center"
         gutterBottom
-        fontWeight={"bold"}
-        sx={{ mb: 2, color: 'white', paddingTop: '20px' }}
+        fontWeight="bold"
+        sx={{ 
+          mb: 2, 
+          color: '#333', 
+          paddingTop: '40px',
+          fontSize: '36px',
+          textTransform: 'uppercase',
+          letterSpacing: '2px',
+          position: 'relative',
+          zIndex: 1,
+        }}
       >
         Liste des participants
       </Typography>
@@ -49,7 +75,7 @@ function ProfileCard({ participants }: Props) {
       <Box
         sx={{
           width: '100%',
-          maxWidth: '1200px',
+          maxWidth: '1400px',
           mx: 'auto',
           my: 4,
           p: 2,
@@ -62,70 +88,80 @@ function ProfileCard({ participants }: Props) {
             xl: 'repeat(8, 1fr)' // ≥1536px : 6 cartes
           },
           gap: 3,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {participants.map((profile) => (
           <Card
             key={profile.id}
             sx={{
-              backgroundColor: '#3d033a',
-              border: 'none',
-              color: 'white',
+              backgroundColor: '#ffffff',
+              border: '1px solid rgba(240, 86, 35, 0.1)',
+              color: '#333',
               position: 'relative',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              minHeight: 300, // Réduction de la hauteur
+              minHeight: 300,
               height: '100%',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+              transition: 'all 0.4s ease',
+              '&:hover': {
+                transform: 'translateY(-8px) scale(1.02)',
+                boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15)',
+              },
             }}
           >
             <Box>
-              <div className="relative z-10 flex flex-col items-center justify-between h-full p-4 text-white">
-                {/* Décor */}
-                <div
-                  className="w-64 h-32 mb-[-4rem] mt-[-2rem] z-0"
-                  style={{
-                    backgroundImage: "url('/img/bg1.jpg')",
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  }}
-                ></div>
-
+              <div className="relative z-10 flex flex-col items-center justify-between h-full p-4">
                 {profile.rang && (
-                  <div className="absolute top-4 right-4 bg-[#ff0100] text-white w-8 h-8 rounded flex items-center justify-center font-bold text-sm z-10">
+                  <div 
+                    className="absolute top-4 right-4 text-white w-8 h-8 rounded flex items-center justify-center font-bold text-sm z-10"
+                    style={{
+                      background: '#666',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                    }}
+                  >
                     {profile.rang}
                   </div>
                 )}
 
-                <div className="w-24 h-24 rounded-full overflow-hidden mb-4 border-4 border-white/20 shadow-xl relative z-10">
+                <div 
+                  className="w-24 h-24 rounded-full overflow-hidden mb-4 shadow-xl relative z-10"
+                  style={{
+                    border: '4px solid #e0e0e0',
+                  }}
+                >
                   <img
-                    src={`${apiImageUrl}/${profile.url_photo_identite}`}
+                    src={profile.url_photo_identite?.startsWith('http') ? profile.url_photo_identite : `${apiImageUrl}/${profile.url_photo_identite}`}
                     alt={`${profile.nom_correct}`}
                     className="w-full h-full object-cover"
                   />
                 </div>
 
-                <div className="text-center mb-3" style={{ minHeight: '100px', backgroundColor: '#120a1c' }}>
+                <div className="text-center mb-3" style={{ minHeight: '100px', width: '100%' }}>
                 <div className="text-center px-2">
                     <div className="flex items-center justify-center gap-2 mb-1">
                       <span className="text-xl">🇨🇮</span>
-                      <h2 className="text-xl font-bold">{profile.nom_correct}</h2>
+                      <h2 className="text-xl font-bold" style={{ color: '#333' }}>{profile.nom_correct}</h2>
                     </div>
-                    <p className="text-sm text-white/90">{profile.prenoms_correct}</p>
+                    <p className="text-sm" style={{ color: '#666' }}>{profile.prenoms_correct}</p>
                   </div>
                   <div
-                    className="flex items-center justify-center gap-1 text-white/80 mt-auto"
-                    style={{ paddingTop: 12 }}
+                    className="flex items-center justify-center gap-1 mt-auto"
+                    style={{ paddingTop: 12, color: '#666' }}
                   >
                     <div className="flex gap-1">
                       {[...Array(4)].map((_, i) => (
                         <div
                           key={i}
-                          className="w-1 h-3 bg-white/60 rounded-full"
+                          className="w-1 h-3 rounded-full"
+                          style={{ backgroundColor: '#d0d0d0' }}
                         ></div>
                       ))}
                     </div>
-                    <span className="ml-2 font-semibold text-sm">{profile.nbre_vote} pts</span>
+                    <span className="ml-2 font-semibold text-sm" style={{ color: '#666' }}>{profile.nbre_vote} pts</span>
                   </div>
                 </div>
 
@@ -134,14 +170,18 @@ function ProfileCard({ participants }: Props) {
                     fullWidth
                     className="font-semibold py-2 rounded-full shadow-lg"
                     sx={{
-                      backgroundColor: '#f9c254',
-                      color: 'black',
+                      background: 'linear-gradient(135deg, #f05623 0%, #f78c45 50%, #f9a05f 100%)',
+                      color: 'white',
                       fontWeight: 'bold',
-                      '&:hover': { backgroundColor: '#f6ddab' },
+                      boxShadow: '0 4px 16px rgba(240, 86, 35, 0.3)',
+                      '&:hover': { 
+                        background: 'linear-gradient(135deg, #ea580c 0%, #f05623 50%, #f78c45 100%)',
+                        boxShadow: '0 6px 20px rgba(240, 86, 35, 0.4)',
+                      },
                     }}
                     startIcon={<Play className="w-4 h-4" />}
-                    style={{ fontSize: '10px' }}
-                    onClick={() => handleOpenVideo(`${apiImageUrl}/${profile.url_video}`)}
+                    style={{ fontSize: '12px' }}
+                    onClick={() => handleOpenVideo(profile.url_video?.startsWith('http') ? profile.url_video : `${apiImageUrl}/${profile.url_video}`)}
                   >
                     Voir la vidéo
                   </Button>
@@ -150,7 +190,17 @@ function ProfileCard({ participants }: Props) {
                     <Button
                       fullWidth
                       className="py-2 rounded-full shadow-lg"
-                      sx={{ backgroundColor: '#ff0100', fontWeight: 'bold', color: 'white', marginTop: '10px', '&:hover': { backgroundColor: '#e63946' } }}
+                      sx={{ 
+                        background: 'linear-gradient(135deg, #f05623 0%, #f78c45 50%, #f9a05f 100%)', 
+                        fontWeight: 'bold', 
+                        color: 'white', 
+                        marginTop: '10px',
+                        boxShadow: '0 4px 16px rgba(240, 86, 35, 0.3)',
+                        '&:hover': { 
+                          background: 'linear-gradient(135deg, #ea580c 0%, #f05623 50%, #f78c45 100%)',
+                          boxShadow: '0 6px 20px rgba(240, 86, 35, 0.4)',
+                        }
+                      }}
                     >
                       Je vote
                     </Button>

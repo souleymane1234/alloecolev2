@@ -61,9 +61,9 @@ const EmissionCard: React.FC<Props> = ({ titleComponent, titleButton }) => {
           p: 2,
           display: 'grid',
           gridTemplateColumns: {
-            xs: '1fr',        // mobile
-            sm: 'repeat(2, 1fr)', // tablette
-            md: 'repeat(4, 1fr)'  // desktop
+            xs: '1fr',
+            sm: 'repeat(2, 1fr)',
+            md: 'repeat(4, 1fr)'
           },
           gap: 2,
         }}
@@ -95,14 +95,12 @@ const EmissionCard: React.FC<Props> = ({ titleComponent, titleButton }) => {
                     {card.description_emission}
                   </p>
 
-                  <button className="mt-2 w-full bg-gradient-to-r from-fuchsia-700 to-purple-700 hover:bg-purple-900 text-white font-medium text-sm py-1.5 px-3 rounded-lg transition duration-300">
-                    <Link
-                      to={`/emissions/detail/${card.code_emission}`}
-                      style={{ color: 'white', textDecoration: 'none' }}
-                    >
-                      {titleButton}
-                    </Link>
-                  </button>
+                  <Link
+                    to={`/emissions/detail/${card.code_emission}`}
+                    className="mt-2 block w-full bg-gradient-to-r from-fuchsia-700 to-purple-700 hover:bg-purple-900 text-white font-medium text-sm py-1.5 px-3 rounded-lg transition duration-300 no-underline"
+                  >
+                    {titleButton}
+                  </Link>
                 </div>
               </div>
             </Box>
