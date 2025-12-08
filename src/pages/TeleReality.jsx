@@ -25,6 +25,7 @@ const TeleReality = () => {
   const allShows = [
     {
       id: 1,
+      code_emission: 'EMISSION-001',
       title: 'Battle of Talents',
       description: 'Une compétition musicale intense où les talents s\'affrontent pour décrocher le titre ultime.',
       videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
@@ -38,6 +39,7 @@ const TeleReality = () => {
     },
     {
       id: 2,
+      code_emission: 'EMISSION-002',
       title: 'Street Challenge',
       description: 'Des défis urbains spectaculaires dans les rues de Paris, mêlant sport extrême et stratégie.',
       videoUrl: 'https://www.w3schools.com/html/movie.mp4',
@@ -50,6 +52,7 @@ const TeleReality = () => {
     },
     {
       id: 3,
+      code_emission: 'EMISSION-003',
       title: 'Love Connection',
       description: 'Trouvez l\'amour dans une aventure romantique unique où chaque choix compte.',
       videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
@@ -64,6 +67,7 @@ const TeleReality = () => {
     },
     {
       id: 4,
+      code_emission: 'EMISSION-004',
       title: 'Aventure Extrême',
       description: 'Survivre dans les conditions les plus difficiles. Seuls les plus forts resteront.',
       videoUrl: 'https://www.w3schools.com/html/movie.mp4',
@@ -76,6 +80,7 @@ const TeleReality = () => {
     },
     {
       id: 5,
+      code_emission: 'EMISSION-005',
       title: 'Chef Academy',
       description: 'Apprenez les secrets de la haute cuisine avec les meilleurs chefs du pays.',
       videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
@@ -89,6 +94,7 @@ const TeleReality = () => {
     },
     {
       id: 6,
+      code_emission: 'EMISSION-006',
       title: 'Dance Revolution',
       description: 'Les meilleurs danseurs s\'affrontent dans des chorégraphies spectaculaires et innovantes.',
       videoUrl: 'https://www.w3schools.com/html/movie.mp4',
@@ -107,10 +113,12 @@ const TeleReality = () => {
     navigate(`/emission/${showId}`);
   };
 
-  const handleInterested = (showId, e) => {
+  const handleInterested = (show, e) => {
     e.stopPropagation();
-    console.log('Interested in show:', showId);
-    // Ajouter ici la logique pour marquer l'intérêt
+    // Rediriger vers la page des éditions de l'émission
+    navigate(`/emission/${show.code_emission || show.id}`, { 
+      state: { show } 
+    });
   };
 
   const formatViews = (views) => {
@@ -203,7 +211,7 @@ const TeleReality = () => {
                   
                   <button 
                     className="interest-button"
-                    onClick={(e) => handleInterested(show.id, e)}
+                    onClick={(e) => handleInterested(show, e)}
                   >
                     <span>Ça m'intéresse</span>
                   </button>

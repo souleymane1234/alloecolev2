@@ -18,6 +18,7 @@ import MyOrientationJobs from './pages/MyOrientationJobs.jsx'
 import Quiz from './pages/Quiz.jsx'
 import QuizPlay from './pages/QuizPlay.jsx'
 import TeleReality from './pages/TeleReality.jsx'
+import EmissionDetail from './pages/EmissionDetail.jsx'
 import Toon from './pages/Toon.jsx'
 import Magazine from './pages/Magazine.jsx'
 import MagazineReader from './pages/MagazineReader.jsx'
@@ -61,6 +62,7 @@ function App() {
             <Route path="quiz" element={<Quiz />} />
             <Route path="quiz/:id" element={<QuizPlay />} />
             <Route path="emissions-telerealite" element={<TeleReality />} />
+            <Route path="emission/:code_emission" element={<EmissionDetail />} />
             <Route path="toon" element={<Toon />} />
             <Route path="magazine" element={<Magazine />} />
             <Route path="magazine/read/:id" element={<MagazineReader />} />

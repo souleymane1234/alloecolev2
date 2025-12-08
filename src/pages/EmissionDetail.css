@@ -1,0 +1,217 @@
+/* Emission Detail Page */
+.emission-detail-page {
+  min-height: 100vh;
+  background: #ffffff;
+  position: relative;
+}
+
+.emission-detail-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(240, 86, 35, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(249, 160, 95, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(255, 177, 153, 0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Loader styles - same as home page */
+.school-detail-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(248, 250, 252, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(3px);
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.spinner-container {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.spinner-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 4px solid transparent;
+  border-top: 4px solid #f05623;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinner-ring:nth-child(2) {
+  width: 80%;
+  height: 80%;
+  top: 10%;
+  left: 10%;
+  border-top-color: #f78c45;
+  animation-duration: 1.5s;
+  animation-direction: reverse;
+}
+
+.spinner-ring:nth-child(3) {
+  width: 60%;
+  height: 60%;
+  top: 20%;
+  left: 20%;
+  border-top-color: #f9a05f;
+  animation-duration: 2s;
+}
+
+.loading-text {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Competition Card Styles */
+.competition-card {
+  border-radius: 24px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.current-edition-card {
+  position: relative;
+  transform: scale(1.02);
+}
+
+.current-edition-card::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  background: linear-gradient(135deg, #f05623, #f78c45, #f9a05f);
+  border-radius: 24px;
+  z-index: -1;
+  opacity: 0.3;
+  animation: borderGlow 2s ease-in-out infinite;
+}
+
+@keyframes borderGlow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes badgeFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.competition-badge {
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.interest-button-detail {
+  position: relative;
+  overflow: hidden;
+}
+
+.interest-button-detail::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.interest-button-detail:hover::before {
+  left: 100%;
+}
+
+.interest-button-detail:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(240, 86, 35, 0.4);
+  background: linear-gradient(135deg, #ea580c 0%, #f05623 50%, #f78c45 100%);
+}
+
+.interest-button-detail:active {
+  transform: translateY(0);
+}
+
+/* Banner Styles */
+.emission-banner-title {
+  color: #ffffff;
+  font-size: 48px;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  line-height: 1.2;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.emission-banner-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .emission-banner-title {
+    font-size: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .current-edition-badge {
+    font-size: 10px !important;
+    padding: 4px 12px !important;
+    top: -10px !important;
+  }
+
+  .emission-banner-title {
+    font-size: 32px;
+    margin-bottom: 16px;
+  }
+
+  .emission-banner-description {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .emission-banner-title {
+    font-size: 28px;
+  }
+
+  .emission-banner-description {
+    font-size: 15px;
+  }
+}
+
