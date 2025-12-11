@@ -77,6 +77,7 @@ const HeaderOne = () => {
         { href: "/bourses", label: "Bourses d'étude" },
         { href: "/etudes-etranger", label: "Études à l'étranger" },
         { href: "/permutation", label: "Permutations" },
+        { href: "/revision", label: "Révision" },
       ],
     },
     {

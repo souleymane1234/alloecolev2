@@ -24,6 +24,9 @@ import VotingComponent from './pages/VotingComponent.tsx'
 import Toon from './pages/Toon.jsx'
 import Magazine from './pages/Magazine.jsx'
 import MagazineReader from './pages/MagazineReader.jsx'
+import Revision from './pages/Revision.jsx'
+import RevisionDetail from './pages/RevisionDetail.jsx'
+import RevisionPublish from './pages/RevisionPublish.jsx'
 
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
@@ -70,6 +73,9 @@ function App() {
             <Route path="toon" element={<Toon />} />
             <Route path="magazine" element={<Magazine />} />
             <Route path="magazine/read/:id" element={<MagazineReader />} />
+            <Route path="revision" element={<Revision />} />
+            <Route path="revision/publier" element={<RevisionPublish />} />
+            <Route path="revision/:id" element={<RevisionDetail />} />
             {/* Ajoute d'autres routes ici si nécessaire */}
             <Route path="*" element={<div>Page Not Found</div>} />
           </Route>
