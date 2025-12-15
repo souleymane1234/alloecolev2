@@ -12,8 +12,9 @@ const RevisionDetail = () => {
   const exercise = exerciseFromState || getRevisionExerciseById(id);
   const [hasAccess, setHasAccess] = useState(exercise?.isFree ?? false);
   const [answers, setAnswers] = useState({});
-  const [submitted, setSubmitted] = useState(false);
-  const [score, setScore] = useState(null);
+  const [submittedSubjects, setSubmittedSubjects] = useState(new Set());
+  const [subjectScores, setSubjectScores] = useState({});
+  const [currentSubjectIndex, setCurrentSubjectIndex] = useState(0);
 
   if (!exercise) {
     return (
@@ -28,8 +29,30 @@ const RevisionDetail = () => {
     );
   }
 
+  const subjects = useMemo(() => {
+    if (!exercise.questions?.length) return ['Exercice'];
+    const seen = new Set();
+    const order = [];
+    exercise.questions.forEach((q) => {
+      const s = q.subject || 'Exercice';
+      if (!seen.has(s)) {
+        seen.add(s);
+        order.push(s);
+      }
+    });
+    return order.length ? order : ['Exercice'];
+  }, [exercise.questions]);
+
+  const currentSubject = subjects[currentSubjectIndex] || subjects[0];
+  const isLastSubject = currentSubjectIndex === subjects.length - 1;
+
+  const subjectQuestions = useMemo(() => {
+    const label = currentSubject || 'Exercice';
+    return exercise.questions?.filter((q) => (q.subject || 'Exercice') === label) || [];
+  }, [exercise.questions, currentSubject]);
+
   const handleSelect = (question, optionId) => {
-    if (submitted) return;
+    if (submittedSubjects.has(currentSubject)) return;
     if (question.type === 'qcu') {
       setAnswers((prev) => ({ ...prev, [question.id]: [optionId] }));
     } else {
@@ -46,15 +69,14 @@ const RevisionDetail = () => {
   };
 
   const handleInput = (question, value) => {
-    if (submitted) return;
+    if (submittedSubjects.has(currentSubject)) return;
     setAnswers((prev) => ({ ...prev, [question.id]: value }));
   };
 
-  const evaluation = useMemo(() => {
-    if (!submitted) return null;
-    const total = exercise.questions.length;
+  const evaluateQuestions = (questions) => {
+    const total = questions.length;
     let good = 0;
-    const details = exercise.questions.map((q) => {
+    const details = questions.map((q) => {
       let isCorrect = false;
       if (q.type === 'input') {
         const givenVal = (answers[q.id] || '').toString().trim().toLowerCase();
@@ -71,36 +93,34 @@ const RevisionDetail = () => {
       return { id: q.id, isCorrect };
     });
     return { total, good, details };
-  }, [submitted, exercise.questions, answers]);
+  };
 
-  const handleSubmit = () => {
-    if (!hasAccess) return;
-    setSubmitted(true);
-    if (!exercise.questions?.length) return;
-    const total = exercise.questions.length;
-    let good = 0;
-    exercise.questions.forEach((q) => {
-      let isCorrect = false;
-      if (q.type === 'input') {
-        const givenVal = (answers[q.id] || '').toString().trim().toLowerCase();
-        const correctVals = (q.correct || []).map((c) => c.toString().trim().toLowerCase());
-        isCorrect = correctVals.includes(givenVal);
-      } else {
-        const correctSet = new Set(q.correct);
-        const given = new Set(answers[q.id] || []);
-        isCorrect =
-          correctSet.size === given.size &&
-          [...correctSet].every((x) => given.has(x));
-      }
-      if (isCorrect) good += 1;
+  const evaluation = useMemo(() => {
+    // For rendering per question, rely on subjectScores to know if subject validated
+    const map = {};
+    Object.entries(subjectScores).forEach(([subj, val]) => {
+      val.details.forEach((d) => {
+        map[d.id] = d.isCorrect;
+      });
     });
-    setScore({ total, good });
+    return map;
+  }, [subjectScores]);
+
+  const handleValidateSubject = () => {
+    if (!hasAccess) return;
+    const result = evaluateQuestions(subjectQuestions);
+    setSubjectScores((prev) => ({ ...prev, [currentSubject]: result }));
+    setSubmittedSubjects((prev) => new Set([...prev, currentSubject]));
+    if (!isLastSubject) {
+      setCurrentSubjectIndex((idx) => idx + 1);
+    }
   };
 
   const handleReset = () => {
     setAnswers({});
-    setSubmitted(false);
-    setScore(null);
+    setSubmittedSubjects(new Set());
+    setSubjectScores({});
+    setCurrentSubjectIndex(0);
   };
 
   return (
@@ -115,11 +135,22 @@ const RevisionDetail = () => {
                 {exercise.certified ? 'Certifié' : 'Non certifié'}
               </span>
               <span className="price-chip">{exercise.price}</span>
+              {exercise.category === 'examen' && (
+                <>
+                  {exercise.level && <span className="exam-pill">{exercise.level}</span>}
+                  {exercise.series && <span className="exam-pill light">Série {exercise.series}</span>}
+                </>
+              )}
             </div>
             <p className="exercise-teacher detail-teacher-line">
               Professeur : <strong>{exercise.teacher.name}</strong>
             </p>
           </div>
+          {exercise.category === 'examen' && (
+            <button className="btn-secondary" onClick={() => navigate('/revision')}>
+              Retour aux examens
+            </button>
+          )}
         </div>
 
         <div className="revision-detail">
@@ -149,18 +180,22 @@ const RevisionDetail = () => {
 
           {hasAccess && (
             <div className="question-list">
-              {exercise.questions?.map((q) => {
+              {subjectQuestions?.map((q) => {
                 const selected = new Set(answers[q.id] || []);
-                const evalForQ = evaluation?.details.find((d) => d.id === q.id);
+                const isSubjectSubmitted = submittedSubjects.has(currentSubject);
+                const isCorrect = evaluation[q.id];
                 return (
                   <div key={q.id} className="question-card">
                     <div className="question-head">
-                      <div className="question-type">
-                        {q.type === 'qcm' ? 'QCM' : q.type === 'qcu' ? 'QCU' : 'Réponse libre'}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        {q.subject && <span className="subject-pill">{q.subject}</span>}
+                        <div className="question-type">
+                          {q.type === 'qcm' ? 'QCM' : q.type === 'qcu' ? 'QCU' : 'Réponse libre'}
+                        </div>
                       </div>
-                      {submitted && (
-                        <div className={`question-result ${evalForQ?.isCorrect ? 'ok' : 'ko'}`}>
-                          {evalForQ?.isCorrect ? 'Bonne réponse' : 'À revoir'}
+                      {isSubjectSubmitted && (
+                        <div className={`question-result ${isCorrect ? 'ok' : 'ko'}`}>
+                          {isCorrect ? 'Bonne réponse' : 'À revoir'}
                         </div>
                       )}
                     </div>
@@ -172,15 +207,15 @@ const RevisionDetail = () => {
                         placeholder={q.placeholder || 'Votre réponse'}
                         value={answers[q.id] || ''}
                         onChange={(e) => handleInput(q, e.target.value)}
-                        disabled={submitted}
+                        disabled={isSubjectSubmitted}
                       />
                     ) : (
                       <div className="options">
                         {q.options?.map((opt) => {
                           const isSelected = selected.has(opt.id);
-                          const isCorrect = submitted && q.correct.includes(opt.id);
-                          const showState = submitted
-                            ? isCorrect
+                          const isOptionCorrect = isSubjectSubmitted && q.correct.includes(opt.id);
+                          const showState = isSubjectSubmitted
+                            ? isOptionCorrect
                               ? 'correct'
                               : isSelected
                               ? 'wrong'
@@ -194,7 +229,7 @@ const RevisionDetail = () => {
                               type="button"
                               className={`option ${showState}`}
                               onClick={() => handleSelect(q, opt.id)}
-                              disabled={submitted}
+                              disabled={isSubjectSubmitted}
                             >
                               <span className="option-check">
                                 {q.type === 'qcm' ? '□' : '○'}
@@ -221,15 +256,33 @@ const RevisionDetail = () => {
             </button>
             <button
               className="btn-primary"
-              onClick={handleSubmit}
-              disabled={(submitted && !!score) || !hasAccess}
+              onClick={handleValidateSubject}
+              disabled={!hasAccess}
             >
-              {!hasAccess ? 'Payer pour commencer' : submitted ? 'Corrigé envoyé' : 'Envoyer mes réponses'}
+              {!hasAccess
+                ? 'Payer pour commencer'
+                : isLastSubject
+                ? 'Valider'
+                : 'Valider et passer au sujet suivant'}
             </button>
           </div>
-          {score && (
+          {Object.keys(subjectScores).length > 0 && (
             <div className="score-banner">
-              Score : {score.good} / {score.total}
+              {subjects.map((subj) => {
+                const res = subjectScores[subj];
+                return (
+                  <div key={subj} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+                    <span className="subject-pill">{subj}</span>
+                    {res ? (
+                      <span>
+                        Score : {res.good} / {res.total}
+                      </span>
+                    ) : (
+                      <span>En cours...</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

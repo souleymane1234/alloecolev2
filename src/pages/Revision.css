@@ -35,6 +35,99 @@
   font-size: 16px;
 }
 
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0 4px;
+}
+
+.level-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 8px 0 12px;
+  padding: 10px 0 6px;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.level-label {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.level-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.level-chip {
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #0f172a;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.level-chip.active {
+  background: linear-gradient(135deg, #f05623 0%, #f78c45 50%, #f9a05f 100%);
+  color: white;
+  border-color: #f78c45;
+}
+
+.level-chip:hover {
+  transform: translateY(-1px);
+  border-color: #cbd5e1;
+}
+
+.filter-chip {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.filter-chip .filter-count {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.filter-chip.active {
+  background: linear-gradient(135deg, #f05623 0%, #f78c45 50%, #f9a05f 100%);
+  color: white;
+  border-color: #f78c45;
+}
+
+.filter-chip.active .filter-count {
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+}
+
+.filter-chip:hover {
+  transform: translateY(-1px);
+  border-color: #cbd5e1;
+}
+
 .publish-button {
   background: linear-gradient(135deg, #f05623 0%, #f78c45 50%, #f9a05f 100%);
   color: white;
@@ -98,6 +191,84 @@
   font-size: 18px;
   font-weight: 700;
   color: #0f172a;
+}
+
+.exercise-category {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.category-pill.interrogation {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4338ca;
+}
+
+.category-pill.devoir {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #c2410c;
+}
+
+.category-pill.examen {
+  background: #eefbf3;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.level-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #ecfeff;
+  color: #0f172a;
+  border: 1px solid #bae6fd;
+}
+
+.exam-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.exam-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.exam-pill.light {
+  background: #fefce8;
+  color: #854d0e;
+  border-color: #fcd34d;
 }
 
 .exercise-teacher {
@@ -233,6 +404,19 @@
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.subject-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  font-weight: 800;
+  font-size: 12px;
 }
 
 .question-type {
