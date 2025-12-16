@@ -78,6 +78,7 @@ const HeaderOne = () => {
         { href: "/etudes-etranger", label: "Études à l'étranger" },
         { href: "/permutation", label: "Permutations" },
         { href: "/revision", label: "Révision" },
+        { href: "/assistance-demande", label: "Demande d'assistance" },
       ],
     },
     {

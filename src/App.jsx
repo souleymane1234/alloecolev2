@@ -17,6 +17,7 @@ import JobSheetDetail from './pages/JobSheetDetail.jsx'
 import MyOrientationJobs from './pages/MyOrientationJobs.jsx'
 import Quiz from './pages/Quiz.jsx'
 import QuizPlay from './pages/QuizPlay.jsx'
+import Jeux from './pages/Jeux.jsx'
 import TeleReality from './pages/TeleReality.jsx'
 import EmissionDetail from './pages/EmissionDetail.tsx'
 import CompetDetail from './pages/CompetDetail.tsx'
@@ -27,6 +28,7 @@ import MagazineReader from './pages/MagazineReader.jsx'
 import Revision from './pages/Revision.jsx'
 import RevisionDetail from './pages/RevisionDetail.jsx'
 import RevisionPublish from './pages/RevisionPublish.jsx'
+import AssistanceDemande from './pages/AssistanceDemande.jsx'
 
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
@@ -66,6 +68,7 @@ function App() {
             <Route path="mes-metiers-orientation" element={<MyOrientationJobs />} />
             <Route path="quiz" element={<Quiz />} />
             <Route path="quiz/:id" element={<QuizPlay />} />
+            <Route path="jeux" element={<Jeux />} />
             <Route path="emissions-telerealite" element={<TeleReality />} />
             <Route path="emission/:code_emission" element={<EmissionDetail />} />
             <Route path="competitions/:code_competition/detail" element={<CompetDetail />} />
@@ -76,6 +79,7 @@ function App() {
             <Route path="revision" element={<Revision />} />
             <Route path="revision/publier" element={<RevisionPublish />} />
             <Route path="revision/:id" element={<RevisionDetail />} />
+            <Route path="assistance-demande" element={<AssistanceDemande />} />
             {/* Ajoute d'autres routes ici si nécessaire */}
             <Route path="*" element={<div>Page Not Found</div>} />
           </Route>
