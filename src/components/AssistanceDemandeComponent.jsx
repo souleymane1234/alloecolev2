@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import InitialAssistanceForm from './assistance/InitialAssistanceForm';
+import BourseForm from './assistance/BourseForm';
+import tokenManager from '../helper/tokenManager';
 
 const API_BASE_URL = 'https://alloecoleapi-dev.up.railway.app/api/v1';
 
@@ -49,20 +52,28 @@ const AssistanceDemandeComponent = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('access_token'));
+  const [initialFormCompleted, setInitialFormCompleted] = useState(false);
+  const [initialFormData, setInitialFormData] = useState({});
+  const [assistanceType, setAssistanceType] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
   
   const [formData, setFormData] = useState({
-    // Étape 1: Localisation (selon doc: Ville + Établissement)
+    // Données du formulaire initial
+    ...initialFormData,
+    
+    // Étape 1: Localisation (selon doc: Ville + Établissement) - pour documents uniquement
     city: '',
     school: '',
     
-    // Étape 2: Méthode de réception
+    // Étape 2: Méthode de réception - pour documents uniquement
     receptionMode: '', // 'email', 'agence', 'expedition'
     shippingZone: '', // Si expédition: 'CEDEAO', 'Hors CEDEAO', 'Asie', 'Europe'
     
-    // Étape 3: Type de document
+    // Étape 3: Type de document - pour documents uniquement
     documentType: '', // Bulletin scolaire, Certificat de scolarité, Certification, Duplication de diplôme, Attestation de réussite
     
-    // Étape 4: Informations additionnelles
+    // Étape 4: Informations additionnelles - pour documents uniquement
     classLevel: '',
     copies: 1,
     legalisation: false,
@@ -84,13 +95,116 @@ const AssistanceDemandeComponent = () => {
 
   const [errors, setErrors] = useState({});
 
+  // Vérifier l'authentification et charger le profil
   useEffect(() => {
-    const handleStorageChange = () => {
-      setIsAuthenticated(!!localStorage.getItem('access_token'));
+    const checkAuthAndLoadProfile = async () => {
+      const token = localStorage.getItem('access_token');
+      const authenticated = !!token;
+      setIsAuthenticated(authenticated);
+
+      if (!authenticated) {
+        setLoadingProfile(false);
+        // Rediriger vers login après un court délai pour permettre l'affichage du message
+        setTimeout(() => {
+          navigate('/login', { 
+            state: { 
+              from: '/assistance-demande',
+              message: 'Veuillez vous connecter pour accéder à la demande d\'assistance'
+            } 
+          });
+        }, 1500);
+        return;
+      }
+
+      // Charger le profil utilisateur
+      try {
+        setLoadingProfile(true);
+        const response = await tokenManager.fetchWithAuth(`${API_BASE_URL}/profile/student`);
+        
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP ${response.status}`);
+        }
+
+        const json = await response.json();
+        const userData = json?.data ?? json;
+        setUserProfile(userData);
+        
+        // Pré-remplir les données du formulaire initial
+        const prefillData = {
+          demandeurNom: userData.lastName || userData.nom || '',
+          demandeurPrenoms: userData.firstName || userData.prenom || '',
+          demandeurTelephone: userData.phone || userData.telephone || userData.mobile || '',
+          demandeurEmail: userData.email || '',
+          demandeurPays: userData.country || userData.pays || '',
+          demandeurStatut: userData.status || userData.statut || '',
+        };
+        
+        setInitialFormData(prefillData);
+      } catch (err) {
+        console.error('❌ Erreur chargement profil:', err);
+        // Si erreur 401, rediriger vers login
+        if (err.message.includes('401') || err.message.includes('token')) {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          navigate('/login', { 
+            state: { 
+              from: '/assistance-demande',
+              message: 'Votre session a expiré. Veuillez vous reconnecter.'
+            } 
+          });
+        }
+      } finally {
+        setLoadingProfile(false);
+      }
     };
+
+    checkAuthAndLoadProfile();
+
+    const handleStorageChange = () => {
+      const token = localStorage.getItem('access_token');
+      setIsAuthenticated(!!token);
+      if (!token) {
+        navigate('/login', { 
+          state: { 
+            from: '/assistance-demande',
+            message: 'Veuillez vous connecter pour accéder à la demande d\'assistance'
+          } 
+        });
+      }
+    };
+    
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [navigate]);
+
+  // Handler pour le formulaire initial
+  const handleInitialFormComplete = (data) => {
+    setInitialFormData(data);
+    setAssistanceType(data.assistanceType);
+    setInitialFormCompleted(true);
+    setFormData(prev => ({ ...prev, ...data }));
+    
+    // Si c'est "Demande de documents", on garde le flow actuel
+    // Sinon, on réinitialise les steps pour le nouveau formulaire
+    if (data.assistanceType !== 'Demande de documents') {
+      setCurrentStep(1);
+    }
+    
+    // Scroll vers le haut
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Scroll vers le haut lors des changements d'étape
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
+
+  // Scroll vers le haut lors des changements de formulaire
+  useEffect(() => {
+    if (initialFormCompleted || assistanceType) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [initialFormCompleted, assistanceType]);
 
   // Récupérer les villes disponibles (selon doc: liste dynamique)
   const { data: cities } = useQuery({
@@ -344,6 +458,8 @@ const AssistanceDemandeComponent = () => {
     if (validateStep(currentStep)) {
       if (currentStep < steps.length) {
         setCurrentStep(currentStep + 1);
+        // Scroll vers le haut
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
   };
@@ -351,6 +467,8 @@ const AssistanceDemandeComponent = () => {
   const handlePrevious = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+      // Scroll vers le haut
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -371,6 +489,20 @@ const AssistanceDemandeComponent = () => {
         status: 'En attente de paiement',
       });
     }
+  };
+
+  const handleSubmitBourse = async (data) => {
+    if (!isAuthenticated) {
+      alert('Veuillez vous connecter pour créer une demande');
+      navigate('/login');
+      return;
+    }
+    
+    // Créer la demande de bourse
+    createRequest.mutate({
+      ...data,
+      status: 'En attente de paiement',
+    });
   };
 
   const renderStepContent = () => {
@@ -1272,80 +1404,159 @@ const AssistanceDemandeComponent = () => {
       <div className="assistance-demande-section">
         <div className="container">
           <div className="text-center mb-5">
-            <h1 className="section-title">Assistance pour Demande de Documents</h1>
+            <h1 className="section-title">Demande d'assistance</h1>
             <p className="section-subtitle">
-              Créez votre demande d'assistance pour obtenir vos documents scolaires. Suivez les étapes pour calculer automatiquement les tarifs selon la grille tarifaire.
+              {!initialFormCompleted 
+                ? 'Remplissez le formulaire initial pour commencer votre demande d\'assistance.'
+                : assistanceType === 'Demande de documents'
+                  ? 'Créez votre demande d\'assistance pour obtenir vos documents scolaires.'
+                  : `Formulaire pour : ${assistanceType}`
+              }
             </p>
           </div>
 
-          <div className="progress-container">
-            <div className="progress">
-              <div 
-                className="progress-bar" 
-                style={{ width: `${(currentStep / steps.length) * 100}%` }}
-              ></div>
-            </div>
-            <div className="progress-text">
-              Étape {currentStep} sur {steps.length}
-            </div>
-          </div>
-
-          <div className="steps-navigation">
-            <div className="form-row">
-              {steps.map(step => (
-                <div 
-                  key={step.id}
-                  className={`step-item ${currentStep === step.id ? 'current' : currentStep > step.id ? 'active' : ''}`}
-                  onClick={() => {
-                    if (step.id < currentStep) {
-                      setCurrentStep(step.id);
-                    }
-                  }}
-                >
-                  <div className="step-icon">
-                    <i className={step.icon}></i>
-                  </div>
-                  <div className="step-title">{step.title}</div>
+          {loadingProfile ? (
+            <div className="form-container" style={{ padding: '3rem', textAlign: 'center' }}>
+              <div className="loading-spinner">
+                <div className="spinner-container">
+                  <div className="spinner-ring"></div>
+                  <div className="spinner-ring"></div>
+                  <div className="spinner-ring"></div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-container">
-            <form onSubmit={handleSubmit}>
-              {renderStepContent()}
-
-              <div className="form-actions">
-                {currentStep > 1 && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={handlePrevious}
-                  >
-                    Précédent
-                  </button>
-                )}
-                <div style={{ flex: 1 }} />
-                {currentStep < steps.length ? (
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleNext}
-                  >
-                    Suivant
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={createRequest.isLoading}
-                  >
-                    {createRequest.isLoading ? 'Enregistrement...' : 'Enregistrer la demande'}
-                  </button>
-                )}
+                <div className="loading-text">Chargement de vos informations...</div>
               </div>
-            </form>
-          </div>
+            </div>
+          ) : !isAuthenticated ? (
+            <div className="form-container" style={{ padding: '3rem', textAlign: 'center' }}>
+              <p style={{ fontSize: '1.1rem', color: '#64748b', marginBottom: '1rem' }}>
+                Vous devez être connecté pour accéder à la demande d'assistance.
+              </p>
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate('/login', { 
+                  state: { from: '/assistance-demande' }
+                })}
+              >
+                Se connecter
+              </button>
+            </div>
+          ) : !initialFormCompleted ? (
+            <div className="form-container">
+              <InitialAssistanceForm 
+                onComplete={handleInitialFormComplete}
+                initialData={initialFormData}
+                userProfile={userProfile}
+              />
+            </div>
+          ) : assistanceType === 'Demande de documents' ? (
+            <>
+              <div className="progress-container">
+                <div className="progress">
+                  <div 
+                    className="progress-bar" 
+                    style={{ width: `${(currentStep / steps.length) * 100}%` }}
+                  ></div>
+                </div>
+                <div className="progress-text">
+                  Étape {currentStep} sur {steps.length}
+                </div>
+              </div>
+
+              <div className="steps-navigation">
+                <div className="form-row">
+                  {steps.map(step => (
+                    <div 
+                      key={step.id}
+                      className={`step-item ${currentStep === step.id ? 'current' : currentStep > step.id ? 'active' : ''}`}
+                      onClick={() => {
+                        if (step.id < currentStep) {
+                          setCurrentStep(step.id);
+                        }
+                      }}
+                    >
+                      <div className="step-icon">
+                        <i className={step.icon}></i>
+                      </div>
+                      <div className="step-title">{step.title}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-container">
+                <form onSubmit={handleSubmit}>
+                  {renderStepContent()}
+
+                  <div className="form-actions">
+                    {currentStep > 1 && (
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={handlePrevious}
+                      >
+                        Précédent
+                      </button>
+                    )}
+                    <div style={{ flex: 1 }} />
+                    {currentStep < steps.length ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={handleNext}
+                      >
+                        Suivant
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={createRequest.isLoading}
+                      >
+                        {createRequest.isLoading ? 'Enregistrement...' : 'Enregistrer la demande'}
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+            </>
+          ) : assistanceType === 'Bourse d\'études' ? (
+            <div className="form-container">
+              <BourseForm
+                initialData={formData}
+                onComplete={(bourseData) => {
+                  // Fusionner les données et soumettre
+                  const finalData = {
+                    ...initialFormData,
+                    ...bourseData,
+                    assistanceType: 'Bourse d\'études',
+                  };
+                  handleSubmitBourse(finalData);
+                }}
+                onBack={() => {
+                  setInitialFormCompleted(false);
+                  setInitialFormData({});
+                  setAssistanceType(null);
+                }}
+              />
+            </div>
+          ) : (
+            <div className="form-container">
+              <div style={{ padding: '2rem', textAlign: 'center' }}>
+                <p>Formulaire pour "{assistanceType}" en cours de développement...</p>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => {
+                    setInitialFormCompleted(false);
+                    setInitialFormData({});
+                    setAssistanceType(null);
+                  }}
+                  style={{ marginTop: '1rem' }}
+                >
+                  Retour au formulaire initial
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

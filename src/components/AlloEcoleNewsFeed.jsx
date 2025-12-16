@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Calendar, Clock, MapPin, ArrowRight, ChevronLeft, ChevronRight, Eye, User, BookOpen, GraduationCap, Settings } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowRight, ChevronLeft, ChevronRight, Eye, User, BookOpen, GraduationCap, Settings, Play } from 'lucide-react';
 import ContactAlloEcoleService from './ContactAlloEcoleService';
-import { Link, useOutletContext } from "react-router-dom";
+import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import axios from 'axios';
 import './AlloEcoleNewsFeed.css';
 import UserProfileSidebar from './userComponent/UserProfileSidebar';
@@ -10,6 +10,7 @@ import Banner from './banner/Banner';
 import './banner/Banner.css';
 
 const AlloEcoleNewsFeed = () => {
+  const navigate = useNavigate();
   const { isAuthenticated } = useOutletContext() || {};
   const token = localStorage.getItem("access_token");
   
@@ -227,133 +228,40 @@ const AlloEcoleNewsFeed = () => {
   // Aplatir toutes les données des pages
   const allFeedData = data?.pages.flatMap(page => page.data) || [];
 
-  // Données statiques pour les autres types
-  const staticData = [
+  // Données statiques pour les quiz uniquement
+  const quizCardsForFeed = [
     {
-      id: 2,
-      type: "bourse",
-      title: "Programme doctoral de littérature de l'Université de Bâle (Suisse)",
-      published: "06/10/2025",
-      deadline: "16/11/2025",
-      typeEtude: "Doctorat",
-      country: "Suisse",
-      image: "/images/poster/bourse.jpg"
+      id: 15,
+      type: "quiz",
+      title: "Quiz Histoire",
+      image: "/img/quiz.jpeg",
+      questions: 18,
+      players: 1250,
+      topPrize: "10 000 FCFA",
+      difficulty: "Moyen",
+      date: "11/12/2025"
     },
     {
-      id: 3,
-      type: "ecole",
-      name: "COLLÈGE PRIVÉ NOTRE DAME DES LAGUNES DE YOPOUGON MILLIONNAIRE",
-      location: "Yopougon, Côte d'Ivoire",
-      typeEcole: "Collège Privé",
-      image: "/images/poster/ecole.png",
-      description: "Établissement d'excellence offrant un enseignement de qualité avec des infrastructures modernes et un personnel qualifié."
+      id: 16,
+      type: "quiz",
+      title: "Quiz Culture Générale",
+      image: "/img/quiz.jpeg",
+      questions: 20,
+      players: 2100,
+      topPrize: "15 000 FCFA",
+      difficulty: "Difficile",
+      date: "11/12/2025"
     },
     {
-      id: 5,
-      type: "permutation",
-      niveau: "BTS 1",
-      filiere: "Génie Informatique",
-      annee: "2024-2025",
-      origine: "Grande école ASTC",
-      villeOrigine: "Abidjan",
-      souhait: "Université de Amérique",
-      villeSouhaitee: "Abidjan",
-      status: "En cours",
-      date: "15/10/2025",
-      user: {
-        nom: "Kouassi",
-        prenom: "Jean",
-        ville: "Abidjan"
-      },
-      vues: 45,
-      correspondances: 3
-    },
-    {
-      id: 6,
-      type: "bourse",
-      title: "Bourse d'étude doctorat en recrutement et égalité dans l'enseignement des sciences et de l'ingénierie",
-      published: "29/09/2025",
-      deadline: "04/11/2025",
-      typeEtude: "Doctorat",
-      country: "International",
-      image: "/images/poster/ecole.png"
-    },
-    {
-      id: 7,
-      type: "ecole",
-      name: "COLLEGE AHIMSA",
-      location: "Abidjan, Côte d'Ivoire",
-      typeEcole: "Collège",
-      image: "/images/poster/ecole.png",
-      description: "Institution reconnue pour son approche pédagogique innovante et son engagement envers la réussite de chaque élève."
-    },
-    {
-      id: 9,
-      type: "permutation",
-      niveau: "Master 1",
-      filiere: "Commerce",
-      annee: "2024-2025",
-      origine: "Université Félix Houphouët Boigny",
-      villeOrigine: "Abidjan",
-      souhait: "Université de Strasbourg",
-      villeSouhaitee: "Strasbourg, France",
-      status: "En cours",
-      date: "12/10/2025",
-      user: {
-        nom: "Traoré",
-        prenom: "Fatou",
-        ville: "Bouaké"
-      },
-      vues: 78,
-      correspondances: 1
-    },
-    {
-      id: 10,
-      type: "bourse",
-      title: "Bourse d'études de l'Université de Lausanne UNIL, 2026/2027",
-      published: "29/09/2025",
-      deadline: "01/11/2025",
-      typeEtude: "Master/Doctorat",
-      country: "Suisse",
-      image: "/images/poster/bourse.jpg"
-    },
-    {
-      id: 11,
-      type: "ecole",
-      name: "COLLEGE ABOUDRAMANE TRAORE PK 18",
-      location: "Abobo, Côte d'Ivoire",
-      typeEcole: "Collège",
-      image: "/images/poster/ecole.png",
-      description: "Établissement public offrant un enseignement de qualité accessible à tous avec un encadrement professionnel."
-    },
-    {
-      id: 13,
-      type: "permutation",
-      niveau: "Licence 3",
-      filiere: "Génie Civil",
-      annee: "2024-2025",
-      origine: "LEGACY INSTITUT",
-      villeOrigine: "Abidjan",
-      souhait: "Campus France",
-      villeSouhaitee: "Paris, France",
-      status: "En cours",
-      date: "10/10/2025",
-      user: {
-        nom: "Koné",
-        prenom: "Moussa",
-        ville: "Yamoussoukro"
-      },
-      vues: 92,
-      correspondances: 2
-    },
-    {
-      id: 14,
-      type: "ecole",
-      name: "INSTITUT SECONDAIRE FAMORY",
-      location: "Marcory, Côte d'Ivoire",
-      typeEcole: "Institut Secondaire",
-      image: "/images/poster/ecole.png",
-      description: "Institut moderne spécialisé dans la formation technique et professionnelle avec des équipements de pointe."
+      id: 17,
+      type: "quiz",
+      title: "Quiz Sciences",
+      image: "/img/quiz.jpeg",
+      questions: 22,
+      players: 1580,
+      topPrize: "12 000 FCFA",
+      difficulty: "Difficile",
+      date: "11/12/2025"
     }
   ];
 
@@ -409,38 +317,40 @@ const AlloEcoleNewsFeed = () => {
   );
 
   const renderTransferCard = (item) => (
-    <div className="card" key={`transfer-${item.id}`}>
-      <div className="card-content">
-        <div className="card-badges">
-          <span className="badge badge-purple">Transfert</span>
-          <div className="date-info">
-            <Calendar className="icon-sm" />
-            {item.date}
-          </div>
-        </div>
-        <h3 className="card-title">Demande de transfert</h3>
-        <div className="permutation-path">
-          <div className="path-item">
-            <div className="path-dot"></div>
-            <div>
-              <p className="path-label">Établissement source</p>
-              <p className="path-value">{item.sourceInstitution}</p>
+    <div className="card card-compact" key={`transfer-${item.id}`}>
+      <div className="card-content card-content-compact">
+        <div className="card-compact-header">
+          <div className="card-badges">
+            <span className="badge badge-purple">Transfert</span>
+            <div className="date-info">
+              <Calendar className="icon-sm" />
+              {item.date}
             </div>
           </div>
-          <div className="path-arrow">
-            <ChevronRight className="icon-lg" />
-          </div>
-          <div className="path-item">
+          <h3 className="card-title card-title-compact">Demande de transfert</h3>
+        </div>
+        <div className="permutation-path permutation-path-compact">
+          <div className="path-item path-item-compact">
             <div className="path-dot"></div>
             <div>
-              <p className="path-label">Établissement cible</p>
-              <p className="path-value">{item.targetInstitution}</p>
+              <p className="path-label path-label-compact">Source</p>
+              <p className="path-value path-value-compact">{item.sourceInstitution}</p>
+            </div>
+          </div>
+          <div className="path-arrow path-arrow-compact">
+            <ChevronRight className="icon-md" />
+          </div>
+          <div className="path-item path-item-compact">
+            <div className="path-dot"></div>
+            <div>
+              <p className="path-label path-label-compact">Cible</p>
+              <p className="path-value path-value-compact">{item.targetInstitution}</p>
             </div>
           </div>
         </div>
-        <div className="permutation-actions">
-          <button className="button-primary">Contacter</button>
-          <button className="button-secondary">Voir détails</button>
+        <div className="permutation-actions permutation-actions-compact">
+          <button className="button-primary button-compact">Contacter</button>
+          <button className="button-secondary button-compact">Détails</button>
         </div>
       </div>
     </div>
@@ -562,6 +472,108 @@ const AlloEcoleNewsFeed = () => {
       </div>
     </div>
   );
+
+  const renderQuizCard = (item) => (
+    <div 
+      className="card quiz-card" 
+      key={`quiz-${item.id}`}
+      onClick={() => navigate('/quiz')}
+      style={{ cursor: 'pointer' }}
+    >
+      <div className="quiz-card-image-wrapper">
+        <img src={item.image} alt={item.title} className="card-image quiz-card-image" />
+        <div className="quiz-card-overlay">
+          <Play className="quiz-play-icon" />
+        </div>
+        <div className="quiz-card-badge">
+          <span className="badge badge-purple">Quiz</span>
+        </div>
+      </div>
+      <div className="card-content">
+        <div className="card-badges">
+          <span className="badge badge-orange">{item.difficulty}</span>
+          <div className="date-info">
+            <Calendar className="icon-sm" />
+            {item.date}
+          </div>
+        </div>
+        <h3 className="card-title">{item.title}</h3>
+        <div className="quiz-card-stats">
+          <div className="quiz-stat">
+            <BookOpen className="icon-sm icon-purple" />
+            <span>{item.questions} questions</span>
+          </div>
+          <div className="quiz-stat">
+            <User className="icon-sm icon-purple" />
+            <span>{item.players.toLocaleString()} joueurs</span>
+          </div>
+        </div>
+        <div className="quiz-card-prize">
+          <span className="prize-label">Lot principal :</span>
+          <span className="prize-amount">{item.topPrize}</span>
+        </div>
+        <button 
+          className="button-primary quiz-play-button"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate('/quiz');
+          }}
+        >
+          <Play className="icon-sm" />
+          Jouer maintenant
+        </button>
+      </div>
+    </div>
+  );
+
+  // Carte quiz compacte pour le fil d'actualité
+  const renderCompactQuizCard = (item, index = 0) => {
+    const quizItem = quizCardsForFeed[index % quizCardsForFeed.length];
+    if (!quizItem) return null;
+    
+    return (
+      <div 
+        className="card quiz-card-compact" 
+        key={`quiz-compact-${quizItem.id}-${Date.now()}`}
+        onClick={() => navigate('/quiz')}
+        style={{ cursor: 'pointer' }}
+      >
+        <div className="quiz-compact-content">
+          <div className="quiz-compact-image">
+            <img src={quizItem.image} alt={quizItem.title} />
+            <div className="quiz-compact-overlay">
+              <Play className="quiz-compact-play-icon" />
+            </div>
+          </div>
+          <div className="quiz-compact-info">
+            <div className="quiz-compact-header">
+              <span className="badge badge-purple">Quiz</span>
+              <span className="badge badge-orange">{quizItem.difficulty}</span>
+            </div>
+            <h3 className="quiz-compact-title">{quizItem.title}</h3>
+            <div className="quiz-compact-meta">
+              <span>{quizItem.questions} questions</span>
+              <span>•</span>
+              <span>{quizItem.players.toLocaleString()} joueurs</span>
+            </div>
+            <div className="quiz-compact-prize">
+              <span>🎁 {quizItem.topPrize}</span>
+            </div>
+            <button 
+              className="quiz-compact-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate('/quiz');
+              }}
+            >
+              <Play className="icon-sm" />
+              Jouer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const RightSidebar = () => {
     return (
@@ -754,7 +766,7 @@ const AlloEcoleNewsFeed = () => {
 
                   {/* Données de l'API avec pagination infinie */}
                   {allFeedData.map((item, index) => {
-                    // Ajouter une bannière après les 2 premiers éléments
+                    // Ajouter une bannière après les 2 premiers éléments de l'API
                     if (index === 2) {
                       return (
                         <React.Fragment key={`banner-${index}`}>
@@ -771,11 +783,13 @@ const AlloEcoleNewsFeed = () => {
                       );
                     }
 
-                    // Rendu normal des éléments
-                    if (item.type === 'news') return renderActualiteCard(item);
-                    if (item.type === 'transfer') return renderTransferCard(item);
-                    
-                    return null;
+                    return (
+                      <React.Fragment key={`item-${item.id || index}`}>
+                        {item.type === 'news' && renderActualiteCard(item)}
+                        {item.type === 'transfer' && renderTransferCard(item)}
+                        {item.type === 'quiz' && renderQuizCard(item)}
+                      </React.Fragment>
+                    );
                   })}
 
                   {/* Cible pour l'observation du scroll */}

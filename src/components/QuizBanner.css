@@ -1,0 +1,228 @@
+.quiz-banner {
+  background: linear-gradient(135deg, #7B2CBF 0%, #E91E63 100%);
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+  animation: bannerPulse 3s ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+
+@keyframes bannerPulse {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 4px 12px rgba(123, 44, 191, 0.3);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 8px 24px rgba(123, 44, 191, 0.5);
+  }
+}
+
+.quiz-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 300px;
+  height: 300px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  animation: floatCircle 8s ease-in-out infinite;
+}
+
+.quiz-banner::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  left: -5%;
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  animation: floatCircle 10s ease-in-out infinite reverse;
+}
+
+@keyframes floatCircle {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(20px, 20px) scale(1.1);
+    opacity: 0.5;
+  }
+}
+
+.quiz-banner-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.quiz-banner-left {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  color: white;
+  flex-wrap: wrap;
+}
+
+.quiz-banner-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  animation: badgeBounce 2s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes badgeBounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.05);
+  }
+}
+
+.badge-icon {
+  font-size: 16px;
+  animation: iconRotate 3s ease-in-out infinite;
+}
+
+@keyframes iconRotate {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+.quiz-banner-title {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0;
+  flex: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  animation: titleShimmer 3s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes titleShimmer {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.02);
+  }
+}
+
+.quiz-banner-title .highlight {
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: highlightGlow 2s ease-in-out infinite;
+  will-change: filter;
+}
+
+@keyframes highlightGlow {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.3);
+  }
+}
+
+.quiz-banner-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  color: #0f172a;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+  white-space: nowrap;
+  animation: buttonPulse 2s ease-in-out infinite;
+  will-change: transform, box-shadow, background;
+}
+
+@keyframes buttonPulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+    transform: scale(1);
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  }
+  50% {
+    box-shadow: 0 8px 24px rgba(255, 215, 0, 0.6);
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #FFED4E 0%, #FFB84D 100%);
+  }
+}
+
+.quiz-banner-cta:hover {
+  transform: translateY(-3px) scale(1.08);
+  box-shadow: 0 10px 28px rgba(255, 215, 0, 0.5);
+  animation: buttonPulse 1s ease-in-out infinite;
+}
+
+.cta-icon {
+  font-size: 18px;
+  animation: iconPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% {
+    transform: scale(1) translateX(0);
+  }
+  50% {
+    transform: scale(1.1) translateX(2px);
+  }
+}
+
+
+
+@media (max-width: 768px) {
+  .quiz-banner {
+    padding: 16px;
+  }
+
+  .quiz-banner-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .quiz-banner-title {
+    font-size: 18px;
+  }
+
+  .quiz-banner-cta {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+}

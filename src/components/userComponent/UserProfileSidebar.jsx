@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
-import { User, Settings, LogIn, LogOut, BookOpen, Code, X, GraduationCap, Smartphone, PlayCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, Settings, LogIn, LogOut, BookOpen, Code, X, GraduationCap, Smartphone, PlayCircle, Trophy, Zap, TrendingUp } from 'lucide-react';
 import tokenManager from '../../helper/tokenManager';
 import './UserProfileSidebar.css';
 
 const API_BASE = 'https://alloecoleapi-dev.up.railway.app/api/v1';
 
 const UserProfileSidebar = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showSyntaxModal, setShowSyntaxModal] = useState(false);
+  const [quizStats, setQuizStats] = useState({ rank: 42, score: 850, totalPlayers: 1250 }); // Valeurs par défaut
 
   /**
    * 📦 Charger le profil utilisateur avec auto-refresh
@@ -39,6 +41,22 @@ const UserProfileSidebar = () => {
       
       console.log('✅ Profil chargé:', userData);
       setUser(userData);
+      
+      // Récupérer les stats de quiz si disponibles
+      if (userData.quizRank || userData.quizScore) {
+        setQuizStats({
+          rank: userData.quizRank || userData.rank || null,
+          score: userData.quizScore || userData.score || null,
+          totalPlayers: userData.totalQuizPlayers || userData.totalPlayers || null,
+        });
+      } else {
+        // Données mockées pour l'instant - toujours afficher
+        setQuizStats({
+          rank: 42,
+          score: 850,
+          totalPlayers: 1250,
+        });
+      }
       
     } catch (err) {
       console.error('❌ Erreur profil sidebar:', err);
@@ -363,6 +381,37 @@ const UserProfileSidebar = () => {
 
   const QuickLinksPanel = () => (
     <div className="quick-links-panel">
+      {/* Carte Quiz animée */}
+      <div 
+        className="quick-link-card quiz-card-sidebar"
+        onClick={() => navigate('/quiz')}
+      >
+        <div className="quiz-card-sidebar-image-wrapper">
+          <img src="/img/quiz.jpeg" alt="Quiz" className="quiz-card-sidebar-image" />
+        </div>
+        <div className="quiz-card-sidebar-content">
+          <h3 className="quiz-card-sidebar-title">Quiz Interactifs</h3>
+          
+          <div className="quiz-card-sidebar-stats">
+            <div className="quiz-stat-item">
+              <Trophy size={16} className="stat-icon" />
+              <span className="stat-label">Rang</span>
+              <span className="stat-value">#{quizStats.rank || 42}</span>
+            </div>
+            {/* <div className="quiz-stat-item">
+              <TrendingUp size={16} className="stat-icon" />
+              <span className="stat-label">Score</span>
+              <span className="stat-value">{quizStats.score || 850}</span>
+            </div> */}
+          </div>
+          
+          <button className="quiz-card-sidebar-button">
+            <PlayCircle size={18} />
+            Jouer
+          </button>
+        </div>
+      </div>
+
       <a
         href="https://www.myschooltoon.com/"
         target="_blank"
