@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { 
   EmojiEvents, 
   Calculate, 
@@ -10,206 +11,126 @@ import {
   Star,
   Close,
   Timer,
-  LocalOffer
+  LocalOffer,
+  ErrorOutline
 } from '@mui/icons-material';
+import { Alert, CircularProgress } from '@mui/material';
+import quizService from '../services/quizService';
 import './Quiz.css';
+
+// Mapping des difficultés pour les couleurs
+const difficultyColors = {
+  'FACILE': '#4CAF50',
+  'MOYEN': '#E91E63',
+  'DIFFICILE': '#D32F2F',
+  'EXPERT': '#9C27B0',
+};
+
+// Mapping des icônes par défaut
+const defaultIcons = {
+  'Mathématiques': Calculate,
+  'Culture Générale': Psychology,
+  'Sciences': Calculate,
+  'Histoire': Psychology,
+  'Géographie': Calculate,
+  'Français': Psychology,
+  'Anglais': Calculate,
+  'Art & Culture': Psychology,
+};
 
 const Quiz = () => {
   const navigate = useNavigate();
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  const quizzes = [
-    {
-      id: 1,
-      icon: Calculate,
-      title: 'Quiz Mathématiques',
-      description: 'Testez vos connaissances en mathématiques',
-      questions: 15,
-      difficulty: 'Moyen',
-      difficultyColor: '#E91E63',
-      players: 1250,
-      bgColor: 'linear-gradient(135deg, #7B2CBF 0%, #9D4EDD 100%)',
-      duration: 15,
-      prizes: [
-        { rank: 1, reward: '10 000 FCFA', icon: '🥇' },
-        { rank: 2, reward: '5 000 FCFA', icon: '🥈' },
-        { rank: 3, reward: '2 500 FCFA', icon: '🥉' },
-        { rank: '4-10', reward: '1 000 FCFA', icon: '⭐' }
-      ],
-      rules: [
-        'Répondez à toutes les questions dans le temps imparti',
-        'Les points sont attribués selon la rapidité de réponse',
-        'Les meilleurs scores remportent des lots'
-      ]
-    },
-    {
-      id: 2,
-      icon: Psychology,
-      title: 'Quiz Culture Générale',
-      description: 'Défiez vos amis sur la culture générale',
-      questions: 20,
-      difficulty: 'Difficile',
-      difficultyColor: '#D32F2F',
-      players: 2100,
-      bgColor: 'linear-gradient(135deg, #E91E63 0%, #F06292 100%)',
-      duration: 20,
-      prizes: [
-        { rank: 1, reward: '15 000 FCFA', icon: '🥇' },
-        { rank: 2, reward: '7 500 FCFA', icon: '🥈' },
-        { rank: 3, reward: '3 000 FCFA', icon: '🥉' },
-        { rank: '4-10', reward: '1 500 FCFA', icon: '⭐' }
-      ],
-      rules: [
-        'Répondez à toutes les questions dans le temps imparti',
-        'Les points sont attribués selon la rapidité de réponse',
-        'Les meilleurs scores remportent des lots'
-      ]
-    },
-    {
-      id: 3,
-      icon: Calculate,
-      title: 'Quiz Sciences',
-      description: 'Explorez le monde des sciences',
-      questions: 18,
-      difficulty: 'Moyen',
-      difficultyColor: '#E91E63',
-      players: 1580,
-      bgColor: 'linear-gradient(135deg, #7B2CBF 0%, #9D4EDD 100%)',
-      duration: 18,
-      prizes: [
-        { rank: 1, reward: '12 000 FCFA', icon: '🥇' },
-        { rank: 2, reward: '6 000 FCFA', icon: '🥈' },
-        { rank: 3, reward: '2 500 FCFA', icon: '🥉' },
-        { rank: '4-10', reward: '1 000 FCFA', icon: '⭐' }
-      ],
-      rules: [
-        'Répondez à toutes les questions dans le temps imparti',
-        'Les points sont attribués selon la rapidité de réponse',
-        'Les meilleurs scores remportent des lots'
-      ]
-    },
-    {
-      id: 4,
-      icon: Psychology,
-      title: 'Quiz Histoire',
-      description: 'Voyagez à travers le temps',
-      questions: 25,
-      difficulty: 'Difficile',
-      difficultyColor: '#D32F2F',
-      players: 1890,
-      bgColor: 'linear-gradient(135deg, #E91E63 0%, #F06292 100%)',
-      duration: 25,
-      prizes: [
-        { rank: 1, reward: '20 000 FCFA', icon: '🥇' },
-        { rank: 2, reward: '10 000 FCFA', icon: '🥈' },
-        { rank: 3, reward: '5 000 FCFA', icon: '🥉' },
-        { rank: '4-10', reward: '2 000 FCFA', icon: '⭐' }
-      ],
-      rules: [
-        'Répondez à toutes les questions dans le temps imparti',
-        'Les points sont attribués selon la rapidité de réponse',
-        'Les meilleurs scores remportent des lots'
-      ]
-    },
-    {
-      id: 5,
-      icon: Calculate,
-      title: 'Quiz Géographie',
-      description: 'Découvrez les pays du monde',
-      questions: 12,
-      difficulty: 'Facile',
-      difficultyColor: '#4CAF50',
-      players: 2450,
-      bgColor: 'linear-gradient(135deg, #7B2CBF 0%, #9D4EDD 100%)',
-      duration: 12,
-      prizes: [
-        { rank: 1, reward: '8 000 FCFA', icon: '🥇' },
-        { rank: 2, reward: '4 000 FCFA', icon: '🥈' },
-        { rank: 3, reward: '2 000 FCFA', icon: '🥉' },
-        { rank: '4-10', reward: '800 FCFA', icon: '⭐' }
-      ],
-      rules: [
-        'Répondez à toutes les questions dans le temps imparti',
-        'Les points sont attribués selon la rapidité de réponse',
-        'Les meilleurs scores remportent des lots'
-      ]
-    },
-    {
-      id: 6,
-      icon: Psychology,
-      title: 'Quiz Français',
-      description: 'Testez votre maîtrise du français',
-      questions: 20,
-      difficulty: 'Moyen',
-      difficultyColor: '#E91E63',
-      players: 1720,
-      bgColor: 'linear-gradient(135deg, #E91E63 0%, #F06292 100%)',
-      duration: 20,
-      prizes: [
-        { rank: 1, reward: '12 000 FCFA', icon: '🥇' },
-        { rank: 2, reward: '6 000 FCFA', icon: '🥈' },
-        { rank: 3, reward: '2 500 FCFA', icon: '🥉' },
-        { rank: '4-10', reward: '1 000 FCFA', icon: '⭐' }
-      ],
-      rules: [
-        'Répondez à toutes les questions dans le temps imparti',
-        'Les points sont attribués selon la rapidité de réponse',
-        'Les meilleurs scores remportent des lots'
-      ]
-    },
-    {
-      id: 7,
-      icon: Calculate,
-      title: 'Quiz Anglais',
-      description: 'Améliorez votre anglais',
-      questions: 15,
-      difficulty: 'Facile',
-      difficultyColor: '#4CAF50',
-      players: 3200,
-      bgColor: 'linear-gradient(135deg, #7B2CBF 0%, #9D4EDD 100%)',
-      duration: 15,
-      prizes: [
-        { rank: 1, reward: '10 000 FCFA', icon: '🥇' },
-        { rank: 2, reward: '5 000 FCFA', icon: '🥈' },
-        { rank: 3, reward: '2 500 FCFA', icon: '🥉' },
-        { rank: '4-10', reward: '1 000 FCFA', icon: '⭐' }
-      ],
-      rules: [
-        'Répondez à toutes les questions dans le temps imparti',
-        'Les points sont attribués selon la rapidité de réponse',
-        'Les meilleurs scores remportent des lots'
-      ]
-    },
-    {
-      id: 8,
-      icon: Psychology,
-      title: 'Quiz Art & Culture',
-      description: 'Pour les passionnés d\'art',
-      questions: 22,
-      difficulty: 'Difficile',
-      difficultyColor: '#D32F2F',
-      players: 980,
-      bgColor: 'linear-gradient(135deg, #E91E63 0%, #F06292 100%)',
-      duration: 22,
-      prizes: [
-        { rank: 1, reward: '15 000 FCFA', icon: '🥇' },
-        { rank: 2, reward: '7 500 FCFA', icon: '🥈' },
-        { rank: 3, reward: '3 000 FCFA', icon: '🥉' },
-        { rank: '4-10', reward: '1 500 FCFA', icon: '⭐' }
-      ],
-      rules: [
-        'Répondez à toutes les questions dans le temps imparti',
-        'Les points sont attribués selon la rapidité de réponse',
-        'Les meilleurs scores remportent des lots'
-      ]
-    }
-  ];
+  // Récupérer les quiz depuis l'API
+  const { data: quizzesData, isLoading, error } = useQuery({
+    queryKey: ['quizzes'],
+    queryFn: () => quizService.getQuizzes({ page: 1, limit: 50 }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-  const handlePlayQuiz = (quizId, quizTitle) => {
+  // Transformer les données de l'API en format compatible avec l'UI
+  const quizzes = useMemo(() => {
+    if (!quizzesData || !Array.isArray(quizzesData)) return [];
+    
+    // Filtrer uniquement les quiz actifs
+    return quizzesData
+      .filter(quiz => quiz.active !== false)
+      .map((quiz) => {
+      // Déterminer l'icône basée sur le titre
+      const iconKey = Object.keys(defaultIcons).find(key => 
+        quiz.title?.toLowerCase().includes(key.toLowerCase())
+      );
+      const Icon = iconKey ? defaultIcons[iconKey] : Calculate;
+      
+      // Mapper la difficulté
+      const difficulty = quiz.difficulty || 'MOYEN';
+      const difficultyColor = difficultyColors[difficulty] || difficultyColors['MOYEN'];
+      
+      // Générer un gradient basé sur la difficulté
+      const bgColors = {
+        'FACILE': 'linear-gradient(135deg, #7B2CBF 0%, #9D4EDD 100%)',
+        'MOYEN': 'linear-gradient(135deg, #7B2CBF 0%, #9D4EDD 100%)',
+        'DIFFICILE': 'linear-gradient(135deg, #E91E63 0%, #F06292 100%)',
+        'EXPERT': 'linear-gradient(135deg, #9C27B0 0%, #BA68C8 100%)',
+      };
+      const bgColor = bgColors[difficulty] || bgColors['MOYEN'];
+      
+      // Transformer les rewards en format prizes
+      // Filtrer et organiser les rewards : badges d'abord, puis points bonus
+      const badges = (quiz.rewards || []).filter(r => r.rewardType === 'BADGE');
+      const pointsBonus = (quiz.rewards || []).filter(r => r.rewardType === 'POINTS_BONUS');
+      
+      const prizes = [
+        ...badges.map((reward, index) => ({
+          rank: index + 1,
+          reward: reward.title || 'Badge',
+          icon: '🏅',
+          description: reward.description,
+          minScore: reward.minScore,
+        })),
+        ...pointsBonus.map((reward, index) => ({
+          rank: badges.length + index + 1,
+          reward: `${reward.pointsValue || 0} points bonus`,
+          icon: '⭐',
+          description: reward.description,
+          minScore: reward.minScore,
+        })),
+      ];
+      
+      // Règles par défaut
+      const rules = [
+        'Répondez à toutes les questions dans le temps imparti',
+        'Les points sont attribués selon la rapidité de réponse',
+        'Les meilleurs scores remportent des lots'
+      ];
+      
+      return {
+        id: quiz.id,
+        icon: Icon,
+        title: quiz.title || 'Quiz sans titre',
+        description: quiz.description || '',
+        questions: quiz.totalQuestions || 0,
+        difficulty: difficulty,
+        difficultyColor,
+        players: 0, // Non disponible dans l'API
+        bgColor,
+        duration: Math.ceil((quiz.totalQuestions || 10) * 1.5), // Estimation: 1.5 min par question
+        prizes: prizes.length > 0 ? prizes : [],
+        rules,
+        rewards: quiz.rewards || [],
+        active: quiz.active !== false, // Par défaut actif si non spécifié
+      };
+    });
+  }, [quizzesData]);
+
+  const handlePlayQuiz = (quizId) => {
     const quiz = quizzes.find(q => q.id === quizId);
-    setSelectedQuiz(quiz);
-    setShowModal(true);
+    if (quiz) {
+      setSelectedQuiz(quiz);
+      setShowModal(true);
+    }
   };
 
   const handleStartQuiz = () => {
@@ -243,6 +164,27 @@ const Quiz = () => {
     setSelectedQuiz(null);
   };
 
+  if (isLoading) {
+    return (
+      <div className="quiz-page">
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <CircularProgress />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="quiz-page">
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '400px', gap: '16px' }}>
+          <Alert severity="error" />
+          <p>Erreur lors du chargement des quiz. Veuillez réessayer plus tard.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="quiz-page">
       {/* Main content */}
@@ -263,7 +205,12 @@ const Quiz = () => {
         </div>
 
         {/* Quiz Cards */}
-        {quizzes.map((quiz, index) => (
+        {quizzes.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <p>Aucun quiz disponible pour le moment.</p>
+          </div>
+        ) : (
+          quizzes.map((quiz, index) => (
           <div 
             key={quiz.id} 
             className="quiz-card"
@@ -297,14 +244,15 @@ const Quiz = () => {
             </div>
             <button 
               className="play-buttons"
-              onClick={() => handlePlayQuiz(quiz.id, quiz.title)}
+              onClick={() => handlePlayQuiz(quiz.id)}
             >
               {/* <PlayArrow className="play-icon" /> */}
               <span>JOUER</span>
             </button>
 
           </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Modal de préambule */}
@@ -362,15 +310,26 @@ const Quiz = () => {
                   Lots à gagner
                 </h3>
                 <div className="prizes-list">
-                  {selectedQuiz.prizes.map((prize, index) => (
-                    <div key={index} className="prize-item">
-                      <span className="prize-icon">{prize.icon}</span>
-                      <div className="prize-info">
-                        <span className="prize-rank">{prize.rank === '4-10' ? 'Rang 4-10' : `Rang ${prize.rank}`}</span>
-                        <span className="prize-reward">{prize.reward}</span>
+                  {selectedQuiz.prizes.length === 0 ? (
+                    <p style={{ textAlign: 'center', color: '#64748b', padding: '20px' }}>
+                      Aucune récompense spécifique pour ce quiz
+                    </p>
+                  ) : (
+                    selectedQuiz.prizes.map((prize, index) => (
+                      <div key={index} className="prize-item">
+                        <span className="prize-icon">{prize.icon}</span>
+                        <div className="prize-info">
+                          <span className="prize-rank">{prize.reward}</span>
+                          {prize.description && (
+                            <span className="prize-description">{prize.description}</span>
+                          )}
+                          {prize.minScore && (
+                            <span className="prize-min-score">Score minimum: {prize.minScore}%</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 

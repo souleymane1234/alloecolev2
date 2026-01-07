@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { 
   ArrowBack,
   ArrowForward,
@@ -7,24 +8,39 @@ import {
   ZoomIn,
   ZoomOut,
   Fullscreen,
-  FullscreenExit
+  FullscreenExit,
+  PictureAsPdf,
+  Download
 } from '@mui/icons-material';
+import { CircularProgress, Alert } from '@mui/material';
+import magazineService from '../services/magazineService';
 import './MagazineReader.css';
 
 const MagazineReader = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const magazine = location.state?.magazine;
+  const magazineFromState = location.state?.magazine;
 
+  // Récupérer le magazine depuis l'API si pas dans le state
+  const { data: magazineData, isLoading, error } = useQuery({
+    queryKey: ['magazine', id],
+    queryFn: () => magazineService.getMagazineById(id),
+    enabled: !!id && !magazineFromState,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const magazine = magazineFromState || magazineData;
+
+  const [viewMode, setViewMode] = useState('pdf'); // 'pdf' ou 'pages'
   const [currentPage, setCurrentPage] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipDirection, setFlipDirection] = useState('');
   const [zoom, setZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Pages du magazine avec contenu
-  const totalPages = magazine?.pages || 32;
+  // Pages du magazine avec contenu (fallback si pas de PDF)
+  const totalPages = 32;
   
   // Générer du contenu pour chaque page
   const generatePageContent = (pageNum) => {
@@ -107,16 +123,40 @@ const MagazineReader = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [currentPage, isFlipping]);
 
-  if (!magazine) {
+  if (isLoading) {
     return (
-      <div className="reader-error">
-        <h2>Magazine non trouvé</h2>
-        <button onClick={handleClose} className="back-button">
-          Retour aux magazines
-        </button>
+      <div className="magazine-reader">
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <CircularProgress />
+        </div>
       </div>
     );
   }
+
+  if (error || !magazine) {
+    return (
+      <div className="magazine-reader">
+        <div className="reader-error">
+          <Alert severity="error">
+            {error?.message || 'Magazine non trouvé'}
+          </Alert>
+          <button onClick={handleClose} className="back-button">
+            Retour aux magazines
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Formater la date de publication
+  const formatPublishedDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    return `${months[date.getMonth()]} ${date.getFullYear()}`;
+  };
+
+  const publishedDate = formatPublishedDate(magazine.publishedAt);
 
   return (
     <div className="magazine-reader">
@@ -124,9 +164,30 @@ const MagazineReader = () => {
       <div className="reader-header">
         <div className="reader-info">
           <h2>{magazine.title}</h2>
-          <span>{magazine.issue}</span>
+          {publishedDate && <span>{publishedDate}</span>}
         </div>
         <div className="reader-controls">
+          {magazine.pdfUrl && (
+            <>
+              <button 
+                onClick={() => setViewMode(viewMode === 'pdf' ? 'pages' : 'pdf')} 
+                className="control-btn"
+                title={viewMode === 'pdf' ? 'Vue pages' : 'Vue PDF'}
+              >
+                <PictureAsPdf />
+              </button>
+              <a 
+                href={magazine.pdfUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="control-btn"
+                title="Télécharger le PDF"
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
+                <Download />
+              </a>
+            </>
+          )}
           <button onClick={handleZoomOut} className="control-btn" disabled={zoom <= 0.5}>
             <ZoomOut />
           </button>
@@ -145,7 +206,17 @@ const MagazineReader = () => {
 
       {/* Magazine Container */}
       <div className="magazine-container">
-        <div className="magazine-book" style={{ transform: `scale(${zoom})` }}>
+        {viewMode === 'pdf' && magazine.pdfUrl ? (
+          <div className="pdf-viewer" style={{ transform: `scale(${zoom})` }}>
+            <iframe
+              src={magazine.pdfUrl}
+              title={magazine.title}
+              className="pdf-iframe"
+              style={{ width: '100%', height: 'calc(100vh - 200px)', border: 'none' }}
+            />
+          </div>
+        ) : (
+          <div className="magazine-book" style={{ transform: `scale(${zoom})` }}>
           {/* Page Gauche */}
           <div 
             className={`page page-left ${isFlipping && flipDirection === 'next' ? 'flipping-left' : ''}`}
@@ -241,42 +312,49 @@ const MagazineReader = () => {
               <div className="page-number">{pages[currentPage]?.number}</div>
             </div>
           )}
-        </div>
+          </div>
+        )}
 
-        {/* Navigation Buttons */}
-        <button 
-          className="nav-button nav-prev" 
-          onClick={handlePrevPage}
-          disabled={currentPage === 0 || isFlipping}
-        >
-          <ArrowBack />
-        </button>
-        <button 
-          className="nav-button nav-next" 
-          onClick={handleNextPage}
-          disabled={currentPage >= totalPages - 2 || isFlipping}
-        >
-          <ArrowForward />
-        </button>
+        {/* Navigation Buttons - seulement en mode pages */}
+        {viewMode !== 'pdf' && (
+          <>
+            <button 
+              className="nav-button nav-prev" 
+              onClick={handlePrevPage}
+              disabled={currentPage === 0 || isFlipping}
+            >
+              <ArrowBack />
+            </button>
+            <button 
+              className="nav-button nav-next" 
+              onClick={handleNextPage}
+              disabled={currentPage >= totalPages - 2 || isFlipping}
+            >
+              <ArrowForward />
+            </button>
+          </>
+        )}
       </div>
 
       {/* Footer Controls */}
-      <div className="reader-footer">
-        <div className="page-indicator">
-          <span>Pages {currentPage + 1}-{currentPage + 2} sur {totalPages}</span>
+      {viewMode !== 'pdf' && (
+        <div className="reader-footer">
+          <div className="page-indicator">
+            <span>Pages {currentPage + 1}-{currentPage + 2} sur {totalPages}</span>
+          </div>
+          <div className="page-slider">
+            <input 
+              type="range" 
+              min="0" 
+              max={totalPages - 2} 
+              step="2"
+              value={currentPage} 
+              onChange={(e) => setCurrentPage(parseInt(e.target.value))}
+              className="slider"
+            />
+          </div>
         </div>
-        <div className="page-slider">
-          <input 
-            type="range" 
-            min="0" 
-            max={totalPages - 2} 
-            step="2"
-            value={currentPage} 
-            onChange={(e) => setCurrentPage(parseInt(e.target.value))}
-            className="slider"
-          />
-        </div>
-      </div>
+      )}
     </div>
   );
 };

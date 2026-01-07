@@ -20,31 +20,30 @@ const Layout = () => {
       setIsAuthenticated(authenticated);
       
       if (authenticated) {
+        const token = tokenManager.getAccessToken();
+        const refreshToken = tokenManager.getRefreshToken();
+        
         console.log("✅ Utilisateur connecté détecté");
-        console.log("Token:", tokenManager.getAccessToken());
+        console.log("Access Token:", token?.substring(0, 50) + '...');
+        console.log("Refresh Token:", refreshToken?.substring(0, 50) + '...');
+        console.log("Token complet stocké:", !!token);
+      } else {
+        console.log("❌ Aucun utilisateur connecté");
       }
     };
 
     checkAuth();
 
-    // 🔄 Écouter les changements dans localStorage (multi-onglets)
-    const handleStorageChange = (e) => {
-      if (e.key === 'access_token') {
-        checkAuth();
-      }
-    };
-
-    // 🚪 Écouter les déconnexions
+    // 🚪 Écouter les déconnexions depuis le TokenManager
     const handleLogout = () => {
+      console.log("🚪 Déconnexion détectée dans Layout");
       setIsAuthenticated(false);
       navigate('/login', { replace: true });
     };
 
-    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('logout', handleLogout);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('logout', handleLogout);
     };
   }, [navigate]);
@@ -61,12 +60,20 @@ const Layout = () => {
 
     if (success === "true" && accessToken) {
       try {
-        // ✅ Utiliser TokenManager pour sauvegarder
+        console.log("📥 Réception tokens OAuth depuis URL");
+        console.log("Access Token reçu:", accessToken.substring(0, 50) + '...');
+        console.log("Refresh Token reçu:", refreshToken?.substring(0, 50) + '...');
+        
+        // ✅ Sauvegarder dans TokenManager (en mémoire)
         tokenManager.setTokens(accessToken, refreshToken);
         
-        console.log("✅ Tokens OAuth enregistrés via TokenManager");
-        console.log("Access Token:", accessToken);
-        if (refreshToken) console.log("Refresh Token:", refreshToken);
+        // ✅ Vérifier que les tokens sont bien sauvegardés
+        const savedAccessToken = tokenManager.getAccessToken();
+        const savedRefreshToken = tokenManager.getRefreshToken();
+        
+        console.log("✅ Tokens sauvegardés dans TokenManager");
+        console.log("Vérification Access Token:", savedAccessToken === accessToken ? "✅ OK" : "❌ ERREUR");
+        console.log("Vérification Refresh Token:", savedRefreshToken === refreshToken ? "✅ OK" : "❌ ERREUR");
         
         setIsAuthenticated(true);
 
@@ -75,6 +82,7 @@ const Layout = () => {
           ? decodeURIComponent(redirect) 
           : location.pathname;
         
+        console.log("🔄 Redirection vers:", cleanPath);
         navigate(cleanPath, { replace: true });
         
       } catch (e) {
@@ -84,14 +92,24 @@ const Layout = () => {
   }, [location.search, location.pathname, navigate]);
 
   /**
-   * 🔄 Mettre à jour l'état quand la route change
+   * 🔄 Vérifier l'authentification quand la route change
    */
   useEffect(() => {
     const authenticated = tokenManager.isAuthenticated();
+    
     if (authenticated !== isAuthenticated) {
+      console.log("🔄 Changement d'état d'authentification:", authenticated);
       setIsAuthenticated(authenticated);
     }
-  }, [location.pathname]);
+    
+    // 🔐 Rediriger vers login si non authentifié (sauf pour les pages publiques)
+    // Ne pas rediriger si l'utilisateur est sur la page d'accueil pour permettre la navigation même avec un token expiré
+    const isHomePage = location.pathname === '/' || location.pathname === '';
+    if (!authenticated && !isLoginPage && !isRegisterPage && !isHomePage) {
+      console.log("🔐 Utilisateur non authentifié, redirection vers /login");
+      navigate('/login', { replace: true, state: { from: location.pathname } });
+    }
+  }, [location.pathname, isAuthenticated, isLoginPage, isRegisterPage, navigate]);
 
   return (
     <div className="app">

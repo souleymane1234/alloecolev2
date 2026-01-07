@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { User, Settings, LogIn, LogOut, BookOpen, Code, X, GraduationCap, Smartphone, PlayCircle, Trophy, Zap, TrendingUp } from 'lucide-react';
 import tokenManager from '../../helper/tokenManager';
+import quizService from '../../services/quizService';
 import './UserProfileSidebar.css';
 
 const API_BASE = 'https://alloecoleapi-dev.up.railway.app/api/v1';
@@ -13,7 +15,17 @@ const UserProfileSidebar = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showSyntaxModal, setShowSyntaxModal] = useState(false);
-  const [quizStats, setQuizStats] = useState({ rank: 42, score: 850, totalPlayers: 1250 }); // Valeurs par défaut
+
+  // Récupérer les stats de quiz depuis l'API
+  const { data: quizStatsData } = useQuery({
+    queryKey: ['quizStats'],
+    queryFn: () => quizService.getMyStats(),
+    enabled: tokenManager.isAuthenticated(),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: 1,
+  });
+
+  const quizStats = quizStatsData || { rank: null, totalPoints: null };
 
   /**
    * 📦 Charger le profil utilisateur avec auto-refresh
@@ -41,22 +53,6 @@ const UserProfileSidebar = () => {
       
       console.log('✅ Profil chargé:', userData);
       setUser(userData);
-      
-      // Récupérer les stats de quiz si disponibles
-      if (userData.quizRank || userData.quizScore) {
-        setQuizStats({
-          rank: userData.quizRank || userData.rank || null,
-          score: userData.quizScore || userData.score || null,
-          totalPlayers: userData.totalQuizPlayers || userData.totalPlayers || null,
-        });
-      } else {
-        // Données mockées pour l'instant - toujours afficher
-        setQuizStats({
-          rank: 42,
-          score: 850,
-          totalPlayers: 1250,
-        });
-      }
       
     } catch (err) {
       console.error('❌ Erreur profil sidebar:', err);
@@ -396,7 +392,7 @@ const UserProfileSidebar = () => {
             <div className="quiz-stat-item">
               <Trophy size={16} className="stat-icon" />
               <span className="stat-label">Rang</span>
-              <span className="stat-value">#{quizStats.rank || 42}</span>
+              <span className="stat-value">#{quizStats.rank || '--'}</span>
             </div>
             {/* <div className="quiz-stat-item">
               <TrendingUp size={16} className="stat-icon" />

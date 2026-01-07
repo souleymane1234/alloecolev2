@@ -1,0 +1,249 @@
+.quiz-rewards-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.rewards-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #0f172a;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background: #e2e8f0;
+  transform: translateX(-2px);
+}
+
+.rewards-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 32px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.empty-rewards {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  gap: 16px;
+}
+
+.empty-icon {
+  font-size: 80px;
+  color: #cbd5e1;
+  margin-bottom: 16px;
+}
+
+.empty-rewards h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.empty-rewards p {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+}
+
+.cta-button {
+  margin-top: 16px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #7B2CBF 0%, #E91E63 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cta-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(123, 44, 191, 0.3);
+}
+
+.rewards-summary {
+  margin-bottom: 32px;
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #7B2CBF 0%, #E91E63 100%);
+  border-radius: 16px;
+  color: white;
+}
+
+.summary-icon {
+  font-size: 40px;
+}
+
+.summary-card div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-value {
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.summary-label {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.reward-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: 2px solid #f1f5f9;
+}
+
+.reward-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  border-color: #7B2CBF;
+}
+
+.reward-header {
+  position: relative;
+  padding: 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.reward-icon-img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+.reward-icon {
+  font-size: 64px;
+  line-height: 1;
+}
+
+.reward-type-badge {
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #7B2CBF 0%, #E91E63 100%);
+  color: white;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reward-content {
+  padding: 20px;
+}
+
+.reward-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.reward-description {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+}
+
+.reward-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #475569;
+}
+
+.detail-icon {
+  font-size: 18px;
+  color: #f59e0b;
+}
+
+.reward-footer {
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.obtained-date {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.reward-image-container {
+  padding: 0;
+  margin-top: 16px;
+}
+
+.reward-image {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .quiz-rewards-page {
+    padding: 16px;
+  }
+
+  .rewards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rewards-title {
+    font-size: 24px;
+  }
+}

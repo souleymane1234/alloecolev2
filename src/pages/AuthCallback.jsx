@@ -18,27 +18,13 @@ const AuthCallback = () => {
         console.log("🔑 Résultat de handleGoogleCallback:", result);
 
         if (result.success) {
-          setStatus("Récupération de votre profil...");
-          
-          // Étape 2: Récupérer le profil de l'utilisateur
-          console.log("Récupération du profil utilisateur...");
-          const userResult = await ConsumApi.getUser();
-          console.log(" Résultat de getUser():", userResult);
-          
-          if (userResult.success) {
-            console.log("Succès complet! Redirection vers l'accueil");
-            setStatus("Redirection...");
-            // Rediriger vers la page d'accueil avec le profil chargé
-            setTimeout(() => {
-              navigate("/", { replace: true });
-            }, 500);
-          } else {
-            console.error(" Échec de la récupération du profil:", userResult.message);
-            setStatus("Erreur: " + userResult.message);
-            setTimeout(() => {
-              navigate("/login", { replace: true });
-            }, 2000);
-          }
+          console.log("✅ Connexion Google réussie! Redirection vers l'accueil");
+          setStatus("Redirection...");
+          // Rediriger vers la page d'accueil
+          // Les tokens sont déjà sauvegardés dans tokenManager via handleGoogleCallback
+          setTimeout(() => {
+            navigate("/", { replace: true });
+          }, 500);
         } else {
           console.error("❌ Échec de handleGoogleCallback:", result.error);
           setStatus("Échec de la connexion: " + (result.error || "Erreur inconnue"));

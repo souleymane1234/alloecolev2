@@ -36,47 +36,7 @@ export default class ConsumApi {
       async (error) => {
         const originalRequest = error.config;
 
-        // 🔴 Erreur 401 = Token expiré
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-
-          // ⏳ Si refresh en cours, mettre en file d'attente
-          if (this.isRefreshing) {
-            return new Promise((resolve, reject) => {
-              this.pendingRequestsQueue.push({ resolve, reject, config: originalRequest });
-            });
-          }
-
-          this.isRefreshing = true;
-
-          try {
-            // 🔄 Utiliser le TokenManager pour refresh
-            const newToken = await tokenManager.refreshAccessToken();
-            
-            // ✅ Relancer toutes les requêtes en attente
-            this.pendingRequestsQueue.forEach(({ resolve, config }) => {
-              config.headers.Authorization = `Bearer ${newToken}`;
-              resolve(this.api(config));
-            });
-            this.pendingRequestsQueue = [];
-
-            // ✅ Relancer la requête originale
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return this.api(originalRequest);
-
-          } catch (refreshError) {
-            // ❌ Échec du refresh - Rejeter toutes les requêtes
-            this.pendingRequestsQueue.forEach(({ reject }) => reject(refreshError));
-            this.pendingRequestsQueue = [];
-            
-            tokenManager.logout();
-            return Promise.reject(refreshError);
-            
-          } finally {
-            this.isRefreshing = false;
-          }
-        }
-
+        // 🔴 Erreur 401 : ne plus tenter de refresh (tokens valides 7 jours)
         return Promise.reject(error);
       }
     );
@@ -112,6 +72,7 @@ export default class ConsumApi {
 
   /**
    * ✅ Vérification OTP
+   * Format de réponse: { success: true, data: { accessToken, refreshToken, user, studentProfile } }
    */
   static async verifyOTP(phoneNumber, code) {
     try {
@@ -131,6 +92,7 @@ export default class ConsumApi {
         throw error;
       }
 
+      // Le format de réponse est déjà { success: true, data: {...} }
       return responseData;
     } catch (error) {
       console.error('Error verifying OTP:', error);
@@ -140,11 +102,14 @@ export default class ConsumApi {
 
   /**
    * 🔐 Connexion Google OAuth
+   * GET /api/v1/auth/google - Redirige vers Google OAuth
    */
   static async loginWithGoogle() {
     try {
+      // L'API redirige automatiquement vers Google, puis vers /api/v1/auth/google/callback
+      // Le callback redirige ensuite vers le frontend avec les tokens dans l'URL
       const callbackUrl = `${window.location.origin}/auth/callback`;
-      const redirectUrl = `https://alloecoleapi-dev.up.railway.app/api/v1/auth/google?redirect_uri=${callbackUrl}`;
+      const redirectUrl = `https://alloecoleapi-dev.up.railway.app/api/v1/auth/google?redirect_uri=${encodeURIComponent(callbackUrl)}`;
       window.location.href = redirectUrl;
     } catch (error) {
       console.error("Erreur lors de la redirection vers Google:", error);
@@ -214,7 +179,51 @@ export default class ConsumApi {
    * 🔄 Rafraîchir le token (legacy - utilise TokenManager)
    */
   static async refreshAccessToken() {
-    return tokenManager.refreshAccessToken();
+    console.warn('Refresh token désactivé (validité 7 jours).');
+    return tokenManager.getAccessToken();
+  }
+
+  /**
+   * ✉️ Vérifier l'adresse email
+   * POST /api/v1/auth/verify-email
+   * Format de réponse: { accessToken, refreshToken, user, studentProfile }
+   */
+  static async verifyEmail(email, code) {
+    try {
+      const response = await fetch('https://alloecoleapi-dev.up.railway.app/api/v1/auth/verify-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+      });
+
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        const errorMessage = responseData.message || `HTTP error! status: ${response.status}`;
+        const error = new Error(errorMessage);
+        error.status = response.status;
+        error.responseData = responseData;
+        throw error;
+      }
+
+      // Format de réponse: { accessToken, refreshToken, user, studentProfile }
+      const { accessToken, refreshToken, user, studentProfile } = responseData;
+
+      // Sauvegarder les tokens dans tokenManager
+      if (accessToken) {
+        tokenManager.setTokens(accessToken, refreshToken, user || studentProfile);
+        if (user) {
+          tokenManager.setUserData(user);
+        } else if (studentProfile) {
+          tokenManager.setUserData(studentProfile);
+        }
+      }
+
+      return responseData;
+    } catch (error) {
+      console.error('Error verifying email:', error);
+      throw error;
+    }
   }
 
   /**
@@ -239,9 +248,40 @@ export default class ConsumApi {
 
   /**
    * 🚪 Déconnexion
+   * POST /api/v1/auth/logout avec refreshToken
    */
-  static logout() {
-    tokenManager.logout();
+  static async logout() {
+    try {
+      const refreshToken = tokenManager.getRefreshToken();
+      
+      if (refreshToken) {
+        // Appeler l'API de déconnexion
+        const response = await fetch('https://alloecoleapi-dev.up.railway.app/api/v1/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (!response.ok) {
+          console.warn('Erreur lors de la déconnexion côté serveur:', response.status);
+        }
+      }
+
+      // Déconnecter localement dans tous les cas
+      tokenManager.logout();
+      
+      // Rediriger vers la page de connexion
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+      // Déconnecter localement même en cas d'erreur
+      tokenManager.logout();
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    }
   }
 
   /**

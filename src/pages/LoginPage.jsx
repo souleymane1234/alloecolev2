@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ConsumApi from "../services_workers/consum_api";
+import tokenManager from "../helper/tokenManager";
 
 const LoginPage = () => {
   const [step, setStep] = useState("phone");
@@ -131,53 +132,54 @@ const handleSendOTP = async () => {
   };
 
   // ✅ Vérification OTP via l'API
+  const handleVerifyOTP = async (otpCode) => {
+    setLoading(true);
+    setError("");
 
-const handleVerifyOTP = async (otpCode) => {
-  setLoading(true);
-  setError("");
+    try {
+      const formattedPhoneNumber = `225${phoneNumber}`;
+      const response = await ConsumApi.verifyOTP(formattedPhoneNumber, otpCode);
+      
+      console.log("Réponse API:", response);
 
-  try {
-    const formattedPhoneNumber = `225${phoneNumber}`;
-    const response = await ConsumApi.verifyOTP(formattedPhoneNumber, otpCode);
-    
-    console.log("Réponse API:", response);
+      // Format de réponse: { success: true, data: { accessToken, refreshToken, user, studentProfile } }
+      if (response?.success && response?.data?.accessToken) {
+        const { accessToken, refreshToken, user, studentProfile } = response.data;
 
-    if (response?.data?.accessToken) {
-      // Stocker tous les éléments de data
-      Object.keys(response.data).forEach(key => {
-        if (typeof response.data[key] === 'string') {
-          localStorage.setItem(key, response.data[key]);
-        } else {
-          localStorage.setItem(key, JSON.stringify(response.data[key]));
+        // ✅ Sauvegarder les tokens dans tokenManager (en mémoire)
+        // Les informations du token seront affichées automatiquement dans setTokens
+        tokenManager.setTokens(accessToken, refreshToken, user || studentProfile);
+
+        // ✅ Sauvegarder les données utilisateur si présentes
+        if (user) {
+          tokenManager.setUserData(user);
+        } else if (studentProfile) {
+          tokenManager.setUserData(studentProfile);
         }
-      });
 
-      // ✅ CORRECTION : Stocker explicitement access_token et refresh_token
-      localStorage.setItem('access_token', response.data.accessToken);
-      if (response.data.refreshToken) {
-        localStorage.setItem('refresh_token', response.data.refreshToken);
+        console.log("✅ Tokens sauvegardés dans tokenManager");
+        console.log("User:", user || studentProfile);
+
+        setStep("success");
+        
+        // Rediriger vers la page d'accueil
+        setTimeout(() => {
+          navigate("/", { replace: true });
+        }, 1500);
+        
+      } else {
+        setError("Token d'accès manquant dans la réponse");
       }
 
-      setStep("success");
-      
-      // ✅ CORRECTION : Forcer un rechargement complet de la page
-      // pour que Layout détecte la connexion
-      setTimeout(() => {
-        window.location.href = "/"; // Au lieu de navigate
-      }, 2000);
-      
-    } else {
-      setError("Token d'accès manquant dans la réponse");
+    } catch (error) {
+      console.error("Erreur:", error);
+      const errorMessage = error.responseData?.message || error.message || "Erreur de vérification";
+      setError(errorMessage);
+      setOtp(["", "", "", "", "", ""]);
+    } finally {
+      setLoading(false);
     }
-
-  } catch (error) {
-    console.error("Erreur:", error);
-    setError(error.message || "Erreur de vérification");
-    setOtp(["", "", "", "", "", ""]);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // 🔁 Renvoyer le code OTP
   const handleResendOTP = async () => {

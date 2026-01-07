@@ -17,6 +17,8 @@ import JobSheetDetail from './pages/JobSheetDetail.jsx'
 import MyOrientationJobs from './pages/MyOrientationJobs.jsx'
 import Quiz from './pages/Quiz.jsx'
 import QuizPlay from './pages/QuizPlay.jsx'
+import QuizLeaderboard from './pages/QuizLeaderboard.jsx'
+import QuizRewards from './pages/QuizRewards.jsx'
 import Jeux from './pages/Jeux.jsx'
 import TeleReality from './pages/TeleReality.jsx'
 import EmissionDetail from './pages/EmissionDetail.tsx'
@@ -68,6 +70,8 @@ function App() {
             <Route path="mes-metiers-orientation" element={<MyOrientationJobs />} />
             <Route path="quiz" element={<Quiz />} />
             <Route path="quiz/:id" element={<QuizPlay />} />
+            <Route path="quiz/leaderboard" element={<QuizLeaderboard />} />
+            <Route path="quiz/rewards" element={<QuizRewards />} />
             <Route path="jeux" element={<Jeux />} />
             <Route path="emissions-telerealite" element={<TeleReality />} />
             <Route path="emission/:code_emission" element={<EmissionDetail />} />
