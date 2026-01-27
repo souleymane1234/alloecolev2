@@ -9,7 +9,7 @@ const BourseDetailsComponent = () => {
 
   // --- Fonction de récupération des détails depuis l'API ---
   const fetchBourseDetails = async () => {
-    const response = await fetch(`https://alloecoleapi-dev.up.railway.app/api/v1/students/scholarships/${id}`);
+    const response = await fetch(`https://alloecoleapi-dev.up.railway.app/api/v1/scholarships/${id}`);
     if (!response.ok) throw new Error(`Erreur ${response.status}`);
     const result = await response.json();
     if (result.success && result.data) return result.data;
@@ -113,11 +113,11 @@ const BourseDetailsComponent = () => {
                       </div>
                       <div className="info-item">
                         <i className="ph ph-calendar"></i>
-                        <span><strong>Publié :</strong> {bourse?.publishedAt}</span>
+                        <span><strong>Publié :</strong> {formatDate(bourse?.publishedAt)}</span>
                       </div>
                       <div className="info-item">
                         <i className="ph ph-clock"></i>
-                        <span><strong>Limite :</strong> {bourse?.dateLimite}</span>
+                        <span><strong>Limite :</strong> {formatDate(bourse?.dateLimite)}</span>
                         {!isExpired && daysLeft > 0 && (
                           <span className="days-left">({daysLeft} jours restants)</span>
                         )}

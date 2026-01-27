@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import './SchoolsList.css';
@@ -13,14 +13,10 @@ const levelToType = {
 };
 
 const SchoolsList = () => {
-  const [filteredSchools, setFilteredSchools] = useState([]);
   const [selectedLevel, setSelectedLevel] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFiliere, setSelectedFiliere] = useState('all');
-  const [showProximityFilter, setShowProximityFilter] = useState(false);
-  const [userLocation, setUserLocation] = useState(null);
-  const [proximityRadius, setProximityRadius] = useState(10);
-  const [navigating, setNavigating] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(12);
   const [sortBy, setSortBy] = useState('name');
@@ -28,7 +24,57 @@ const SchoolsList = () => {
   const navigate = useNavigate();
   const normalizedSearch = useMemo(() => searchTerm.trim(), [searchTerm]);
 
-  // Fonction pour récupérer les écoles depuis l'API
+  // Fonction pour obtenir l'emoji du drapeau basé sur le pays/région
+  const getCountryFlag = (region, city, country) => {
+    // Si un pays est spécifié
+    if (country) {
+      const countryLower = country.toLowerCase();
+      if (countryLower.includes('côte') || countryLower.includes('cote') || countryLower.includes('ivoire') || countryLower === 'ci') {
+        return '🇨🇮';
+      }
+      if (countryLower.includes('france') || countryLower === 'fr') {
+        return '🇫🇷';
+      }
+      if (countryLower.includes('sénégal') || countryLower.includes('senegal') || countryLower === 'sn') {
+        return '🇸🇳';
+      }
+      if (countryLower.includes('mali') || countryLower === 'ml') {
+        return '🇲🇱';
+      }
+      if (countryLower.includes('burkina') || countryLower === 'bf') {
+        return '🇧🇫';
+      }
+      if (countryLower.includes('bénin') || countryLower.includes('benin') || countryLower === 'bj') {
+        return '🇧🇯';
+      }
+      if (countryLower.includes('togo') || countryLower === 'tg') {
+        return '🇹🇬';
+      }
+      if (countryLower.includes('ghana') || countryLower === 'gh') {
+        return '🇬🇭';
+      }
+      if (countryLower.includes('guinée') || countryLower.includes('guinee') || countryLower === 'gn') {
+        return '🇬🇳';
+      }
+    }
+    
+    // Par défaut, si c'est en Côte d'Ivoire (basé sur la région)
+    const regionLower = (region || '').toLowerCase();
+    const cityLower = (city || '').toLowerCase();
+    
+    // La plupart des écoles sont probablement en Côte d'Ivoire
+    // On peut aussi vérifier des villes spécifiques
+    if (regionLower.includes('abidjan') || cityLower.includes('abidjan') ||
+        regionLower.includes('yamoussoukro') || cityLower.includes('yamoussoukro') ||
+        regionLower.includes('bouaké') || cityLower.includes('bouake') ||
+        regionLower.includes('san-pedro') || cityLower.includes('san-pedro')) {
+      return '🇨🇮';
+    }
+    
+    // Par défaut, retourner le drapeau de la Côte d'Ivoire
+    return '🇨🇮';
+  };
+
   const fetchSchools = async ({ queryKey }) => {
     const [_key, page, search, levelSelection, sort, order] = queryKey;
     const params = new URLSearchParams();
@@ -73,16 +119,12 @@ const SchoolsList = () => {
           level,
           filiere,
           logo: item.logoUrl || DEFAULT_LOGO,
-          banner: item.bannerUrl || DEFAULT_LOGO,
-          address: item.city && item.region ? `${item.city}, ${item.region}` : item.city || item.region || 'Adresse indisponible',
+          address: item.city && item.region ? `${item.city}, ${item.region}` : item.city || item.region || 'Non précisée',
           description: item.description || item.slogan || "",
-          rating: item.isVerified ? 4.5 : 4.0,
-          foundedYear: item.createdAt ? new Date(item.createdAt).getFullYear() : null,
-          slogan: item.slogan,
-          hasPaid: item.hasPaid,
           isVerified: item.isVerified,
+          city: item.city || 'Non précisée',
           region: item.region || 'Non précisée',
-          city: item.city || 'Non précisée'
+          country: item.country || null
         };
       });
 
@@ -92,7 +134,6 @@ const SchoolsList = () => {
     return { schools: [], pagination: null };
   };
 
-  // Utilisation de React Query
   const { data, isLoading, error, isError, isFetching } = useQuery({
     queryKey: ['schools', currentPage, normalizedSearch, selectedLevel, sortBy, sortOrder],
     queryFn: fetchSchools,
@@ -107,430 +148,243 @@ const SchoolsList = () => {
   const pagination = data?.pagination || null;
 
   const academicLevels = [
-    { value: 'all', label: 'Tous les niveaux', icon: 'ph-graduation-cap' },
-    { value: 'primaire', label: 'Primaire', icon: 'ph-book' },
-    { value: 'collège', label: 'Collège', icon: 'ph-student' },
-    { value: 'lycée', label: 'Lycée', icon: 'ph-graduation-cap' },
-    { value: 'université', label: 'Université', icon: 'ph-buildings' }
+    { value: 'all', label: 'Tous' },
+    { value: 'primaire', label: 'Primaire' },
+    { value: 'collège', label: 'Collège' },
+    { value: 'lycée', label: 'Lycée' },
+    { value: 'université', label: 'Université' }
   ];
 
   const filieres = [
-    { value: 'all', label: 'Toutes les filières', icon: 'ph-stack' },
-    { value: 'général', label: 'Général', icon: 'ph-book-open' },
-    { value: 'technique', label: 'Technique', icon: 'ph-wrench' },
-    { value: 'commerce', label: 'Commerce', icon: 'ph-currency-circle-dollar' },
-    { value: 'santé', label: 'Santé', icon: 'ph-heart' },
-    { value: 'art', label: 'Art', icon: 'ph-palette' }
+    { value: 'all', label: 'Toutes filières' },
+    { value: 'général', label: 'Général' },
+    { value: 'technique', label: 'Technique' },
+    { value: 'commerce', label: 'Commerce' },
+    { value: 'santé', label: 'Santé' },
+    { value: 'art', label: 'Art' }
   ];
 
-  useEffect(() => {
-    filterSchools();
-  }, [selectedLevel, selectedFiliere, searchTerm, schools]);
+  // Liste des pays disponibles
+  const countries = [
+    { value: 'all', label: 'Tous les pays', flag: '🌍' },
+    { value: 'Côte d\'Ivoire', label: 'Côte d\'Ivoire', flag: '🇨🇮' },
+    { value: 'France', label: 'France', flag: '🇫🇷' },
+    { value: 'Sénégal', label: 'Sénégal', flag: '🇸🇳' },
+    { value: 'Mali', label: 'Mali', flag: '🇲🇱' },
+    { value: 'Burkina Faso', label: 'Burkina Faso', flag: '🇧🇫' },
+    { value: 'Bénin', label: 'Bénin', flag: '🇧🇯' },
+    { value: 'Togo', label: 'Togo', flag: '🇹🇬' },
+    { value: 'Ghana', label: 'Ghana', flag: '🇬🇭' },
+    { value: 'Guinée', label: 'Guinée', flag: '🇬🇳' }
+  ];
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [normalizedSearch, selectedLevel, sortBy, sortOrder]);
-
-  const filterSchools = () => {
+  // Utiliser useMemo pour calculer les écoles filtrées au lieu d'un useEffect
+  const filteredSchools = useMemo(() => {
     let filtered = schools;
 
-    // Filtre par niveau académique
     if (selectedLevel !== 'all') {
       filtered = filtered.filter(school => school.level === selectedLevel);
     }
 
-    // Filtre par filière
     if (selectedFiliere !== 'all') {
       filtered = filtered.filter(school => school.filiere === selectedFiliere);
     }
 
-    // Filtre par recherche textuelle (côté client si < 2 caractères)
-    if (searchTerm && searchTerm.trim().length < 2) {
+    if (selectedCountry !== 'all') {
+      filtered = filtered.filter(school => {
+        // Vérifier si le pays correspond directement
+        if (school.country && school.country.toLowerCase() === selectedCountry.toLowerCase()) {
+          return true;
+        }
+        // Sinon, utiliser la fonction getCountryFlag pour déterminer le pays
+        const flag = getCountryFlag(school.region, school.city, school.country);
+        const selectedCountryData = countries.find(c => c.value === selectedCountry);
+        if (selectedCountryData) {
+          return flag === selectedCountryData.flag;
+        }
+        return false;
+      });
+    }
+
+    if (searchTerm && searchTerm.trim().length >= 1) {
+      const term = searchTerm.toLowerCase();
       filtered = filtered.filter(school =>
-        school.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    } else if (searchTerm && searchTerm.trim().length >= 2) {
-      filtered = filtered.filter(school =>
-        school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (school.address && school.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (school.description && school.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (school.slogan && school.slogan.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (school.city && school.city.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (school.region && school.region.toLowerCase().includes(searchTerm.toLowerCase()))
+        school.name.toLowerCase().includes(term) ||
+        (school.address && school.address.toLowerCase().includes(term)) ||
+        (school.description && school.description.toLowerCase().includes(term)) ||
+        (school.city && school.city.toLowerCase().includes(term)) ||
+        (school.region && school.region.toLowerCase().includes(term))
       );
     }
 
-    setFilteredSchools(filtered);
-  };
+    return filtered;
+  }, [schools, selectedLevel, selectedFiliere, selectedCountry, searchTerm]);
 
-  const handleProximitySearch = () => {
-    if (!userLocation) {
-      // Demander la géolocalisation
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const location = {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            };
-            setUserLocation(location);
-            filterByProximity(location);
-          },
-          (error) => {
-            alert('Impossible d\'obtenir votre position. Veuillez autoriser la géolocalisation.');
-          }
-        );
-      } else {
-        alert('La géolocalisation n\'est pas supportée par votre navigateur.');
-      }
-    } else {
-      filterByProximity(userLocation);
-    }
-  };
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [normalizedSearch, selectedLevel, selectedFiliere, selectedCountry, sortBy, sortOrder]);
 
-  const filterByProximity = (location) => {
-    // Filtrer par ville si les coordonnées GPS ne sont pas disponibles
-    const filtered = schools.filter(school => {
-      // Si l'école a des coordonnées GPS, utiliser la distance
-      if (school.latitude && school.longitude) {
-        const distance = calculateDistance(
-          location.latitude,
-          location.longitude,
-          school.latitude,
-          school.longitude
-        );
-        return distance <= proximityRadius;
-      }
-      // Sinon, inclure toutes les écoles (la géolocalisation fine nécessite des coordonnées)
-      return true;
-    });
-
-    setFilteredSchools(filtered);
-  };
-
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Rayon de la Terre en km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  };
-
-  const handleSchoolClick = (schoolId, event) => {
-    // Empêcher le comportement par défaut du bouton
-    event.preventDefault();
-    event.stopPropagation();
-    
-    // Indiquer qu'une navigation est en cours
-    setNavigating(true);
-    
-    // Navigation sans rechargement de page avec transition fluide
-    setTimeout(() => {
-      navigate(`/schools/${schoolId}`, { replace: false });
-      setNavigating(false);
-    }, 50); // Réduit à 50ms pour une transition quasi-instantanée
+  const handleSchoolClick = (schoolId) => {
+    navigate(`/schools/${schoolId}`);
   };
 
   const resetFilters = () => {
     setSelectedLevel('all');
     setSelectedFiliere('all');
+    setSelectedCountry('all');
     setSearchTerm('');
-    setUserLocation(null);
-    setShowProximityFilter(false);
-    setFilteredSchools(schools);
   };
 
-  if (isLoading) {
-    return (
-      <>
-        <div className="school-detail-loading">
-          <div className="loading-spinner">
-            <div className="spinner-container">
-              <div className="spinner-ring"></div>
-              <div className="spinner-ring"></div>
-              <div className="spinner-ring"></div>
-            </div>
-            <div className="loading-text">Chargement des détails...</div>
-          </div>
-        </div>
-      </>
-    );
-  }
-
   return (
-    <>
-      <div className="schools-page">
-        {navigating && (
-          <div className="navigation-overlay">
-            <div className="navigation-indicator">
-              <div className="nav-spinner-container">
-                <div className="nav-spinner-ring"></div>
-                <div className="nav-spinner-ring"></div>
-              </div>
-              <div className="nav-spinner-text">Chargement...</div>
-            </div>
+    <div className="schools-page">
+      <div className="schools-container">
+        <header className="page-header">
+          <h1><i className="ph-buildings"></i> Découvrez les Écoles</h1>
+          <p>Trouvez l'établissement parfait pour votre éducation</p>
+        </header>
+
+        <div className="filters-bar">
+          <input
+            type="text"
+            className="search-box"
+            placeholder="🔍 Rechercher une école..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          
+          <select
+            className="filter-dropdown"
+            value={selectedLevel}
+            onChange={(e) => setSelectedLevel(e.target.value)}
+          >
+            {academicLevels.map(level => (
+              <option key={level.value} value={level.value}>{level.label}</option>
+            ))}
+          </select>
+
+          <select
+            className="filter-dropdown"
+            value={selectedFiliere}
+            onChange={(e) => setSelectedFiliere(e.target.value)}
+          >
+            {filieres.map(filiere => (
+              <option key={filiere.value} value={filiere.value}>{filiere.label}</option>
+            ))}
+          </select>
+
+          <select
+            className="filter-dropdown"
+            value={selectedCountry}
+            onChange={(e) => setSelectedCountry(e.target.value)}
+          >
+            {countries.map(country => (
+              <option key={country.value} value={country.value}>
+                {country.flag} {country.label}
+              </option>
+            ))}
+          </select>
+
+          <button className="reset-button" onClick={resetFilters}>
+            <i className="ph-arrow-clockwise"></i> Réinitialiser
+          </button>
+        </div>
+
+        {isError && (
+          <div className="error-message">
+            ⚠️ {error?.message || "Impossible de charger les écoles"}
           </div>
         )}
-        <div className="schools-container">
-          <div className="schools-header">
-            <h1 className="schools-title">
-              <i className="ph-buildings"></i>
-              Découvrez les Écoles
-            </h1>
-            <p className="schools-subtitle">
-              Trouvez l'établissement parfait pour votre éducation
-            </p>
+
+        <div className="results-info">
+          {isLoading || isFetching ? 'Chargement...' : `${filteredSchools.length} école(s) trouvée(s)`}
+          {pagination && ` • Page ${pagination.current_page || currentPage} / ${pagination.total_pages || '?'}`}
+        </div>
+
+        {isLoading ? (
+          <div className="loading-container">
+            <div className="spinner"></div>
+            <p>Chargement des écoles...</p>
           </div>
+        ) : filteredSchools.length > 0 ? (
+          <div className="schools-grid">
+            {filteredSchools.map(school => (
+              <div
+                key={school.id}
+                className="school-card"
+                onClick={() => handleSchoolClick(school.id)}
+              >
+                <div className="card-header">
+                  <img src={school.logo} alt="pas d'image" className="school-logo" />
+                  {school.isVerified && (
+                    <span className="verified-badge">
+                      <i className="ph-check-circle-fill"></i>
+                    </span>
+                  )}
+                </div>
 
-          <div className="filters-section">
-            <div className="filters-grid">
-              <div className="filter-group">
-                <label className="filter-label">
-                  <i className="ph-magnifying-glass"></i>
-                  Recherche
-                </label>
-                <input
-                  type="text"
-                  className="search-input"
-                  placeholder="Nom de l'école, adresse..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+                <div className="card-body">
+                  <h3 className="school-name">
+                    <span style={{ marginRight: '0.5rem', fontSize: '1.2em' }}>
+                      {getCountryFlag(school.region, school.city, school.country)}
+                    </span>
+                    {school.name}
+                  </h3>
+                  <span className="school-badge">{academicLevels.find(l => l.value === school.level)?.label}</span>
+                  
+                  <p className="school-location">
+                    <i className="ph-map-pin"></i> {school.city}
+                  </p>
 
-              <div className="filter-group">
-                <label className="filter-label">
-                  <i className="ph-graduation-cap"></i>
-                  Niveau académique
-                </label>
-                <select
-                  className="filter-select"
-                  value={selectedLevel}
-                  onChange={(e) => setSelectedLevel(e.target.value)}
-                >
-                  {academicLevels.map(level => (
-                    <option key={level.value} value={level.value}>
-                      {level.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  {school.description && (
+                    <p className="school-desc">
+                      {school.description.length > 80 
+                        ? school.description.substring(0, 80) + '...' 
+                        : school.description}
+                    </p>
+                  )}
+                </div>
 
-              <div className="filter-group">
-                <label className="filter-label">
-                  <i className="ph-stack"></i>
-                  Filière
-                </label>
-                <select
-                  className="filter-select"
-                  value={selectedFiliere}
-                  onChange={(e) => setSelectedFiliere(e.target.value)}
-                >
-                  {filieres.map(filiere => (
-                    <option key={filiere.value} value={filiere.value}>
-                      {filiere.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="filter-group">
-                <label className="filter-label">
-                  <i className="ph-map-pin"></i>
-                  Proximité
-                </label>
-                <button
-                  className="proximity-btn"
-                  onClick={() => setShowProximityFilter(!showProximityFilter)}
-                >
-                  {showProximityFilter ? 'Masquer' : 'Rechercher près de moi'}
-                </button>
-              </div>
-            </div>
-
-            {showProximityFilter && (
-              <div className="proximity-section">
-                <div className="proximity-controls">
-                  <input
-                    type="number"
-                    className="proximity-input"
-                    placeholder="Rayon (km)"
-                    value={proximityRadius}
-                    onChange={(e) => setProximityRadius(Number(e.target.value))}
-                    min="1"
-                    max="100"
-                  />
-                  <button
-                    className="proximity-btn"
-                    onClick={handleProximitySearch}
-                  >
-                    <i className="ph-map-pin"></i>
-                    Rechercher
+                <div className="card-footer">
+                  <button className="view-btn">
+                    Voir détails <i className="ph-arrow-right"></i>
                   </button>
                 </div>
               </div>
-            )}
+            ))}
+          </div>
+        ) : (
+          <div className="no-results">
+            <i className="ph-magnifying-glass"></i>
+            <h3>Aucune école trouvée</h3>
+            <p>Essayez de modifier vos critères de recherche</p>
+          </div>
+        )}
 
-            <button className="reset-btn" onClick={resetFilters}>
-              <i className="ph-arrow-clockwise"></i>
-              Réinitialiser les filtres
+        {pagination && pagination.total_pages > 1 && (
+          <div className="pagination">
+            <button
+              className="page-btn"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1 || isFetching}
+            >
+              <i className="ph-arrow-left"></i> Précédent
+            </button>
+            
+            <span className="page-info">
+              Page {pagination.current_page || currentPage} / {pagination.total_pages}
+            </span>
+            
+            <button
+              className="page-btn"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.total_pages))}
+              disabled={(pagination.current_page || currentPage) >= pagination.total_pages || isFetching}
+            >
+              Suivant <i className="ph-arrow-right"></i>
             </button>
           </div>
-
-          <div className="schools-results">
-            {isError && (
-              <div style={{ 
-                padding: '1rem', 
-                margin: '1rem 0', 
-                background: '#fee2e2', 
-                color: '#dc2626', 
-                borderRadius: '0.5rem',
-                textAlign: 'center'
-              }}>
-                ⚠️ {error?.message || "Impossible de charger les écoles"}
-                {!localStorage.getItem('access_token') && (
-                  <div style={{ marginTop: '0.5rem' }}>
-                    <a href="/login" style={{ color: '#dc2626', textDecoration: 'underline' }}>
-                      Se connecter
-                    </a>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            <div style={{ color: 'white', marginBottom: '1rem', textAlign: 'center' }}>
-              {isFetching ? (
-                'Mise à jour des résultats...'
-              ) : (
-                <>
-                  {filteredSchools.length} école{filteredSchools.length > 1 ? 's' : ''} trouvée{filteredSchools.length > 1 ? 's' : ''}
-                  {pagination && (
-                    <> &middot; Page {pagination.current_page || currentPage} / {pagination.total_pages || '?'} </>
-                  )}
-                </>
-              )}
-            </div>
-
-            {filteredSchools.length > 0 ? (
-              <div className="schools-grid">
-                {filteredSchools.map(school => (
-                  <div
-                    key={school.id}
-                    className="school-card"
-                    onClick={(e) => handleSchoolClick(school.id, e)}
-                  >
-                    <div className="school-banner">
-                      <div className="school-logo">
-                        <img src={school.logo} alt={`Logo ${school.name}`} />
-                      </div>
-                    </div>
-                    
-                    <div className="school-content">
-                      <h3 className="school-name">{school.name}</h3>
-                      <span className="school-level">
-                        {academicLevels.find(l => l.value === school.level)?.label}
-                      </span>
-                      
-                      <div className="school-info">
-                        {school.isVerified && (
-                          <div className="school-verified" style={{ 
-                            display: 'inline-flex', 
-                            alignItems: 'center', 
-                            gap: '0.25rem',
-                            background: '#10b981',
-                            color: 'white',
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '0.25rem',
-                            fontSize: '0.875rem'
-                          }}>
-                            <i className="ph-check-circle-fill"></i>
-                            <span>Vérifié</span>
-                          </div>
-                        )}
-                        {school.slogan && (
-                          <div className="school-slogan" style={{ 
-                            fontSize: '0.875rem', 
-                            color: '#9ca3af', 
-                            fontStyle: 'italic',
-                            marginTop: '0.5rem'
-                          }}>
-                            "{school.slogan}"
-                          </div>
-                        )}
-                        {school.city && school.region && (
-                          <div className="school-location" style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '0.25rem',
-                            fontSize: '0.875rem',
-                            color: '#9ca3af',
-                            marginTop: '0.25rem'
-                          }}>
-                            <i className="ph-map-pin"></i>
-                            <span>{school.city}, {school.region}</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <p className="school-description">
-                        {school.description}
-                      </p>
-                      
-                      <div className="school-actions">
-                        <button 
-                          className="action-btn"
-                          onClick={(e) => handleSchoolClick(school.id, e)}
-                        >
-                          <i className="ph-eye"></i>
-                          Voir détails
-                        </button>
-                        <button className="action-btn secondary">
-                          <i className="ph-heart"></i>
-                          Favoris
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="no-schools">
-                <i className="ph-buildings"></i>
-                <h3>Aucune école trouvée</h3>
-                <p>Essayez de modifier vos critères de recherche</p>
-              </div>
-            )}
-
-            {pagination && pagination.total_pages > 1 && (
-              <div className="pagination-controls">
-                <button
-                  className="pagination-btn"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1 || isFetching}
-                >
-                  <i className="ph-arrow-left"></i>
-                  Précédent
-                </button>
-                <span className="pagination-info">
-                  Page {pagination.current_page || currentPage} sur {pagination.total_pages}
-                </span>
-                <button
-                  className="pagination-btn"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.total_pages))}
-                  disabled={(pagination.current_page || currentPage) >= pagination.total_pages || isFetching}
-                >
-                  Suivant
-                  <i className="ph-arrow-right"></i>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
-    </>
+    </div>
   );
 };
 

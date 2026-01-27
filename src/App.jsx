@@ -22,6 +22,8 @@ import QuizRewards from './pages/QuizRewards.jsx'
 import Jeux from './pages/Jeux.jsx'
 import TeleReality from './pages/TeleReality.jsx'
 import EmissionDetail from './pages/EmissionDetail.tsx'
+import EmissionDetailPage from './pages/EmissionDetailPage.jsx'
+import CandidateDetailPage from './pages/CandidateDetailPage.jsx'
 import CompetDetail from './pages/CompetDetail.tsx'
 import VotingComponent from './pages/VotingComponent.tsx'
 import Toon from './pages/Toon.jsx'
@@ -31,6 +33,7 @@ import Revision from './pages/Revision.jsx'
 import RevisionDetail from './pages/RevisionDetail.jsx'
 import RevisionPublish from './pages/RevisionPublish.jsx'
 import AssistanceDemande from './pages/AssistanceDemande.jsx'
+import Paiement from './pages/Paiement.jsx'
 
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
@@ -74,7 +77,8 @@ function App() {
             <Route path="quiz/rewards" element={<QuizRewards />} />
             <Route path="jeux" element={<Jeux />} />
             <Route path="emissions-telerealite" element={<TeleReality />} />
-            <Route path="emission/:code_emission" element={<EmissionDetail />} />
+            <Route path="emission/:id" element={<EmissionDetailPage />} />
+            <Route path="emission/candidate/:id" element={<CandidateDetailPage />} />
             <Route path="competitions/:code_competition/detail" element={<CompetDetail />} />
             <Route path="VotingComponent" element={<VotingComponent />} />
             <Route path="toon" element={<Toon />} />
@@ -84,6 +88,7 @@ function App() {
             <Route path="revision/publier" element={<RevisionPublish />} />
             <Route path="revision/:id" element={<RevisionDetail />} />
             <Route path="assistance-demande" element={<AssistanceDemande />} />
+            <Route path="paiement" element={<Paiement />} />
             {/* Ajoute d'autres routes ici si nécessaire */}
             <Route path="*" element={<div>Page Not Found</div>} />
           </Route>

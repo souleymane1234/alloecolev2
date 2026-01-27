@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import tokenManager from '../../helper/tokenManager';
 import './OrientationInteractive.css';
 
 const API_BASE = 'https://alloecoleapi-dev.up.railway.app/api/v1';
 
 const OrientationInteractive = () => {
+  const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(tokenManager.isAuthenticated());
   const [questionnaires, setQuestionnaires] = useState([]);
   const [questionnairesLoading, setQuestionnairesLoading] = useState(false);
@@ -140,6 +142,15 @@ const OrientationInteractive = () => {
 
   const handleStartSession = async (questionnaireId, resumeLast = true) => {
     if (!questionnaireId || sessionLoading === questionnaireId) return;
+
+    // ✅ Vérifier l'authentification au moment de l'action
+    if (!isAuthenticated) {
+      setActionError('Veuillez vous connecter pour démarrer une session');
+      if (window.confirm('Vous devez être connecté pour accéder au questionnaire. Souhaitez-vous vous connecter ?')) {
+        navigate('/login', { state: { from: '/orientation-interactive' } });
+      }
+      return;
+    }
 
     setShowQuestionnaire(true);
     setUserOpenedQuestionnaire(true);
@@ -419,27 +430,7 @@ const OrientationInteractive = () => {
     </div>
   );
 
-  if (!isAuthenticated) {
-    return (
-      <section className="orientation-module">
-        {heroSection}
-        <div className="orientation-content container">
-          <div className="orientation-section auth-required">
-            <i className="ph-lock key-icon"></i>
-            <h2>Connexion requise</h2>
-            <p>
-              Vous devez être connecté pour accéder au questionnaire interactif
-              d’orientation et sauvegarder vos réponses.
-            </p>
-            <a className="btn-orange" href="/login">
-              Me connecter
-            </a>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
+  // ✅ L'affichage est libre - la connexion sera demandée au moment des actions
   return (
     <section className="orientation-module">
       {heroSection}

@@ -132,15 +132,15 @@ const handleSendOTP = async () => {
   };
 
   // ✅ Vérification OTP via l'API
-  const handleVerifyOTP = async (otpCode) => {
-    setLoading(true);
-    setError("");
+const handleVerifyOTP = async (otpCode) => {
+  setLoading(true);
+  setError("");
 
-    try {
-      const formattedPhoneNumber = `225${phoneNumber}`;
-      const response = await ConsumApi.verifyOTP(formattedPhoneNumber, otpCode);
-      
-      console.log("Réponse API:", response);
+  try {
+    const formattedPhoneNumber = `225${phoneNumber}`;
+    const response = await ConsumApi.verifyOTP(formattedPhoneNumber, otpCode);
+    
+    console.log("Réponse API:", response);
 
       // Format de réponse: { success: true, data: { accessToken, refreshToken, user, studentProfile } }
       if (response?.success && response?.data?.accessToken) {
@@ -159,27 +159,34 @@ const handleSendOTP = async () => {
 
         console.log("✅ Tokens sauvegardés dans tokenManager");
         console.log("User:", user || studentProfile);
-
-        setStep("success");
         
+        // 🔑 Afficher le token pour les tests
+        console.log("🔑 ACCESS TOKEN:", accessToken);
+        console.log("🔑 REFRESH TOKEN:", refreshToken);
+        
+        // Afficher le token dans une alerte
+        alert(`🔑 TOKEN RÉCUPÉRÉ!\n\nAccess Token:\n${accessToken}\n\nRefresh Token:\n${refreshToken}\n\n(Consultez aussi la console pour plus de détails)`);
+
+      setStep("success");
+      
         // Rediriger vers la page d'accueil
-        setTimeout(() => {
+      setTimeout(() => {
           navigate("/", { replace: true });
         }, 1500);
-        
-      } else {
-        setError("Token d'accès manquant dans la réponse");
-      }
+      
+    } else {
+      setError("Token d'accès manquant dans la réponse");
+    }
 
-    } catch (error) {
-      console.error("Erreur:", error);
+  } catch (error) {
+    console.error("Erreur:", error);
       const errorMessage = error.responseData?.message || error.message || "Erreur de vérification";
       setError(errorMessage);
-      setOtp(["", "", "", "", "", ""]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setOtp(["", "", "", "", "", ""]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // 🔁 Renvoyer le code OTP
   const handleResendOTP = async () => {

@@ -3,6 +3,12 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import InitialAssistanceForm from './assistance/InitialAssistanceForm';
 import BourseForm from './assistance/BourseForm';
+import EtudesEtrangerForm from './assistance/EtudesEtrangerForm';
+import PermutationForm from './assistance/PermutationForm';
+import OrientationForm from './assistance/OrientationForm';
+import DocumentForm from './assistance/DocumentForm';
+import LoginRequiredModal from './assistance/LoginRequiredModal';
+import SuccessModal from './assistance/SuccessModal';
 import tokenManager from '../helper/tokenManager';
 
 const API_BASE_URL = 'https://alloecoleapi-dev.up.railway.app/api/v1';
@@ -57,6 +63,9 @@ const AssistanceDemandeComponent = () => {
   const [assistanceType, setAssistanceType] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successModalData, setSuccessModalData] = useState({ title: '', message: '' });
   
   const [formData, setFormData] = useState({
     // Données du formulaire initial
@@ -95,6 +104,322 @@ const AssistanceDemandeComponent = () => {
 
   const [errors, setErrors] = useState({});
 
+  // Fonction pour mapper le statut du formulaire vers l'API
+  // Note: L'API n'accepte que ELEVE, PARENT, ENSEIGNANT, AUTRE (pas ETUDIANT)
+  const mapApplicantStatus = (statut) => {
+    const mapping = {
+      'Élève': 'ELEVE',
+      'Étudiant': 'ELEVE', // Étudiant est mappé vers ELEVE car l'API n'a pas de valeur ETUDIANT
+      'Parent': 'PARENT',
+      'Enseignant': 'ENSEIGNANT',
+      'Autre': 'AUTRE'
+    };
+    return mapping[statut] || 'ELEVE'; // Par défaut ELEVE au lieu de ETUDIANT
+  };
+
+  // Fonction pour mapper le type d'assistance (location) vers l'API
+  const mapAssistanceType = (location) => {
+    const mapping = {
+      'CI': 'EN_CIV',
+      'Hors CI': 'HORS_CIV'
+    };
+    return mapping[location] || 'EN_CIV';
+  };
+
+  // Fonction pour formater le numéro de téléphone au format attendu par l'API
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return '';
+    const cleaned = phone.trim().replace(/\s+/g, '');
+    // Si le numéro commence par 0, le remplacer par +225
+    if (cleaned.startsWith('0')) {
+      return '+225 ' + cleaned.substring(1).replace(/(\d{2})(?=\d)/g, '$1 ');
+    }
+    // Si le numéro commence déjà par +225, le formater
+    if (cleaned.startsWith('+225')) {
+      const rest = cleaned.substring(4).trim();
+      return '+225 ' + rest.replace(/(\d{2})(?=\d)/g, '$1 ');
+    }
+    // Si le numéro commence par 225, ajouter le +
+    if (cleaned.startsWith('225')) {
+      const rest = cleaned.substring(3).trim();
+      return '+225 ' + rest.replace(/(\d{2})(?=\d)/g, '$1 ');
+    }
+    return phone.trim();
+  };
+
+  // Mutation pour soumettre une demande d'études à l'étranger
+  const applyForeignStudyMutation = useMutation({
+    mutationFn: async (applicationData) => {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('Vous devez être connecté pour soumettre une demande d\'études à l\'étranger');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/foreign-study/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(applicationData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: `Erreur ${response.status}` }));
+        console.error('❌ Erreur API Foreign Study:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: error,
+          errorDetails: error.errors || error.message,
+          fullError: JSON.stringify(error, null, 2),
+        });
+        // Afficher les détails des erreurs de validation si disponibles
+        let errorMessage = error.message || 'Erreur lors de la soumission de la demande';
+        if (error.errors) {
+          if (Array.isArray(error.errors)) {
+            errorMessage = error.errors.map(e => typeof e === 'string' ? e : e.message || JSON.stringify(e)).join(', ');
+          } else if (typeof error.errors === 'object') {
+            errorMessage = Object.entries(error.errors)
+              .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+              .join('; ');
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      console.log('✅ Demande d\'études à l\'étranger soumise avec succès:', data);
+      setSuccessModalData({
+        title: 'Demande soumise avec succès !',
+        message: 'Votre demande d\'études à l\'étranger a été enregistrée et sera traitée dans les plus brefs délais.'
+      });
+      setShowSuccessModal(true);
+    },
+    onError: (error) => {
+      console.error('❌ Erreur lors de la demande d\'études à l\'étranger:', error);
+      alert(`Erreur: ${error.message}`);
+    },
+  });
+
+  // Mutation pour soumettre une demande de permutation
+  const applyPermutationMutation = useMutation({
+    mutationFn: async (applicationData) => {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('Vous devez être connecté pour soumettre une demande de permutation');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/permutation/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(applicationData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: `Erreur ${response.status}` }));
+        console.error('❌ Erreur API Permutation:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: error,
+          fullError: JSON.stringify(error, null, 2),
+        });
+        let errorMessage = error.message || 'Erreur lors de la soumission de la demande';
+        if (error.errors) {
+          if (Array.isArray(error.errors)) {
+            errorMessage = error.errors.map(e => typeof e === 'string' ? e : e.message || JSON.stringify(e)).join(', ');
+          } else if (typeof error.errors === 'object') {
+            errorMessage = Object.entries(error.errors)
+              .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+              .join('; ');
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      console.log('✅ Demande de permutation soumise avec succès:', data);
+      setSuccessModalData({
+        title: 'Demande soumise avec succès !',
+        message: 'Votre demande de permutation a été enregistrée et sera traitée dans les plus brefs délais.'
+      });
+      setShowSuccessModal(true);
+    },
+    onError: (error) => {
+      console.error('❌ Erreur lors de la demande de permutation:', error);
+      alert(`Erreur: ${error.message}`);
+    },
+  });
+
+  // Mutation pour soumettre une demande d'orientation scolaire
+  const applyOrientationMutation = useMutation({
+    mutationFn: async (applicationData) => {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('Vous devez être connecté pour soumettre une demande d\'orientation');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/orientation-request/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(applicationData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: `Erreur ${response.status}` }));
+        console.error('❌ Erreur API Orientation:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: error,
+          fullError: JSON.stringify(error, null, 2),
+        });
+        let errorMessage = error.message || 'Erreur lors de la soumission de la demande';
+        if (error.errors) {
+          if (Array.isArray(error.errors)) {
+            errorMessage = error.errors.map(e => typeof e === 'string' ? e : e.message || JSON.stringify(e)).join(', ');
+          } else if (typeof error.errors === 'object') {
+            errorMessage = Object.entries(error.errors)
+              .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+              .join('; ');
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      console.log('✅ Demande d\'orientation soumise avec succès:', data);
+      setSuccessModalData({
+        title: 'Demande soumise avec succès !',
+        message: 'Votre demande d\'orientation scolaire a été enregistrée et sera traitée dans les plus brefs délais.'
+      });
+      setShowSuccessModal(true);
+    },
+    onError: (error) => {
+      console.error('❌ Erreur lors de la demande d\'orientation:', error);
+      alert(`Erreur: ${error.message}`);
+    },
+  });
+
+  // Mutation pour soumettre une demande de document
+  const applyDocumentMutation = useMutation({
+    mutationFn: async (applicationData) => {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('Vous devez être connecté pour soumettre une demande de document');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/document-request/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(applicationData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: `Erreur ${response.status}` }));
+        console.error('❌ Erreur API Document:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: error,
+          fullError: JSON.stringify(error, null, 2),
+        });
+        let errorMessage = error.message || 'Erreur lors de la soumission de la demande';
+        if (error.errors) {
+          if (Array.isArray(error.errors)) {
+            errorMessage = error.errors.map(e => typeof e === 'string' ? e : e.message || JSON.stringify(e)).join(', ');
+          } else if (typeof error.errors === 'object') {
+            errorMessage = Object.entries(error.errors)
+              .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+              .join('; ');
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      console.log('✅ Demande de document soumise avec succès:', data);
+      setSuccessModalData({
+        title: 'Demande soumise avec succès !',
+        message: 'Votre demande de document a été enregistrée et sera traitée dans les plus brefs délais.'
+      });
+      setShowSuccessModal(true);
+    },
+    onError: (error) => {
+      console.error('❌ Erreur lors de la demande de document:', error);
+      alert(`Erreur: ${error.message}`);
+    },
+  });
+
+  // Mutation pour soumettre une demande d'assistance de bourse
+  const applyScholarshipAssistanceMutation = useMutation({
+    mutationFn: async (applicationData) => {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('Vous devez être connecté pour soumettre une demande d\'assistance de bourse');
+      }
+
+      // Utiliser l'endpoint pour postuler à une bourse libre (sans bourse spécifique)
+      const response = await fetch(`${API_BASE_URL}/scholarships/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(applicationData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: `Erreur ${response.status}` }));
+        console.error('❌ Erreur API Assistance Bourse:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: error,
+          endpoint: `${API_BASE_URL}/scholarships/apply`,
+        });
+        let errorMessage = error.message || 'Erreur lors de la soumission de la demande';
+        if (error.errors) {
+          if (Array.isArray(error.errors)) {
+            errorMessage = error.errors.map(e => typeof e === 'string' ? e : e.message || JSON.stringify(e)).join(', ');
+          } else if (typeof error.errors === 'object') {
+            errorMessage = Object.entries(error.errors)
+              .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+              .join('; ');
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      console.log('✅ Demande d\'assistance de bourse soumise avec succès:', data);
+      setSuccessModalData({
+        title: 'Demande soumise avec succès !',
+        message: 'Votre demande d\'assistance de bourse a été enregistrée et sera traitée dans les plus brefs délais.'
+      });
+      setShowSuccessModal(true);
+    },
+    onError: (error) => {
+      console.error('❌ Erreur lors de la demande d\'assistance de bourse:', error);
+      alert(`Erreur: ${error.message}`);
+    },
+  });
+
   // Vérifier l'authentification et charger le profil
   useEffect(() => {
     const checkAuthAndLoadProfile = async () => {
@@ -104,19 +429,12 @@ const AssistanceDemandeComponent = () => {
 
       if (!authenticated) {
         setLoadingProfile(false);
-        // Rediriger vers login après un court délai pour permettre l'affichage du message
-        setTimeout(() => {
-          navigate('/login', { 
-            state: { 
-              from: '/assistance-demande',
-              message: 'Veuillez vous connecter pour accéder à la demande d\'assistance'
-            } 
-          });
-        }, 1500);
+        // ✅ Afficher le modal de connexion à l'arrivée sur la page
+        setShowLoginModal(true);
         return;
       }
 
-      // Charger le profil utilisateur
+      // Charger le profil utilisateur seulement si authentifié
       try {
         setLoadingProfile(true);
         const response = await tokenManager.fetchWithAuth(`${API_BASE_URL}/profile/student`);
@@ -129,29 +447,28 @@ const AssistanceDemandeComponent = () => {
         const userData = json?.data ?? json;
         setUserProfile(userData);
         
-        // Pré-remplir les données du formulaire initial
+        // Log pour déboguer les données reçues
+        console.log('📋 Données utilisateur reçues:', userData);
+        
+        // Pré-remplir les données du formulaire initial avec tous les champs possibles
         const prefillData = {
           demandeurNom: userData.lastName || userData.nom || '',
           demandeurPrenoms: userData.firstName || userData.prenom || '',
-          demandeurTelephone: userData.phone || userData.telephone || userData.mobile || '',
+          demandeurTelephone: userData.phone || userData.telephone || userData.mobile || userData.phoneNumber || '',
           demandeurEmail: userData.email || '',
-          demandeurPays: userData.country || userData.pays || '',
-          demandeurStatut: userData.status || userData.statut || '',
+          demandeurPays: userData.country || userData.pays || userData.residenceCountry || '',
+          demandeurStatut: userData.status || userData.statut || userData.applicantStatus || '',
         };
         
+        console.log('📝 Données pré-remplies:', prefillData);
         setInitialFormData(prefillData);
       } catch (err) {
         console.error('❌ Erreur chargement profil:', err);
-        // Si erreur 401, rediriger vers login
+        // Si erreur 401, simplement mettre à jour l'état d'authentification
         if (err.message.includes('401') || err.message.includes('token')) {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
-          navigate('/login', { 
-            state: { 
-              from: '/assistance-demande',
-              message: 'Votre session a expiré. Veuillez vous reconnecter.'
-            } 
-          });
+          setIsAuthenticated(false);
         }
       } finally {
         setLoadingProfile(false);
@@ -163,13 +480,12 @@ const AssistanceDemandeComponent = () => {
     const handleStorageChange = () => {
       const token = localStorage.getItem('access_token');
       setIsAuthenticated(!!token);
-      if (!token) {
-        navigate('/login', { 
-          state: { 
-            from: '/assistance-demande',
-            message: 'Veuillez vous connecter pour accéder à la demande d\'assistance'
-          } 
-        });
+      // ✅ Pas de redirection - mettre à jour seulement l'état
+      if (token) {
+        checkAuthAndLoadProfile();
+      } else {
+        setUserProfile(null);
+        setInitialFormData({});
       }
     };
     
@@ -302,30 +618,110 @@ const AssistanceDemandeComponent = () => {
     },
   });
 
-  // Créer la demande
+  // Créer la demande - Utilise l'endpoint document-request pour les demandes de documents
   const createRequest = useMutation({
     mutationFn: async (data) => {
       const token = localStorage.getItem('access_token');
       if (!token) {
         throw new Error('Vous devez être connecté pour créer une demande');
       }
-      const response = await fetch(`${API_BASE_URL}/assistance/requests`, {
+      
+      // Mapper les données du formulaire multi-étapes vers le format de l'API document-request
+      const cityName = cities?.find(c => c.id === data.city)?.name || data.city || '';
+      const schoolName = schools?.find(s => s.id === data.school)?.name || data.school || '';
+      
+      // Mapper receptionMode vers receptionMethod
+      let receptionMethod = 'EMAIL';
+      if (data.receptionMode === 'email') {
+        receptionMethod = 'EMAIL';
+      } else if (data.receptionMode === 'agence') {
+        receptionMethod = 'RETRAIT';
+      } else if (data.receptionMode === 'expedition') {
+        receptionMethod = 'COURRIER';
+      }
+      
+      // Mapper documentType vers le format de l'API
+      const documentTypeMap = {
+        'bulletin': 'BULLETIN_SCOLAIRE',
+        'certificat-sco': 'CERTIFICAT_SCOLARITE',
+        'dup-diplome': 'DIPLOME',
+        'attestation-reussite': 'RELEVE_NOTE',
+        'certification': 'ATTESTATION',
+      };
+      const documentType = documentTypeMap[data.documentType] || 'BULLETIN_SCOLAIRE';
+      
+      // Mapper classLevel vers classe
+      const classeMap = {
+        '6ème': 'SIXIEME',
+        '5ème': 'CINQUIEME',
+        '4ème': 'QUATRIEME',
+        '3ème': 'TROISIEME',
+        '2nde': 'SECONDE',
+        '1ère': 'PREMIERE',
+        'Terminale': 'TERMINALE',
+      };
+      const classe = classeMap[data.classLevel] || data.classLevel?.toUpperCase() || 'SIXIEME';
+      
+      const applicationData = {
+        city: cityName,
+        receptionMethod: receptionMethod,
+        desiredSchool: schoolName,
+        desiredField: documentTypes?.find(d => d.id === data.documentType)?.title || 'Document scolaire',
+        lastAverage: data.lastAverage || '',
+        strengths: data.strengths || '',
+        motivations: data.motivations || 'Demande de document scolaire',
+        documentType: documentType,
+        classe: classe,
+      };
+      
+      // Ajouter les champs optionnels
+      if (data.shippingZone) {
+        applicationData.expeditionRegion = data.shippingZone;
+      }
+      // Ne pas envoyer schoolInstitutionId si ce n'est pas un UUID valide
+      // L'API le requiert en UUID, donc on le retire si ce n'est pas le cas
+      // if (data.school && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.school)) {
+      //   applicationData.schoolInstitutionId = data.school;
+      // }
+      
+      console.log('📤 Envoi de la demande à l\'API:', { url: `${API_BASE_URL}/document-request/apply`, applicationData });
+      
+      const response = await fetch(`${API_BASE_URL}/document-request/apply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(applicationData),
       });
+      
+      console.log('📥 Réponse de l\'API:', { status: response.status, statusText: response.statusText });
+      
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Erreur lors de la création de la demande');
+        const error = await response.json().catch(() => ({ message: `Erreur ${response.status}` }));
+        console.error('❌ Erreur API:', error);
+        let errorMessage = error.message || 'Erreur lors de la création de la demande';
+        if (error.errors) {
+          if (Array.isArray(error.errors)) {
+            errorMessage = error.errors.map(e => typeof e === 'string' ? e : e.message || JSON.stringify(e)).join(', ');
+          } else if (typeof error.errors === 'object') {
+            errorMessage = Object.entries(error.errors)
+              .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+              .join('; ');
+          }
+        }
+        throw new Error(errorMessage);
       }
-      return response.json();
+      
+      const result = await response.json();
+      console.log('✅ Réponse complète:', result);
+      return result;
     },
     onSuccess: (data) => {
       // Selon doc: Après enregistrement, statut "En attente de paiement"
       // Redirection vers la page de paiement
+      // TODO: Décommenter pour activer le paiement
+      /*
       const requestId = data.data?.id || data.id;
       const requestNumber = data.data?.requestNumber || data.requestNumber;
       navigate(`/assistance-demande/${requestId}/paiement`, { 
@@ -335,6 +731,18 @@ const AssistanceDemandeComponent = () => {
           status: 'En attente de paiement'
         } 
       });
+      */
+      // Pour le test : afficher un message de succès
+      console.log('✅ Demande créée avec succès:', data);
+      setSuccessModalData({
+        title: 'Demande enregistrée avec succès !',
+        message: `Votre demande a été enregistrée avec succès. ${data.data?.requestNumber ? `Numéro de demande: ${data.data.requestNumber}` : ''}`
+      });
+      setShowSuccessModal(true);
+    },
+    onError: (error) => {
+      console.error('❌ Erreur lors de la création de la demande:', error);
+      alert(`Erreur: ${error.message || 'Une erreur est survenue lors de l\'enregistrement de la demande'}`);
     },
   });
 
@@ -474,20 +882,38 @@ const AssistanceDemandeComponent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('🔵 handleSubmit appelé');
+    
     if (!isAuthenticated) {
       alert('Veuillez vous connecter pour créer une demande');
       navigate('/login');
       return;
     }
     
-    if (validateStep(5)) {
+    console.log('🔵 Validation du step 5...');
+    const isValid = validateStep(5);
+    console.log('🔵 Résultat validation:', isValid);
+    
+    if (!isValid) {
+      alert('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+    
+    console.log('🔵 Préparation des données à envoyer:', { formData, pricing });
+    
       // Selon doc: Enregistrer la demande avec statut "En attente de paiement"
       // Le numéro unique sera généré côté backend (format: AEDOC-YYYYMMDD-HHMM-XXXX)
+    // TODO: Remettre le statut "En attente de paiement" quand le paiement sera activé
+    try {
       createRequest.mutate({
         ...formData,
         pricing: pricing,
-        status: 'En attente de paiement',
+        // status: 'En attente de paiement', // Commenté pour test
       });
+      console.log('🔵 Mutation déclenchée');
+    } catch (error) {
+      console.error('❌ Erreur lors de la mutation:', error);
+      alert(`Erreur: ${error.message || 'Une erreur est survenue'}`);
     }
   };
 
@@ -497,12 +923,235 @@ const AssistanceDemandeComponent = () => {
       navigate('/login');
       return;
     }
+
+    // Mapper les données du formulaire vers le format de l'API
+    const residenceCountry = initialFormData.demandeurPays || (data.location === 'CI' ? 'Côte d\'Ivoire' : '');
     
-    // Créer la demande de bourse
-    createRequest.mutate({
-      ...data,
-      status: 'En attente de paiement',
+    const applicationData = {
+      residenceCountry: residenceCountry,
+      applicantStatus: mapApplicantStatus(initialFormData.demandeurStatut || 'Étudiant'),
+      assistanceType: mapAssistanceType(data.location || 'CI'),
+      currentLevel: data.niveauEtude || '',
+      studyField: data.domaineEtude || '',
+      targetCountry: data.paysCible || '',
+      targetSchool: data.ecoleCible || '',
+      objective: data.objectif || '',
+      documents: Array.isArray(data.documents) ? data.documents : [], // Les documents doivent être des URLs
+      complementaryInfo: {
+        lastName: initialFormData.demandeurNom || userProfile?.lastName || userProfile?.nom || '',
+        firstName: initialFormData.demandeurPrenoms || userProfile?.firstName || userProfile?.prenom || '',
+        phone: formatPhoneNumber(initialFormData.demandeurTelephone || userProfile?.phone || userProfile?.telephone || userProfile?.mobile || ''),
+        email: initialFormData.demandeurEmail || userProfile?.email || '',
+        residenceCountry: residenceCountry,
+      },
+    };
+
+    // Log pour debug
+    console.log('📤 Données envoyées à l\'API Assistance Bourse:', {
+      url: `${API_BASE_URL}/scholarships/apply`,
+      applicationData,
+      rawData: data,
+      initialFormData,
     });
+
+    // Soumettre la demande via l'API d'assistance
+    applyScholarshipAssistanceMutation.mutate(applicationData);
+  };
+
+  const handleSubmitEtudesEtranger = async (data) => {
+    if (!isAuthenticated) {
+      alert('Veuillez vous connecter pour créer une demande');
+      navigate('/login');
+      return;
+    }
+
+    // Mapper les données du formulaire vers le format de l'API
+    const residenceCountry = initialFormData.demandeurPays || 'Côte d\'Ivoire';
+    
+    // Vérifier que les champs requis ne sont pas vides
+    if (!data.targetCountry || !data.targetCity || !data.targetSchool || !data.targetLevel || !data.studyField) {
+      alert('Veuillez remplir tous les champs obligatoires (Pays, Ville, École, Niveau, Domaine d\'étude)');
+      return;
+    }
+    
+    // Construire l'objet applicationData en n'incluant que les champs non vides
+    const applicationData = {
+      residenceCountry: residenceCountry,
+      applicantStatus: mapApplicantStatus(initialFormData.demandeurStatut || 'Étudiant'),
+      assistanceType: mapAssistanceType(data.location || 'CI'),
+      targetCountry: data.targetCountry.trim(),
+      targetCity: data.targetCity.trim(),
+      targetSchool: data.targetSchool.trim(),
+      targetLevel: data.targetLevel.trim(),
+      studyField: data.studyField.trim(),
+      assistanceHousing: Boolean(data.assistanceHousing),
+      assistanceEnrollment: Boolean(data.assistanceEnrollment),
+      documents: Array.isArray(data.documents) ? data.documents : [],
+      complementaryInfo: {
+        lastName: (initialFormData.demandeurNom || userProfile?.lastName || userProfile?.nom || '').trim(),
+        firstName: (initialFormData.demandeurPrenoms || userProfile?.firstName || userProfile?.prenom || '').trim(),
+        phone: formatPhoneNumber(initialFormData.demandeurTelephone || userProfile?.phone || userProfile?.telephone || userProfile?.mobile || ''),
+        email: (initialFormData.demandeurEmail || userProfile?.email || '').trim(),
+        residenceCountry: residenceCountry,
+      },
+    };
+
+    // Ajouter budgetEstimate seulement s'il n'est pas vide
+    if (data.budgetEstimate && data.budgetEstimate.trim()) {
+      applicationData.budgetEstimate = data.budgetEstimate.trim();
+    }
+
+    // Log pour debug
+    console.log('📤 Données envoyées à l\'API Foreign Study:', {
+      applicationData: JSON.stringify(applicationData, null, 2),
+      rawData: data,
+      initialFormData,
+    });
+
+    // Soumettre la demande via l'API
+    applyForeignStudyMutation.mutate(applicationData);
+  };
+
+  const handleSubmitPermutation = async (data) => {
+    if (!isAuthenticated) {
+      alert('Veuillez vous connecter pour créer une demande');
+      navigate('/login');
+      return;
+    }
+
+    // Mapper les données du formulaire vers le format de l'API
+    const residenceCountry = initialFormData.demandeurPays || 'Côte d\'Ivoire';
+    
+    // Vérifier que les champs requis ne sont pas vides
+    if (!data.departureSchool || !data.desiredInstitution || !data.desiredGeographicZone || !data.reason || !data.permutationRole) {
+      alert('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+    
+    const applicationData = {
+      residenceCountry: residenceCountry,
+      applicantStatus: mapApplicantStatus(initialFormData.demandeurStatut || 'Élève'),
+      departureSchool: data.departureSchool.trim(),
+      desiredInstitution: data.desiredInstitution.trim(),
+      desiredGeographicZone: data.desiredGeographicZone.trim(),
+      reason: data.reason.trim(),
+      permutationRole: data.permutationRole,
+      documents: Array.isArray(data.documents) ? data.documents : [],
+      complementaryInfo: {
+        lastName: (initialFormData.demandeurNom || userProfile?.lastName || userProfile?.nom || '').trim(),
+        firstName: (initialFormData.demandeurPrenoms || userProfile?.firstName || userProfile?.prenom || '').trim(),
+        phone: formatPhoneNumber(initialFormData.demandeurTelephone || userProfile?.phone || userProfile?.telephone || userProfile?.mobile || ''),
+        email: (initialFormData.demandeurEmail || userProfile?.email || '').trim(),
+        residenceCountry: residenceCountry,
+      },
+    };
+
+    // Log pour debug
+    console.log('📤 Données envoyées à l\'API Permutation:', {
+      applicationData: JSON.stringify(applicationData, null, 2),
+      rawData: data,
+      initialFormData,
+    });
+
+    // Soumettre la demande via l'API
+    applyPermutationMutation.mutate(applicationData);
+  };
+
+  const handleSubmitOrientation = async (data) => {
+    if (!isAuthenticated) {
+      alert('Veuillez vous connecter pour créer une demande');
+      navigate('/login');
+      return;
+    }
+
+    // Mapper les données du formulaire vers le format de l'API
+    const residenceCountry = initialFormData.demandeurPays || 'Côte d\'Ivoire';
+    
+    // Vérifier que les champs requis ne sont pas vides
+    if (!data.orientationLevel || !data.desiredSchool || !data.desiredField || !data.lastAverage || !data.strengths || !data.motivations || !data.offerType) {
+      alert('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+    
+    const applicationData = {
+      residenceCountry: residenceCountry,
+      applicantStatus: mapApplicantStatus(initialFormData.demandeurStatut || 'Élève'),
+      orientationLevel: data.orientationLevel,
+      desiredSchool: data.desiredSchool.trim(),
+      desiredField: data.desiredField.trim(),
+      lastAverage: data.lastAverage.trim(),
+      strengths: data.strengths.trim(),
+      motivations: data.motivations.trim(),
+      offerType: data.offerType,
+      complementaryInfo: {
+        lastName: (initialFormData.demandeurNom || userProfile?.lastName || userProfile?.nom || '').trim(),
+        firstName: (initialFormData.demandeurPrenoms || userProfile?.firstName || userProfile?.prenom || '').trim(),
+        phone: formatPhoneNumber(initialFormData.demandeurTelephone || userProfile?.phone || userProfile?.telephone || userProfile?.mobile || ''),
+        email: (initialFormData.demandeurEmail || userProfile?.email || '').trim(),
+        residenceCountry: residenceCountry,
+      },
+    };
+
+    // Log pour debug
+    console.log('📤 Données envoyées à l\'API Orientation:', {
+      applicationData: JSON.stringify(applicationData, null, 2),
+      rawData: data,
+      initialFormData,
+    });
+
+    // Soumettre la demande via l'API
+    applyOrientationMutation.mutate(applicationData);
+  };
+
+  const handleSubmitDocument = async (data) => {
+    if (!isAuthenticated) {
+      alert('Veuillez vous connecter pour créer une demande');
+      navigate('/login');
+      return;
+    }
+
+    // Vérifier que les champs requis ne sont pas vides
+    if (!data.city || !data.receptionMethod || !data.desiredSchool || !data.desiredField || 
+        !data.lastAverage || !data.strengths || !data.motivations || !data.documentType || !data.classe) {
+      alert('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+    
+    const applicationData = {
+      city: data.city.trim(),
+      receptionMethod: data.receptionMethod,
+      desiredSchool: data.desiredSchool.trim(),
+      desiredField: data.desiredField.trim(),
+      lastAverage: data.lastAverage.trim(),
+      strengths: data.strengths.trim(),
+      motivations: data.motivations.trim(),
+      documentType: data.documentType,
+      classe: data.classe,
+    };
+
+    // Ajouter les champs optionnels seulement s'ils sont remplis et valides
+    // schoolInstitutionId doit être un UUID valide
+    if (data.schoolInstitutionId && data.schoolInstitutionId.trim()) {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(data.schoolInstitutionId.trim())) {
+        applicationData.schoolInstitutionId = data.schoolInstitutionId.trim();
+      } else {
+        console.warn('⚠️ schoolInstitutionId n\'est pas un UUID valide, champ ignoré:', data.schoolInstitutionId);
+      }
+    }
+    if (data.expeditionRegion && data.expeditionRegion.trim()) {
+      applicationData.expeditionRegion = data.expeditionRegion;
+    }
+
+    // Log pour debug
+    console.log('📤 Données envoyées à l\'API Document:', {
+      applicationData: JSON.stringify(applicationData, null, 2),
+      rawData: data,
+      initialFormData,
+    });
+
+    // Soumettre la demande via l'API
+    applyDocumentMutation.mutate(applicationData);
   };
 
   const renderStepContent = () => {
@@ -926,6 +1575,8 @@ const AssistanceDemandeComponent = () => {
               </p>
             </div>
 
+            {/* TODO: Décommenter pour activer le paiement */}
+            {/*
             <div className="payment-section">
               <button
                 type="button"
@@ -938,6 +1589,20 @@ const AssistanceDemandeComponent = () => {
               </button>
               <p className="payment-hint">
                 Vous serez redirigé vers la page de paiement après l'enregistrement de votre demande
+              </p>
+            </div>
+            */}
+            <div className="payment-section">
+              <button
+                type="button"
+                className="btn-payment"
+                onClick={handleSubmit}
+                disabled={createRequest.isLoading}
+              >
+                {createRequest.isLoading ? 'Enregistrement...' : 'Enregistrer la demande'}
+              </button>
+              <p className="payment-hint">
+                La demande sera enregistrée pour test (paiement désactivé temporairement)
               </p>
             </div>
           </div>
@@ -1415,7 +2080,7 @@ const AssistanceDemandeComponent = () => {
             </p>
           </div>
 
-          {loadingProfile ? (
+          {loadingProfile && isAuthenticated ? (
             <div className="form-container" style={{ padding: '3rem', textAlign: 'center' }}>
               <div className="loading-spinner">
                 <div className="spinner-container">
@@ -1425,20 +2090,6 @@ const AssistanceDemandeComponent = () => {
                 </div>
                 <div className="loading-text">Chargement de vos informations...</div>
               </div>
-            </div>
-          ) : !isAuthenticated ? (
-            <div className="form-container" style={{ padding: '3rem', textAlign: 'center' }}>
-              <p style={{ fontSize: '1.1rem', color: '#64748b', marginBottom: '1rem' }}>
-                Vous devez être connecté pour accéder à la demande d'assistance.
-              </p>
-              <button 
-                className="btn btn-primary"
-                onClick={() => navigate('/login', { 
-                  state: { from: '/assistance-demande' }
-                })}
-              >
-                Se connecter
-              </button>
             </div>
           ) : !initialFormCompleted ? (
             <div className="form-container">
@@ -1539,6 +2190,90 @@ const AssistanceDemandeComponent = () => {
                 }}
               />
             </div>
+          ) : assistanceType === 'Etudes à l\'Étranger' ? (
+            <div className="form-container">
+              <EtudesEtrangerForm
+                initialData={formData}
+                userProfile={userProfile}
+                onComplete={(etudesData) => {
+                  // Fusionner les données et soumettre
+                  const finalData = {
+                    ...initialFormData,
+                    ...etudesData,
+                    assistanceType: 'Etudes à l\'Étranger',
+                  };
+                  handleSubmitEtudesEtranger(finalData);
+                }}
+                onBack={() => {
+                  setInitialFormCompleted(false);
+                  setInitialFormData({});
+                  setAssistanceType(null);
+                }}
+              />
+            </div>
+          ) : assistanceType === 'Permutation' ? (
+            <div className="form-container">
+              <PermutationForm
+                initialData={formData}
+                userProfile={userProfile}
+                onComplete={(permutationData) => {
+                  // Fusionner les données et soumettre
+                  const finalData = {
+                    ...initialFormData,
+                    ...permutationData,
+                    assistanceType: 'Permutation',
+                  };
+                  handleSubmitPermutation(finalData);
+                }}
+                onBack={() => {
+                  setInitialFormCompleted(false);
+                  setInitialFormData({});
+                  setAssistanceType(null);
+                }}
+              />
+            </div>
+          ) : assistanceType === 'Orientation scolaire' ? (
+            <div className="form-container">
+              <OrientationForm
+                initialData={formData}
+                userProfile={userProfile}
+                onComplete={(orientationData) => {
+                  // Fusionner les données et soumettre
+                  const finalData = {
+                    ...initialFormData,
+                    ...orientationData,
+                    assistanceType: 'Orientation scolaire',
+                  };
+                  handleSubmitOrientation(finalData);
+                }}
+                onBack={() => {
+                  setInitialFormCompleted(false);
+                  setInitialFormData({});
+                  setAssistanceType(null);
+                }}
+              />
+            </div>
+          ) : assistanceType === 'Documents' ? (
+            <div className="form-container">
+              <DocumentForm
+                initialData={formData}
+                userProfile={userProfile}
+                onComplete={(documentData) => {
+                  // Fusionner les données et soumettre
+                  const finalData = {
+                    ...initialFormData,
+                    ...documentData,
+                    assistanceType: 'Documents',
+                  };
+                  handleSubmitDocument(finalData);
+                }}
+                onBack={() => {
+                  setInitialFormCompleted(false);
+                  setInitialFormData({});
+                  setAssistanceType(null);
+                }}
+              />
+            </div>
           ) : (
             <div className="form-container">
               <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -1559,6 +2294,21 @@ const AssistanceDemandeComponent = () => {
           )}
         </div>
       </div>
+      {showLoginModal && <LoginRequiredModal onClose={() => setShowLoginModal(false)} />}
+      {showSuccessModal && (
+        <SuccessModal
+          onClose={() => {
+            setShowSuccessModal(false);
+            // Réinitialiser le formulaire après fermeture du modal
+            setInitialFormCompleted(false);
+            setInitialFormData({});
+            setAssistanceType(null);
+          }}
+          title={successModalData.title}
+          message={successModalData.message}
+          actionLabel="Fermer"
+        />
+      )}
     </>
   );
 };

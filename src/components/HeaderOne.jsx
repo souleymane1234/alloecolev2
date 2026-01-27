@@ -14,6 +14,7 @@ import ExploreIcon from '@mui/icons-material/Explore';
 import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
 import CloseIcon from '@mui/icons-material/Close';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
 
 const HeaderOne = () => {
   const location = useLocation();
@@ -74,9 +75,7 @@ const HeaderOne = () => {
       label: "Études",
       icon: SchoolIcon,
       links: [
-        { href: "/bourses", label: "Bourses d'étude" },
-        { href: "/etudes-etranger", label: "Études à l'étranger" },
-        { href: "/permutation", label: "Permutations" },
+        { href: "/bourses", label: "Nos alertes" },
         { href: "/revision", label: "Révision" },
         { href: "/assistance-demande", label: "Demande d'assistance" },
       ],
@@ -98,6 +97,11 @@ const HeaderOne = () => {
       href: "/webtv", 
       label: "WebTV",
       icon: LiveTvIcon
+    },
+    { 
+      href: "/paiement", 
+      label: "Paiement",
+      icon: CreditCardIcon
     },
     {
       label: "Play",

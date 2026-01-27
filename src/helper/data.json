@@ -84,9 +84,9 @@
 
   "tabs": [
     { "id": "informations", "label": "Mes informations", "icon": "ph-user" },
-    { "id": "dossiers", "label": "Mes dossiers", "icon": "ph-folder" },
-    { "id": "bourses", "label": "Demandes de bourses", "icon": "ph-graduation-cap" },
-    { "id": "permutations", "label": "Mes permutations", "icon": "ph-arrows-clockwise" },
+    { "id": "bourses", "label": "Bourses", "icon": "ph-graduation-cap" },
+    { "id": "etudes-etranger", "label": "Études à l'étranger", "icon": "ph-globe" },
+    { "id": "permutations", "label": "Permutations", "icon": "ph-arrows-clockwise" },
     { "id": "documents", "label": "Mes documents", "icon": "ph-file-text" },
     { "id": "parametres", "label": "Paramètres", "icon": "ph-gear" }
   ]

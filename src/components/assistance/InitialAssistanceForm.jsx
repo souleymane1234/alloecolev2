@@ -94,22 +94,74 @@ const InitialAssistanceForm = ({ onComplete, initialData = null, userProfile = n
     }
   };
 
-  // Auto-remplir si "Moi-même" est coché au chargement
+  // Mettre à jour les champs du demandeur quand userProfile ou initialData changent
   useEffect(() => {
-    if (isMyself && userProfile) {
-      setFormData(prev => ({
-        ...prev,
-        chargeNom: prev.demandeurNom,
-        chargePrenoms: prev.demandeurPrenoms,
-        chargeTelephone: prev.demandeurTelephone,
-        chargeEmail: prev.demandeurEmail,
-        chargePays: prev.demandeurPays,
-        chargeStatut: prev.demandeurStatut,
-        chargeNationalite: userProfile?.nationality || userProfile?.nationalite || prev.chargeNationalite,
-        chargeNiveauEtude: userProfile?.academicLevel || userProfile?.niveauEtude || prev.chargeNiveauEtude,
-      }));
-    }
-  }, [isMyself, userProfile]);
+    // Log pour déboguer
+    console.log('🔄 useEffect déclenché - userProfile:', userProfile, 'initialData:', initialData);
+    
+    // Essayer tous les noms de champs possibles pour chaque champ
+    const updatedData = {
+      demandeurNom: userProfile?.lastName || userProfile?.nom || initialData?.demandeurNom || '',
+      demandeurPrenoms: userProfile?.firstName || userProfile?.prenom || initialData?.demandeurPrenoms || '',
+      demandeurTelephone: userProfile?.phone || userProfile?.telephone || userProfile?.mobile || userProfile?.phoneNumber || initialData?.demandeurTelephone || '',
+      demandeurEmail: userProfile?.email || initialData?.demandeurEmail || '',
+      demandeurPays: userProfile?.country || userProfile?.pays || userProfile?.residenceCountry || initialData?.demandeurPays || '',
+      demandeurStatut: userProfile?.status || userProfile?.statut || userProfile?.applicantStatus || initialData?.demandeurStatut || '',
+    };
+    
+    console.log('📝 Données calculées pour mise à jour:', updatedData);
+    
+    // Mettre à jour le formulaire si on a des données à partir de userProfile ou initialData
+    setFormData(prev => {
+      // Vérifier si on a des nouvelles données à partir de userProfile ou initialData
+      const hasUserData = userProfile && (
+        userProfile.lastName || userProfile.nom || 
+        userProfile.firstName || userProfile.prenom ||
+        userProfile.email || userProfile.phone || userProfile.telephone || userProfile.mobile ||
+        userProfile.country || userProfile.pays
+      );
+      
+      const hasInitialData = initialData && Object.keys(initialData).length > 0 && (
+        initialData.demandeurNom || initialData.demandeurPrenoms || 
+        initialData.demandeurEmail || initialData.demandeurTelephone ||
+        initialData.demandeurPays
+      );
+      
+      // Mettre à jour si on a des nouvelles données ou si les champs sont vides
+      const shouldUpdate = hasUserData || hasInitialData || 
+        !prev.demandeurNom || !prev.demandeurPrenoms ||
+        Object.keys(updatedData).some(key => updatedData[key] && updatedData[key] !== prev[key]);
+      
+      if (shouldUpdate) {
+        const newData = {
+          ...prev,
+          // Mettre à jour les champs avec les nouvelles valeurs
+          demandeurNom: updatedData.demandeurNom,
+          demandeurPrenoms: updatedData.demandeurPrenoms,
+          demandeurTelephone: updatedData.demandeurTelephone,
+          demandeurEmail: updatedData.demandeurEmail,
+          demandeurPays: updatedData.demandeurPays,
+          demandeurStatut: updatedData.demandeurStatut,
+        };
+        
+        // Si "Moi-même" est coché, copier aussi vers la personne à charge
+        if (isMyself) {
+          newData.chargeNom = newData.demandeurNom;
+          newData.chargePrenoms = newData.demandeurPrenoms;
+          newData.chargeTelephone = newData.demandeurTelephone;
+          newData.chargeEmail = newData.demandeurEmail;
+          newData.chargePays = newData.demandeurPays;
+          newData.chargeStatut = newData.demandeurStatut;
+          newData.chargeNationalite = userProfile?.nationality || userProfile?.nationalite || prev.chargeNationalite;
+          newData.chargeNiveauEtude = userProfile?.academicLevel || userProfile?.niveauEtude || prev.chargeNiveauEtude;
+        }
+        
+        console.log('✅ Formulaire mis à jour avec:', newData);
+        return newData;
+      }
+      return prev;
+    });
+  }, [userProfile, initialData, isMyself]);
 
   const validate = () => {
     const newErrors = {};

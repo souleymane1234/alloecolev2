@@ -151,7 +151,7 @@ const Quiz = () => {
         rules: selectedQuiz.rules
       };
       navigate(`/quiz/${selectedQuiz.id}`, { 
-        state: { 
+      state: { 
           quizTitle: selectedQuiz.title,
           quizData: cleanQuizData
         }

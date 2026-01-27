@@ -1,0 +1,258 @@
+.success-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.success-modal {
+  background: white;
+  border-radius: 24px;
+  max-width: 500px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease, popupPulse 3s ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes popupPulse {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 24px 72px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.success-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #333;
+  z-index: 10;
+}
+
+.success-modal-close:hover {
+  background: #e2e8f0;
+  transform: rotate(90deg);
+}
+
+.success-modal-content {
+  padding: 40px 32px;
+  text-align: center;
+}
+
+.success-modal-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 24px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  animation: iconBounce 2s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes iconBounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.1);
+  }
+}
+
+.success-modal-icon svg {
+  font-size: 40px;
+  animation: iconRotate 3s ease-in-out infinite;
+}
+
+@keyframes iconRotate {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+.success-modal-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 12px 0;
+  animation: titleShimmer 2.5s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes titleShimmer {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.02);
+  }
+}
+
+.success-modal-description {
+  font-size: 16px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 24px 0;
+}
+
+.success-modal-features {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.success-modal-feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f0fdf4;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #166534;
+  transition: all 0.3s ease;
+  animation: featureFloat 3s ease-in-out infinite;
+}
+
+@keyframes featureFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.success-feature-icon {
+  font-size: 18px;
+  color: #10b981;
+  animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+.success-modal-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+  animation: buttonPulse 2s ease-in-out infinite;
+  will-change: transform, box-shadow, background;
+}
+
+@keyframes buttonPulse {
+  0%, 100% {
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+    transform: scale(1);
+    background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  }
+  50% {
+    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.5);
+    transform: scale(1.03);
+    background: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
+  }
+}
+
+.success-modal-cta:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 14px 36px rgba(16, 185, 129, 0.5);
+  animation: buttonPulse 1s ease-in-out infinite;
+}
+
+@media (max-width: 768px) {
+  .success-modal {
+    max-width: 100%;
+    border-radius: 20px;
+  }
+
+  .success-modal-content {
+    padding: 32px 24px;
+  }
+
+  .success-modal-title {
+    font-size: 24px;
+  }
+
+  .success-modal-description {
+    font-size: 14px;
+  }
+
+  .success-modal-cta {
+    padding: 14px 28px;
+    font-size: 16px;
+  }
+}

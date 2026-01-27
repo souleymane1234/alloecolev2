@@ -271,7 +271,7 @@ class TokenManager {
         });
         throw new Error('Token invalide dans la réponse');
       }
-      
+
       console.log('✅ Nouveau token extrait:', {
         length: newAccessToken.length,
         preview: newAccessToken.substring(0, 50) + '...',
@@ -284,7 +284,7 @@ class TokenManager {
       
       // Sauvegarder aussi dans localStorage
       try {
-        localStorage.setItem('access_token', newAccessToken);
+      localStorage.setItem('access_token', newAccessToken);
       } catch (error) {
         console.error('❌ Erreur lors de la sauvegarde du nouveau token:', error);
       }
@@ -393,9 +393,9 @@ class TokenManager {
     
     // Nettoyer localStorage
     try {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user_data');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_data');
     } catch (error) {
       console.error('❌ Erreur lors du nettoyage de localStorage:', error);
     }
@@ -404,7 +404,7 @@ class TokenManager {
     
     // 📢 Déclencher un événement pour informer les composants
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('logout'));
+    window.dispatchEvent(new Event('logout'));
     }
     
     // Note: La redirection doit être gérée par l'application
@@ -420,8 +420,8 @@ class TokenManager {
     // Vérifier d'abord en mémoire
     if (this.tokens.accessToken) {
       return true;
-    }
-    
+  }
+
     // Si pas en mémoire, vérifier localStorage (au cas où la page a été rechargée)
     try {
       const accessToken = localStorage.getItem('access_token');
@@ -446,8 +446,8 @@ class TokenManager {
    */
   getUser() {
     return this.tokens.userData;
-  }
-
+    }
+    
   /**
    * 💾 Sauvegarder les données utilisateur
    */

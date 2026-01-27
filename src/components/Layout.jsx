@@ -102,13 +102,8 @@ const Layout = () => {
       setIsAuthenticated(authenticated);
     }
     
-    // 🔐 Rediriger vers login si non authentifié (sauf pour les pages publiques)
-    // Ne pas rediriger si l'utilisateur est sur la page d'accueil pour permettre la navigation même avec un token expiré
-    const isHomePage = location.pathname === '/' || location.pathname === '';
-    if (!authenticated && !isLoginPage && !isRegisterPage && !isHomePage) {
-      console.log("🔐 Utilisateur non authentifié, redirection vers /login");
-      navigate('/login', { replace: true, state: { from: location.pathname } });
-    }
+    // ✅ La navigation est libre - on ne bloque plus l'accès aux pages
+    // La connexion sera demandée uniquement au moment d'exécuter une action qui en nécessite une
   }, [location.pathname, isAuthenticated, isLoginPage, isRegisterPage, navigate]);
 
   return (

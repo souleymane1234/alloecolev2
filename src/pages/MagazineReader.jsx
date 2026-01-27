@@ -136,13 +136,13 @@ const MagazineReader = () => {
   if (error || !magazine) {
     return (
       <div className="magazine-reader">
-        <div className="reader-error">
+      <div className="reader-error">
           <Alert severity="error">
             {error?.message || 'Magazine non trouvé'}
           </Alert>
-          <button onClick={handleClose} className="back-button">
-            Retour aux magazines
-          </button>
+        <button onClick={handleClose} className="back-button">
+          Retour aux magazines
+        </button>
         </div>
       </div>
     );
@@ -216,7 +216,7 @@ const MagazineReader = () => {
             />
           </div>
         ) : (
-          <div className="magazine-book" style={{ transform: `scale(${zoom})` }}>
+        <div className="magazine-book" style={{ transform: `scale(${zoom})` }}>
           {/* Page Gauche */}
           <div 
             className={`page page-left ${isFlipping && flipDirection === 'next' ? 'flipping-left' : ''}`}
@@ -312,48 +312,48 @@ const MagazineReader = () => {
               <div className="page-number">{pages[currentPage]?.number}</div>
             </div>
           )}
-          </div>
+        </div>
         )}
 
         {/* Navigation Buttons - seulement en mode pages */}
         {viewMode !== 'pdf' && (
           <>
-            <button 
-              className="nav-button nav-prev" 
-              onClick={handlePrevPage}
-              disabled={currentPage === 0 || isFlipping}
-            >
-              <ArrowBack />
-            </button>
-            <button 
-              className="nav-button nav-next" 
-              onClick={handleNextPage}
-              disabled={currentPage >= totalPages - 2 || isFlipping}
-            >
-              <ArrowForward />
-            </button>
+        <button 
+          className="nav-button nav-prev" 
+          onClick={handlePrevPage}
+          disabled={currentPage === 0 || isFlipping}
+        >
+          <ArrowBack />
+        </button>
+        <button 
+          className="nav-button nav-next" 
+          onClick={handleNextPage}
+          disabled={currentPage >= totalPages - 2 || isFlipping}
+        >
+          <ArrowForward />
+        </button>
           </>
         )}
       </div>
 
       {/* Footer Controls */}
       {viewMode !== 'pdf' && (
-        <div className="reader-footer">
-          <div className="page-indicator">
-            <span>Pages {currentPage + 1}-{currentPage + 2} sur {totalPages}</span>
-          </div>
-          <div className="page-slider">
-            <input 
-              type="range" 
-              min="0" 
-              max={totalPages - 2} 
-              step="2"
-              value={currentPage} 
-              onChange={(e) => setCurrentPage(parseInt(e.target.value))}
-              className="slider"
-            />
-          </div>
+      <div className="reader-footer">
+        <div className="page-indicator">
+          <span>Pages {currentPage + 1}-{currentPage + 2} sur {totalPages}</span>
         </div>
+        <div className="page-slider">
+          <input 
+            type="range" 
+            min="0" 
+            max={totalPages - 2} 
+            step="2"
+            value={currentPage} 
+            onChange={(e) => setCurrentPage(parseInt(e.target.value))}
+            className="slider"
+          />
+        </div>
+      </div>
       )}
     </div>
   );

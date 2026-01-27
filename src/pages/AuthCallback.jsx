@@ -19,12 +19,12 @@ const AuthCallback = () => {
 
         if (result.success) {
           console.log("✅ Connexion Google réussie! Redirection vers l'accueil");
-          setStatus("Redirection...");
+            setStatus("Redirection...");
           // Rediriger vers la page d'accueil
           // Les tokens sont déjà sauvegardés dans tokenManager via handleGoogleCallback
-          setTimeout(() => {
-            navigate("/", { replace: true });
-          }, 500);
+            setTimeout(() => {
+              navigate("/", { replace: true });
+            }, 500);
         } else {
           console.error("❌ Échec de handleGoogleCallback:", result.error);
           setStatus("Échec de la connexion: " + (result.error || "Erreur inconnue"));

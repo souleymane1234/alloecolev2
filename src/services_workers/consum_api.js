@@ -277,7 +277,7 @@ export default class ConsumApi {
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error);
       // Déconnecter localement même en cas d'erreur
-      tokenManager.logout();
+    tokenManager.logout();
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
       }

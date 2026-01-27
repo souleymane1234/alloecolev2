@@ -182,7 +182,7 @@ const QuizPlay = () => {
       options: ["3", "4", "5", "6"],
       correctAnswer: 1
     }
-    ];
+  ];
   }, [quizDataToUse]);
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -608,7 +608,7 @@ const QuizPlay = () => {
         <div className="quiz-result">
           <div className="result-header">
             <div className="trophy-container">
-              <EmojiEvents className={`result-trophy ${passed ? 'passed' : 'failed'}`} />
+            <EmojiEvents className={`result-trophy ${passed ? 'passed' : 'failed'}`} />
               {passed && <div className="trophy-glow"></div>}
             </div>
             <h2 className="result-title">{passed ? 'Félicitations !' : 'Presque !'}</h2>
@@ -754,7 +754,7 @@ const QuizPlay = () => {
           ) : (
             // Questions à choix multiples ou uniques
             <>
-              <div className="quiz-options">
+          <div className="quiz-options">
                 {questions[currentQuestion]?.options.map((option, index) => {
                   const currentQ = questions[currentQuestion];
                   const isSelected = currentQ.isMultiple 
@@ -762,29 +762,29 @@ const QuizPlay = () => {
                     : selectedAnswer === index;
                   
                   return (
-                    <button
-                      key={index}
+              <button
+                key={index}
                       className={`quiz-option ${getAnswerClass(index)} ${isSelected ? 'selected' : ''}`}
-                      onClick={() => handleAnswerSelect(index)}
+                onClick={() => handleAnswerSelect(index)}
                       disabled={!currentQ.isMultiple && selectedAnswer !== null}
-                    >
-                      <span className="option-letter">
-                        {String.fromCharCode(65 + index)}
-                      </span>
+              >
+                <span className="option-letter">
+                  {String.fromCharCode(65 + index)}
+                </span>
                       <span className="option-text">{typeof option === 'string' ? option : (option.text || option.label || option)}</span>
                       {!currentQ.isMultiple && selectedAnswer !== null && index === currentQ.correctAnswer && (
-                        <CheckCircle className="option-icon correct-icon" />
-                      )}
+                  <CheckCircle className="option-icon correct-icon" />
+                )}
                       {!currentQ.isMultiple && selectedAnswer === index && index !== currentQ.correctAnswer && (
-                        <Cancel className="option-icon incorrect-icon" />
-                      )}
+                  <Cancel className="option-icon incorrect-icon" />
+                )}
                       {currentQ.isMultiple && isSelected && (
                         <CheckCircle className="option-icon" />
                       )}
-                    </button>
+              </button>
                   );
                 })}
-              </div>
+          </div>
               {questions[currentQuestion]?.isMultiple && (
                 <button 
                   className="submit-multiple-btn"

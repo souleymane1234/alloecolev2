@@ -320,13 +320,13 @@ const AlloEcoleNewsFeed = () => {
     <div className="card card-compact" key={`transfer-${item.id}`}>
       <div className="card-content card-content-compact">
         <div className="card-compact-header">
-          <div className="card-badges">
-            <span className="badge badge-purple">Transfert</span>
-            <div className="date-info">
-              <Calendar className="icon-sm" />
-              {item.date}
-            </div>
+        <div className="card-badges">
+          <span className="badge badge-purple">Transfert</span>
+          <div className="date-info">
+            <Calendar className="icon-sm" />
+            {item.date}
           </div>
+        </div>
           <h3 className="card-title card-title-compact">Demande de transfert</h3>
         </div>
         <div className="permutation-path permutation-path-compact">

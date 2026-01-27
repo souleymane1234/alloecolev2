@@ -279,6 +279,13 @@ const EtudesEtrangerComponent = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // ✅ Vérifier l'authentification au moment de l'action
+    if (!isAuthenticated) {
+      if (window.confirm('Vous devez être connecté pour créer un dossier. Souhaitez-vous vous connecter ?')) {
+        navigate('/login', { state: { from: '/etudes-etranger' } });
+      }
+      return;
+    }
     if (validateStep(currentStep)) {
       createDossierMutation.mutate(formData);
     }
@@ -773,34 +780,9 @@ const EtudesEtrangerComponent = () => {
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="etudes-etranger-section">
-        <div className="container">
-          <div className="auth-guard-card">
-            <div className="auth-guard-icon">
-              <i className="ph-lock-key"></i>
-            </div>
-            <h2 className="auth-guard-title">Connectez-vous pour accéder à Études à l'Étranger</h2>
-            <p className="auth-guard-text">
-              Vous devez être authentifié pour créer ou consulter votre dossier d'études internationales.
-            </p>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => navigate('/login?redirect=/etudes-etranger')}
-            >
-              <i className="ph-user-circle"></i>
-              Me connecter
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Afficher le loading pendant la vérification du dossier
-  if (isLoadingDossier) {
+  // ✅ L'affichage est libre - la connexion sera demandée au moment des actions
+  // Afficher le loading pendant la vérification du dossier (seulement si authentifié)
+  if (isLoadingDossier && isAuthenticated) {
     return (
       <div className="etudes-etranger-section">
         <div className="container">

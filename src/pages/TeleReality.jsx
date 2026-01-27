@@ -1,212 +1,145 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { 
-  PlayArrow,
-  Visibility,
-  Tv
+  Tv,
+  ErrorOutline
 } from '@mui/icons-material';
+import { CircularProgress, Alert } from '@mui/material';
+import emissionService from '../services/emissionService';
 import './TeleReality.css';
 
 const TeleReality = () => {
   const navigate = useNavigate();
 
-  // Émission en vedette
-  const featuredShow = {
-    id: 1,
-    title: 'Campus Confessions',
-    description: 'Des binômes d\'étudiants partagent leur quotidien sans filtre entre examens, colocs insolites et secrets inavouables.',
-    episodes: 16,
-    views: 12850,
-    poster: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&q=80',
-    category: 'TÉLÉRÉALITÉ'
+  // Récupérer les émissions depuis l'API
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['emissions'],
+    queryFn: async () => {
+      try {
+        const result = await emissionService.getEmissions({ page: 1, limit: 20 });
+        console.log('📺 Données reçues dans TeleReality:', result);
+        return result;
+      } catch (err) {
+        console.error('❌ Erreur lors de la récupération des émissions:', err);
+        throw err;
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const emissions = data?.emissions || [];
+  console.log('📺 Émissions à afficher:', emissions);
+
+  // Émission en vedette (première émission active)
+  const featuredShow = useMemo(() => {
+    if (emissions.length === 0) return null;
+    const first = emissions[0];
+    return {
+      id: first.id,
+      title: first.title,
+      description: first.description,
+      category: 'TÉLÉRÉALITÉ'
+    };
+  }, [emissions]);
+
+  const handleShowClick = (emissionId) => {
+    navigate(`/emission/${emissionId}`);
   };
 
-  // Liste de toutes les émissions
-  const allShows = [
-    {
-      id: 1,
-      title: 'Battle of Talents',
-      description: 'Une compétition musicale intense où les talents s\'affrontent pour décrocher le titre ultime.',
-      videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
-      participants: [
-        { id: 1, photo: 'https://i.pravatar.cc/150?img=1' },
-        { id: 2, photo: 'https://i.pravatar.cc/150?img=2' },
-        { id: 3, photo: 'https://i.pravatar.cc/150?img=3' },
-        { id: 4, photo: 'https://i.pravatar.cc/150?img=4' }
-      ],
-      totalParticipants: 12
-    },
-    {
-      id: 2,
-      title: 'Street Challenge',
-      description: 'Des défis urbains spectaculaires dans les rues de Paris, mêlant sport extrême et stratégie.',
-      videoUrl: 'https://www.w3schools.com/html/movie.mp4',
-      participants: [
-        { id: 1, photo: 'https://i.pravatar.cc/150?img=5' },
-        { id: 2, photo: 'https://i.pravatar.cc/150?img=6' },
-        { id: 3, photo: 'https://i.pravatar.cc/150?img=7' }
-      ],
-      totalParticipants: 8
-    },
-    {
-      id: 3,
-      title: 'Love Connection',
-      description: 'Trouvez l\'amour dans une aventure romantique unique où chaque choix compte.',
-      videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
-      participants: [
-        { id: 1, photo: 'https://i.pravatar.cc/150?img=8' },
-        { id: 2, photo: 'https://i.pravatar.cc/150?img=9' },
-        { id: 3, photo: 'https://i.pravatar.cc/150?img=10' },
-        { id: 4, photo: 'https://i.pravatar.cc/150?img=11' },
-        { id: 5, photo: 'https://i.pravatar.cc/150?img=12' }
-      ],
-      totalParticipants: 20
-    },
-    {
-      id: 4,
-      title: 'Aventure Extrême',
-      description: 'Survivre dans les conditions les plus difficiles. Seuls les plus forts resteront.',
-      videoUrl: 'https://www.w3schools.com/html/movie.mp4',
-      participants: [
-        { id: 1, photo: 'https://i.pravatar.cc/150?img=13' },
-        { id: 2, photo: 'https://i.pravatar.cc/150?img=14' },
-        { id: 3, photo: 'https://i.pravatar.cc/150?img=15' }
-      ],
-      totalParticipants: 10
-    },
-    {
-      id: 5,
-      title: 'Chef Academy',
-      description: 'Apprenez les secrets de la haute cuisine avec les meilleurs chefs du pays.',
-      videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
-      participants: [
-        { id: 1, photo: 'https://i.pravatar.cc/150?img=16' },
-        { id: 2, photo: 'https://i.pravatar.cc/150?img=17' },
-        { id: 3, photo: 'https://i.pravatar.cc/150?img=18' },
-        { id: 4, photo: 'https://i.pravatar.cc/150?img=19' }
-      ],
-      totalParticipants: 15
-    },
-    {
-      id: 6,
-      title: 'Dance Revolution',
-      description: 'Les meilleurs danseurs s\'affrontent dans des chorégraphies spectaculaires et innovantes.',
-      videoUrl: 'https://www.w3schools.com/html/movie.mp4',
-      participants: [
-        { id: 1, photo: 'https://i.pravatar.cc/150?img=20' },
-        { id: 2, photo: 'https://i.pravatar.cc/150?img=21' },
-        { id: 3, photo: 'https://i.pravatar.cc/150?img=22' },
-        { id: 4, photo: 'https://i.pravatar.cc/150?img=23' },
-        { id: 5, photo: 'https://i.pravatar.cc/150?img=24' }
-      ],
-      totalParticipants: 18
-    }
-  ];
+  if (isLoading) {
+    return (
+      <div className="telerealite-page">
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <CircularProgress />
+        </div>
+      </div>
+    );
+  }
 
-  const handlePlayShow = (showId) => {
-    navigate(`/emission/${showId}`);
-  };
+  if (error) {
+    return (
+      <div className="telerealite-page">
+        <div className="telerealite-content">
+          <Alert severity="error" icon={<ErrorOutline />}>
+            {error.message || 'Erreur lors du chargement des émissions'}
+          </Alert>
+        </div>
+      </div>
+    );
+  }
 
-  const handleInterested = (showId, e) => {
-    e.stopPropagation();
-    navigate(`/emission/${showId}`);
-    console.log('Interested in show:', showId);
-    // Ajouter ici la logique pour marquer l'intérêt
-  };
-
-  const formatViews = (views) => {
-    if (views >= 1000) {
-      return (views / 1000).toFixed(0) + 'k';
-    }
-    return views;
-  };
+  if (emissions.length === 0) {
+    return (
+      <div className="telerealite-page">
+        <div className="telerealite-content">
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <Tv style={{ fontSize: 64, color: '#ccc', marginBottom: '16px' }} />
+            <h2>Aucune émission disponible</h2>
+            <p>Il n'y a pas d'émissions publiées pour le moment.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="telerealite-page">
       <div className="telerealite-content">
         {/* Featured Show */}
-        <div 
-          className="featured-show"
-          style={{ backgroundImage: `url(${featuredShow.poster})` }}
-        >
-          <div className="featured-overlay">
-            <div className="featured-info">
-              <div className="show-badge">
-                <Tv className="badge-icon" />
-                <span>{featuredShow.category}</span>
-              </div>
-              
-              <h1 className="featured-title">{featuredShow.title}</h1>
-              
-              <p className="featured-description">{featuredShow.description}</p>
-              
-              <div className="featured-stats">
-                <div className="stat-item">
-                  <PlayArrow className="stat-icon" />
-                  <span>{featuredShow.episodes} épisodes</span>
+        {featuredShow && (
+          <div 
+            className="featured-show"
+            style={{ 
+              backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&q=80')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+            onClick={() => handleShowClick(featuredShow.id)}
+          >
+            <div className="featured-overlay">
+              <div className="featured-info">
+                <div className="show-badge">
+                  <Tv className="badge-icon" />
+                  <span>TÉLÉRÉALITÉ</span>
                 </div>
-                <div className="stat-item">
-                  <Visibility className="stat-icon" />
-                  <span>{formatViews(featuredShow.views)} vues</span>
-                </div>
+                
+                <h1 className="featured-title">{featuredShow.title}</h1>
+                
+                <p className="featured-description">{featuredShow.description}</p>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* All Shows Section */}
         <div className="all-shows-section">
           <h2 className="section-title">Toutes les émissions</h2>
           
           <div className="shows-grid">
-            {allShows.map((show) => (
+            {emissions.map((emission) => (
               <div 
-                key={show.id} 
+                key={emission.id} 
                 className="show-card"
+                onClick={() => handleShowClick(emission.id)}
               >
-                <div className="show-video-container">
-                  <video 
-                    className="show-video"
-                    controls
-                    preload="metadata"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <source src={show.videoUrl} type="video/mp4" />
-                    Votre navigateur ne supporte pas la lecture de vidéos.
-                  </video>
-                </div>
-                
                 <div className="show-content">
-                  <h3 className="show-title">{show.title}</h3>
-                  <p className="show-description">{show.description}</p>
-                  
-                  <div className="show-participants">
-                    <div className="participants-avatars">
-                      {show.participants.slice(0, 4).map((participant, index) => (
-                        <img 
-                          key={participant.id}
-                          src={participant.photo} 
-                          alt="Participant"
-                          className="participant-avatar"
-                          style={{ zIndex: 10 - index }}
-                        />
-                      ))}
-                      {show.totalParticipants > 4 && (
-                        <div className="more-participants">
-                          +{show.totalParticipants - 4}
-                        </div>
-                      )}
-                    </div>
-                    <span className="participants-count">
-                      {show.totalParticipants} participant{show.totalParticipants > 1 ? 's' : ''}
-                    </span>
+                  <div className="show-badge-small">
+                    <Tv className="badge-icon" />
+                    <span>Émission</span>
                   </div>
+                  
+                  <h3 className="show-title">{emission.title}</h3>
+                  <p className="show-description">{emission.description}</p>
                   
                   <button 
                     className="interest-button"
-                    onClick={(e) => handleInterested(show.id, e)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleShowClick(emission.id);
+                    }}
                   >
-                    <span>Ça m'intéresse</span>
+                    <span>Voir les détails</span>
                   </button>
                 </div>
               </div>

@@ -97,7 +97,7 @@ const Magazine = () => {
             const publishedDate = formatPublishedDate(magazine.publishedAt);
             
             return (
-              <div key={magazine.id} className="magazine-card">
+            <div key={magazine.id} className="magazine-card">
                 {magazine.coverImageUrl ? (
                   <div className="magazine-cover-container">
                     <img 
@@ -107,46 +107,46 @@ const Magazine = () => {
                     />
                   </div>
                 ) : (
-                  <div 
-                    className="magazine-icon-container"
+              <div 
+                className="magazine-icon-container"
                     style={{ backgroundColor: colors.iconBg }}
-                  >
+              >
                     <MenuBook 
-                      className="magazine-icon"
+                  className="magazine-icon"
                       style={{ color: colors.iconColor }}
-                    />
-                  </div>
+                />
+              </div>
                 )}
-                
-                <div className="magazine-info">
-                  <h3 className="magazine-title">{magazine.title}</h3>
+              
+              <div className="magazine-info">
+                <h3 className="magazine-title">{magazine.title}</h3>
                   {publishedDate && (
-                    <p 
-                      className="magazine-issue"
+                <p 
+                  className="magazine-issue"
                       style={{ color: colors.issueColor }}
-                    >
+                >
                       {publishedDate}
-                    </p>
+                </p>
                   )}
-                  <p className="magazine-description">{magazine.description}</p>
-                  
-                  <div className="magazine-footer">
-                    <div className="magazine-pages">
-                      <Description className="pages-icon" />
+                <p className="magazine-description">{magazine.description}</p>
+                
+                <div className="magazine-footer">
+                  <div className="magazine-pages">
+                    <Description className="pages-icon" />
                       <span>PDF disponible</span>
-                    </div>
-                    
-                    <button 
-                      className="read-button"
-                      style={{ backgroundColor: colors.buttonColor }}
-                      onClick={() => handleReadMagazine(magazine)}
-                    >
-                      <Visibility className="read-icon" />
-                      <span>Lire</span>
-                    </button>
                   </div>
+                  
+                  <button 
+                    className="read-button"
+                      style={{ backgroundColor: colors.buttonColor }}
+                    onClick={() => handleReadMagazine(magazine)}
+                  >
+                    <Visibility className="read-icon" />
+                    <span>Lire</span>
+                  </button>
                 </div>
               </div>
+            </div>
             );
           })}
         </div>

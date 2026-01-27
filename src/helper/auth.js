@@ -15,7 +15,7 @@ export const isTokenExpired = (token) => {
 // 🔁 Rafraîchit le token d’accès (désactivé : tokens valables 7 jours)
 export const refreshAccessToken = async () => {
   console.warn('Refresh token non utilisé (validité 7 jours).');
-  return null;
+    return null;
 };
 
 // 🧠 Vérifie l’état d’authentification (et tente un refresh si besoin)
@@ -29,9 +29,9 @@ export const checkAuthStatus = async () => {
   // Si access_token expiré → considérer l'utilisateur non connecté
   if (isTokenExpired(accessToken)) {
     console.log('🔁 Token expiré (pas de refresh automatique).');
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    return false;
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      return false;
   }
 
   // Token encore valide ou bien rafraîchi → utilisateur connecté

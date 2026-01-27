@@ -164,9 +164,10 @@
         }
 
         .school-detail-container {
-          max-width: 1200px;
+          max-width: 100%;
+          width: 100%;
           margin: 0 auto;
-          padding: 0 1rem;
+          padding: 0 2rem;
         }
 
         .school-header {
@@ -648,6 +649,10 @@
         }
 
         @media (max-width: 768px) {
+          .school-detail-container {
+            padding: 0 1rem;
+          }
+
           .school-header-content {
             flex-direction: column;
             align-items: center;
