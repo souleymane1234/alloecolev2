@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { GraduationCap, ForkKnife, FileText, Bus, DotsThree, MagnifyingGlass, X, CreditCard } from 'phosphor-react';
-import './Paiement.css';
+import './paiement.css';
 
 const Paiement = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
