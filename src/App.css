@@ -7,6 +7,49 @@
   /* padding: 2rem; */
 }
 
+/* Fix global pour tous les inputs et placeholders */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="date"],
+input[type="time"],
+input[type="url"],
+input[type="search"],
+textarea,
+select,
+.form-control,
+.form-input,
+.form-select,
+.form-textarea,
+.phone-input,
+.otp-input {
+  color: #1F2937 !important;
+  background-color: #FFFFFF !important;
+}
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="number"]::placeholder,
+input[type="tel"]::placeholder,
+input[type="date"]::placeholder,
+input[type="time"]::placeholder,
+input[type="url"]::placeholder,
+input[type="search"]::placeholder,
+textarea::placeholder,
+select::placeholder,
+.form-control::placeholder,
+.form-input::placeholder,
+.form-select::placeholder,
+.form-textarea::placeholder,
+.phone-input::placeholder,
+.otp-input::placeholder {
+  color: #9CA3AF !important;
+  opacity: 1 !important;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
