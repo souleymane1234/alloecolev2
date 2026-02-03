@@ -102,14 +102,23 @@ const AlloEcoleNewsFeed = () => {
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     const connected = !!token || isAuthenticated;
-    setIsUserConnected(connected);
+    setIsUserConnected(prev => {
+      // Ne mettre à jour que si la valeur change vraiment
+      if (prev !== connected) {
+        return connected;
+      }
+      return prev;
+    });
   }, [isAuthenticated]);
 
   // Fonction pour récupérer une page spécifique du feed
   const fetchFeedPage = async ({ pageParam = 1 }) => {
     console.log(`📥 Chargement page ${pageParam}...`);
     
-    const response = await fetch(`https://alloecoleapi-dev.up.railway.app/api/v1/students/feed?page=${pageParam}`);
+    // Utiliser la nouvelle API /api/v1/news avec pagination
+    const response = await fetch(
+      `https://alloecoleapi-dev.up.railway.app/api/v1/news?page=${pageParam}&limit=10`
+    );
     
     if (!response.ok) throw new Error(`Erreur ${response.status}`);
     
@@ -119,43 +128,71 @@ const AlloEcoleNewsFeed = () => {
 
     // Transformer les données pour l'affichage
     const transformedData = result.data.map((item) => {
-      const baseItem = {
-        id: item.id,
-        type: item.type,
-        title: item.title || "Actualité sans titre",
-        image: item.mainImage || "/images/poster/ecole.png",
-        excerpt: item.summary || "",
-        date: item.publishedAt
-          ? new Date(item.publishedAt).toLocaleDateString("fr-FR")
-          : "Date inconnue",
-        views: item.views || 0,
-        createdAt: item.createdAt,
-        category: item.category,
-      };
-
-      // Ajouter les propriétés spécifiques au type
-      if (item.type === 'transfer') {
+      // Gérer les actualités (contentType: "news")
+      if (item.contentType === 'news') {
         return {
-          ...baseItem,
-          sourceInstitution: item.sourceInstitution,
-          targetInstitution: item.targetInstitution,
-        };
-      }
-
-      if (item.type === 'news') {
-        return {
-          ...baseItem,
+          id: item.id,
+          type: 'news',
+          contentType: 'news',
+          title: item.title || "Actualité sans titre",
+          image: item.mainImage || "/images/poster/ecole.png",
+          excerpt: item.summary || "",
+          date: item.publishedAt
+            ? new Date(item.publishedAt).toLocaleDateString("fr-FR")
+            : "Date inconnue",
+          views: item.views || 0,
+          createdAt: item.createdAt,
           publishedAt: item.publishedAt,
+          category: item.category?.name || item.category || null,
+          author: item.author,
+          slug: item.slug,
+          content: item.content,
+          sourceUrl: item.sourceUrl,
         };
       }
 
-      return baseItem;
+      // Gérer les publicités (contentType: "ad")
+      if (item.contentType === 'ad') {
+        return {
+          id: item.id,
+          type: 'ad',
+          contentType: 'ad',
+          adType: item.type, // BANNER ou VIDEO
+          title: item.title || "Publicité",
+          description: item.description || "",
+          image: item.imageUrl || item.thumbnailUrl || "/images/poster/ecole.png",
+          videoUrl: item.videoUrl || null,
+          targetUrl: item.targetUrl || "#",
+          isActive: item.isActive,
+          displayOrder: item.displayOrder || 0,
+          clickCount: item.clickCount || 0,
+          viewCount: item.viewCount || 0,
+          createdAt: item.createdAt,
+          startDate: item.startDate,
+          endDate: item.endDate,
+        };
+      }
+
+      // Fallback pour les autres types
+      return {
+        id: item.id,
+        type: item.type || 'unknown',
+        contentType: item.contentType || 'unknown',
+        title: item.title || "Contenu sans titre",
+        image: item.mainImage || item.imageUrl || "/images/poster/ecole.png",
+        excerpt: item.summary || item.description || "",
+        date: item.publishedAt || item.createdAt
+          ? new Date(item.publishedAt || item.createdAt).toLocaleDateString("fr-FR")
+          : "Date inconnue",
+        views: item.views || item.viewCount || 0,
+        createdAt: item.createdAt,
+      };
     });
 
     return {
       data: transformedData,
-      pagination: result.pagination,
-      nextPage: result.pagination.current_page < result.pagination.total_pages 
+      pagination: result.pagination || {},
+      nextPage: result.pagination && result.pagination.current_page < result.pagination.total_pages 
         ? result.pagination.current_page + 1 
         : undefined
     };
@@ -172,18 +209,25 @@ const AlloEcoleNewsFeed = () => {
     error,
     isFetching,
   } = useInfiniteQuery({
-    queryKey: ['feed-infinite'],
+    queryKey: ['news-feed-infinite'], // Nouvelle clé pour forcer le rechargement avec la nouvelle API
     queryFn: fetchFeedPage,
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 1,
-    staleTime: 10 * 60 * 1000,
-    cacheTime: 20 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    retry: 1,
+    staleTime: 10 * 60 * 1000, // 10 minutes - les données sont considérées comme fraîches pendant 10 minutes
+    gcTime: 20 * 60 * 1000, // 20 minutes - temps de cache (anciennement cacheTime)
+    refetchOnWindowFocus: false, // Ne pas refetch quand la fenêtre reprend le focus
+    refetchOnMount: false, // Ne pas refetch à chaque montage du composant
+    refetchOnReconnect: false, // Ne pas refetch lors de la reconnexion
+    retry: 1, // Ne réessayer qu'une seule fois en cas d'erreur
   });
 
   // Observer pour le chargement infini
   useEffect(() => {
+    // Ne créer l'observer que si on a une page suivante et qu'on n'est pas en train de charger
+    if (!hasNextPage || isFetchingNextPage) {
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
@@ -204,7 +248,7 @@ const AlloEcoleNewsFeed = () => {
         observer.unobserve(currentTarget);
       }
     };
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Fonction pour charger plus d'éléments quand on scroll (fallback)
   const handleScroll = useCallback(() => {
@@ -220,10 +264,19 @@ const AlloEcoleNewsFeed = () => {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   // Ajouter l'écouteur de scroll (fallback si IntersectionObserver ne fonctionne pas)
+  // Utiliser useRef pour éviter de recréer l'écouteur à chaque render
+  const handleScrollRef = useRef(handleScroll);
   useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    handleScrollRef.current = handleScroll;
   }, [handleScroll]);
+
+  useEffect(() => {
+    const scrollHandler = () => {
+      handleScrollRef.current();
+    };
+    window.addEventListener('scroll', scrollHandler);
+    return () => window.removeEventListener('scroll', scrollHandler);
+  }, []); // Tableau de dépendances vide pour ne s'exécuter qu'une fois
 
   // Aplatir toutes les données des pages
   const allFeedData = data?.pages.flatMap(page => page.data) || [];
@@ -265,11 +318,16 @@ const AlloEcoleNewsFeed = () => {
     }
   ];
 
-  // Charger le profil utilisateur
+  // Ref pour suivre si on a déjà tenté de charger le profil
+  const profileLoadedRef = useRef(false);
+  
+  // Charger le profil utilisateur (une seule fois si l'utilisateur est connecté)
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     
-    if (token && isUserConnected) {
+    // Ne charger le profil que si l'utilisateur est connecté ET qu'on n'a pas encore chargé le profil
+    if (token && isUserConnected && !user && !loadingProfile && !profileLoadedRef.current) {
+      profileLoadedRef.current = true;
       setLoadingProfile(true);
       axios
         .get(`https://alloecoleapi-dev.up.railway.app/api/v1/profile/student`, {
@@ -286,10 +344,19 @@ const AlloEcoleNewsFeed = () => {
             setIsUserConnected(false);
             setUser(null);
           }
+          profileLoadedRef.current = false; // Réinitialiser en cas d'erreur pour permettre un nouvel essai
         })
         .finally(() => setLoadingProfile(false));
     }
-  }, [isUserConnected]);
+    
+    // Si l'utilisateur n'est plus connecté, réinitialiser le profil et le ref
+    if (!isUserConnected) {
+      if (user) {
+        setUser(null);
+      }
+      profileLoadedRef.current = false; // Réinitialiser pour permettre un nouveau chargement si l'utilisateur se reconnecte
+    }
+  }, [isUserConnected, user, loadingProfile]);
 
   // Fonctions de rendu
   const renderActualiteCard = (item) => (
@@ -307,7 +374,16 @@ const AlloEcoleNewsFeed = () => {
         <h3 className="card-title">{item.title}</h3>
         <p className="card-excerpt">{item.excerpt}</p>
         <div className="card-footer">
-          <button className="link-button">
+          <button 
+            className="link-button"
+            onClick={() => {
+              if (item.slug) {
+                navigate(`/actualites/${item.slug}`);
+              } else if (item.id) {
+                navigate(`/actualites/${item.id}`);
+              }
+            }}
+          >
             Lire la suite <ArrowRight className="icon-sm" />
           </button>
           <span className="views">{item.views} vues</span>
@@ -315,6 +391,69 @@ const AlloEcoleNewsFeed = () => {
       </div>
     </div>
   );
+
+  // Fonction pour rendre les publicités (ads) - Affichage simplifié sans carte ni texte
+  const renderAdCard = (item) => {
+    // Publicité de type BANNER - Juste l'image avec badge
+    if (item.adType === 'BANNER') {
+      return (
+        <div 
+          className="ad-simple" 
+          key={`ad-${item.id}`}
+          onClick={() => {
+            if (item.targetUrl && item.targetUrl !== '#') {
+              window.open(item.targetUrl, '_blank', 'noopener,noreferrer');
+            }
+          }}
+          style={{ cursor: item.targetUrl && item.targetUrl !== '#' ? 'pointer' : 'default' }}
+        >
+          <div className="ad-badge-simple">
+            <span className="badge badge-purple">Publicité</span>
+          </div>
+          <img src={item.image} alt={item.title || "Publicité"} className="ad-image" />
+        </div>
+      );
+    }
+
+    // Publicité de type VIDEO - Juste la vidéo avec badge
+    if (item.adType === 'VIDEO') {
+      return (
+        <div className="ad-simple video-ad-simple" key={`ad-${item.id}`}>
+          <div className="ad-badge-simple">
+            <span className="badge badge-purple">Publicité</span>
+          </div>
+          {item.videoUrl ? (
+            <video 
+              className="ad-video"
+              controls
+              poster={item.image}
+              onClick={(e) => {
+                if (item.targetUrl && item.targetUrl !== '#') {
+                  e.stopPropagation();
+                  window.open(item.targetUrl, '_blank', 'noopener,noreferrer');
+                }
+              }}
+            >
+              <source src={item.videoUrl} type="video/mp4" />
+              Votre navigateur ne supporte pas la lecture de vidéos.
+            </video>
+          ) : (
+            <img src={item.image} alt={item.title || "Publicité"} className="ad-image" />
+          )}
+        </div>
+      );
+    }
+
+    // Fallback pour les autres types de publicités
+    return (
+      <div className="ad-simple" key={`ad-${item.id}`}>
+        <div className="ad-badge-simple">
+          <span className="badge badge-purple">Publicité</span>
+        </div>
+        <img src={item.image} alt={item.title || "Publicité"} className="ad-image" />
+      </div>
+    );
+  };
 
   const renderTransferCard = (item) => (
     <div className="card card-compact" key={`transfer-${item.id}`}>
@@ -777,7 +916,8 @@ const AlloEcoleNewsFeed = () => {
                             className="content-banner"
                             linkUrl="#"
                           />
-                          {item.type === 'news' && renderActualiteCard(item)}
+                          {item.contentType === 'news' && renderActualiteCard(item)}
+                          {item.contentType === 'ad' && renderAdCard(item)}
                           {item.type === 'transfer' && renderTransferCard(item)}
                         </React.Fragment>
                       );
@@ -785,7 +925,8 @@ const AlloEcoleNewsFeed = () => {
 
                     return (
                       <React.Fragment key={`item-${item.id || index}`}>
-                        {item.type === 'news' && renderActualiteCard(item)}
+                        {item.contentType === 'news' && renderActualiteCard(item)}
+                        {item.contentType === 'ad' && renderAdCard(item)}
                         {item.type === 'transfer' && renderTransferCard(item)}
                         {item.type === 'quiz' && renderQuizCard(item)}
                       </React.Fragment>

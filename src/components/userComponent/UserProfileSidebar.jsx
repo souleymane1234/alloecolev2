@@ -133,33 +133,93 @@ const UserProfileSidebar = () => {
   };
 
   /**
-   * 📘 Initialiser le SDK Facebook
+   * 📘 Initialiser le SDK Facebook de manière sécurisée (désactivé pour éviter les erreurs de permissions)
+   * Le SDK Facebook cause des violations de permissions policy avec l'événement unload
+   * Pour l'instant, on désactive le chargement automatique et on affiche juste un lien
    */
   useEffect(() => {
-    // Charger le SDK Facebook
-    if (window.FB) {
-      window.FB.XFBML.parse();
-    } else {
-      window.fbAsyncInit = function() {
-        window.FB.init({
-          xfbml: true,
-          version: 'v18.0'
-        });
-      };
+    // DÉSACTIVÉ : Le SDK Facebook cause trop d'erreurs de permissions policy
+    // Si vous avez besoin du widget Facebook, vous devrez :
+    // 1. Configurer correctement les permissions dans votre serveur
+    // 2. Ou utiliser une iframe directe au lieu du SDK
+    
+    // Pour l'instant, on ne charge pas le SDK pour éviter les erreurs
+    // Le lien Facebook fonctionnera toujours, juste sans le widget intégré
+    
+    /* 
+    // Code désactivé - décommenter si nécessaire avec les bonnes permissions
+    const loadFacebookSDK = () => {
+      try {
+        if (window.FB) {
+          setTimeout(() => {
+            try {
+              window.FB.XFBML.parse();
+            } catch (error) {
+              console.warn('Erreur lors du parsing XFBML:', error);
+            }
+          }, 100);
+        } else {
+          if (!window.fbAsyncInit) {
+            window.fbAsyncInit = function() {
+              try {
+                window.FB.init({
+                  xfbml: true,
+                  version: 'v18.0',
+                  cookie: false,
+                  status: false,
+                  autoLogAppEvents: false
+                });
+                
+                setTimeout(() => {
+                  try {
+                    if (window.FB && window.FB.XFBML) {
+                      window.FB.XFBML.parse();
+                    }
+                  } catch (error) {
+                    console.warn('Erreur lors du parsing XFBML après init:', error);
+                  }
+                }, 200);
+              } catch (error) {
+                console.warn('Erreur lors de l\'initialisation du SDK Facebook:', error);
+              }
+            };
+          }
 
-      // Charger le script Facebook SDK
-      if (!document.getElementById('facebook-jssdk')) {
-        (function(d, s, id) {
-          var js, fjs = d.getElementsByTagName(s)[0];
-          if (d.getElementById(id)) return;
-          js = d.createElement(s);
-          js.id = id;
-          js.src = "https://connect.facebook.net/fr_FR/sdk.js";
-          js.async = true;
-          fjs.parentNode.insertBefore(js, fjs);
-        }(document, 'script', 'facebook-jssdk'));
+          if (!document.getElementById('facebook-jssdk')) {
+            (function(d, s, id) {
+              try {
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) return;
+                js = d.createElement(s);
+                js.id = id;
+                js.src = "https://connect.facebook.net/fr_FR/sdk.js";
+                js.async = true;
+                js.crossOrigin = "anonymous";
+                
+                js.onerror = function() {
+                  console.warn('Erreur lors du chargement du SDK Facebook');
+                };
+                
+                if (fjs && fjs.parentNode) {
+                  fjs.parentNode.insertBefore(js, fjs);
+                }
+              } catch (error) {
+                console.warn('Erreur lors de la création du script Facebook SDK:', error);
+              }
+            }(document, 'script', 'facebook-jssdk'));
+          }
+        }
+      } catch (error) {
+        console.warn('Erreur lors du chargement du SDK Facebook:', error);
       }
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadFacebookSDK);
+    } else {
+      loadFacebookSDK();
     }
+    */
   }, []);
 
   // 🔄 Affichage pendant le chargement

@@ -89,8 +89,9 @@ const OrientationInteractive = () => {
     setQuestionnairesError('');
     try {
       const json = await apiCall('/students/orientation/questionnaires');
+      // Nouvelle structure API : { success: true, data: { data: [...], total: 1 } }
       const list = json?.data?.data || json?.data || [];
-      setQuestionnaires(list);
+      setQuestionnaires(Array.isArray(list) ? list : []);
     } catch (error) {
       console.error('Erreur chargement questionnaires:', error);
       setQuestionnairesError(
@@ -110,7 +111,8 @@ const OrientationInteractive = () => {
     }
 
     try {
-      const json = await apiCall('/students/orientation/profile');
+      // Ajouter le paramètre profileType=ETUDIANT
+      const json = await apiCall('/students/orientation/profile?profileType=ETUDIANT');
       const data = json?.data ?? json;
       setLatestProfile(data || null);
     } catch (error) {
@@ -161,7 +163,11 @@ const OrientationInteractive = () => {
     try {
       const json = await apiCall('/students/orientation/start-session', {
         method: 'POST',
-        body: JSON.stringify({ questionnaireId, resumeLast }),
+        body: JSON.stringify({ 
+          questionnaireId, 
+          resumeLast,
+          profileType: 'ETUDIANT' // Ajouter le profileType requis par la nouvelle API
+        }),
       });
       const data = json?.data ?? json;
       setSessionState({

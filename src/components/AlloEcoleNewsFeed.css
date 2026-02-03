@@ -895,6 +895,46 @@
           justify-content: space-between;
         }
 
+        /* Styles pour les publicités simplifiées (sans carte ni texte) */
+        .ad-simple {
+          position: relative;
+          width: 100%;
+          margin-bottom: 2rem;
+          border-radius: 0.5rem;
+          overflow: hidden;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .ad-simple:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .ad-badge-simple {
+          position: absolute;
+          top: 0.75rem;
+          right: 0.75rem;
+          z-index: 10;
+        }
+
+        .ad-image {
+          width: 100%;
+          height: auto;
+          display: block;
+          object-fit: cover;
+        }
+
+        .ad-video {
+          width: 100%;
+          height: auto;
+          display: block;
+        }
+
+        .video-ad-simple .ad-video {
+          max-height: 500px;
+          object-fit: contain;
+        }
+
         .link-button {
           display: flex;
           align-items: center;
