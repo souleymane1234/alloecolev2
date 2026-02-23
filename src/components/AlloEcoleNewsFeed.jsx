@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Calendar, Clock, MapPin, ArrowRight, ChevronLeft, ChevronRight, Eye, User, BookOpen, GraduationCap, Settings, Play } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowRight, ChevronLeft, ChevronRight, Eye, User, BookOpen, GraduationCap, Settings, Play, Search } from 'lucide-react';
 import ContactAlloEcoleService from './ContactAlloEcoleService';
 import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import axios from 'axios';
@@ -13,6 +13,7 @@ const AlloEcoleNewsFeed = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useOutletContext() || {};
   const token = localStorage.getItem("access_token");
+  const [searchQuery, setSearchQuery] = useState('');
   
   const [isUserConnected, setIsUserConnected] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
@@ -128,8 +129,10 @@ const AlloEcoleNewsFeed = () => {
 
     // Transformer les données pour l'affichage
     const transformedData = result.data.map((item) => {
+      const contentType = item.contentType || 'unknown';
+      
       // Gérer les actualités (contentType: "news")
-      if (item.contentType === 'news') {
+      if (contentType === 'news') {
         return {
           id: item.id,
           type: 'news',
@@ -152,7 +155,7 @@ const AlloEcoleNewsFeed = () => {
       }
 
       // Gérer les publicités (contentType: "ad")
-      if (item.contentType === 'ad') {
+      if (contentType === 'ad') {
         return {
           id: item.id,
           type: 'ad',
@@ -173,18 +176,238 @@ const AlloEcoleNewsFeed = () => {
         };
       }
 
-      // Fallback pour les autres types
+      // Gérer les bourses d'études (contentType: "scholarship")
+      if (contentType === 'scholarship') {
+        return {
+          id: item.id,
+          type: 'scholarship',
+          contentType: 'scholarship',
+          title: item.title || "Bourse d'études",
+          image: item.mainImage || "/images/poster/ecole.png",
+          excerpt: item.summary || item.description || "",
+          date: item.publishedAt
+            ? new Date(item.publishedAt).toLocaleDateString("fr-FR")
+            : "Date inconnue",
+          views: item.views || 0,
+          slug: item.slug,
+          category: item.category?.name || item.category || null,
+          moduleName: item.moduleName,
+          publishedAt: item.publishedAt,
+        };
+      }
+
+      // Gérer les écoles (contentType: "school")
+      if (contentType === 'school') {
+        return {
+          id: item.id,
+          type: 'school',
+          contentType: 'school',
+          title: item.title || item.name || "École",
+          image: item.mainImage || item.logo || "/images/poster/ecole.png",
+          excerpt: item.summary || item.description || "",
+          date: item.publishedAt
+            ? new Date(item.publishedAt).toLocaleDateString("fr-FR")
+            : "Date inconnue",
+          views: item.views || 0,
+          slug: item.slug,
+          category: item.category?.name || item.category || null,
+          moduleName: item.moduleName,
+          publishedAt: item.publishedAt,
+        };
+      }
+
+      // Gérer les vidéos (contentType: "video")
+      if (contentType === 'video') {
+        return {
+          id: item.id,
+          type: 'video',
+          contentType: 'video',
+          title: item.title || "Vidéo",
+          image: item.mainImage || item.thumbnailUrl || "/images/poster/ecole.png",
+          excerpt: item.summary || item.description || "",
+          date: item.publishedAt
+            ? new Date(item.publishedAt).toLocaleDateString("fr-FR")
+            : "Date inconnue",
+          views: item.views || 0,
+          slug: item.slug,
+          category: item.category?.name || item.category || null,
+          moduleName: item.moduleName,
+          publishedAt: item.publishedAt,
+          videoUrl: item.videoUrl || item.url,
+        };
+      }
+
+      // Gérer les vidéos de candidats (contentType: "candidate_video")
+      if (contentType === 'candidate_video') {
+        return {
+          id: item.id,
+          type: 'candidate_video',
+          contentType: 'candidate_video',
+          title: item.title || "Vidéo de candidat",
+          image: item.mainImage || item.video?.thumbnailUrl || "/images/poster/ecole.png",
+          excerpt: item.summary || item.video?.description || "",
+          date: item.publishedAt
+            ? new Date(item.publishedAt).toLocaleDateString("fr-FR")
+            : "Date inconnue",
+          views: item.views || item.video?.views || 0,
+          slug: item.slug,
+          category: item.category?.name || item.category || null,
+          moduleName: item.moduleName,
+          publishedAt: item.publishedAt,
+          author: item.author,
+          video: item.video,
+        };
+      }
+
+      // Gérer les quiz (contentType: "quiz")
+      if (contentType === 'quiz') {
+        return {
+          id: item.id,
+          type: 'quiz',
+          contentType: 'quiz',
+          title: item.title || "Quiz",
+          image: item.mainImage || "/images/poster/ecole.png",
+          excerpt: item.summary || item.description || "",
+          date: item.publishedAt
+            ? new Date(item.publishedAt).toLocaleDateString("fr-FR")
+            : "Date inconnue",
+          views: item.views || 0,
+          slug: item.slug,
+          category: item.category?.name || item.category || null,
+          moduleName: item.moduleName,
+          publishedAt: item.publishedAt,
+        };
+      }
+
+      // Gérer les questionnaires (contentType: "questionnaire")
+      if (contentType === 'questionnaire') {
+        return {
+          id: item.id,
+          type: 'questionnaire',
+          contentType: 'questionnaire',
+          title: item.title || "Questionnaire",
+          image: item.mainImage || "/images/poster/ecole.png",
+          excerpt: item.summary || item.description || "",
+          date: item.publishedAt
+            ? new Date(item.publishedAt).toLocaleDateString("fr-FR")
+            : "Date inconnue",
+          views: item.views || 0,
+          slug: item.slug,
+          category: item.category?.name || item.category || null,
+          moduleName: item.moduleName,
+          publishedAt: item.publishedAt,
+        };
+      }
+
+      // Gérer les magazines (contentType: "magazine")
+      if (contentType === 'magazine') {
+        return {
+          id: item.id,
+          type: 'magazine',
+          contentType: 'magazine',
+          title: item.title || "Magazine",
+          image: item.mainImage || "/images/poster/ecole.png",
+          excerpt: item.summary || item.description || "",
+          date: item.publishedAt
+            ? new Date(item.publishedAt).toLocaleDateString("fr-FR")
+            : "Date inconnue",
+          views: item.views || 0,
+          slug: item.slug,
+          category: item.category?.name || item.category || null,
+          moduleName: item.moduleName,
+          publishedAt: item.publishedAt,
+        };
+      }
+
+      // Gérer les études à l'étranger (contentType: "foreign_study")
+      if (contentType === 'foreign_study') {
+        return {
+          id: item.id,
+          type: 'foreign_study',
+          contentType: 'foreign_study',
+          title: item.title || "Étude à l'étranger",
+          image: item.mainImage || "/images/poster/ecole.png",
+          excerpt: item.summary || item.description || "",
+          date: item.publishedAt
+            ? new Date(item.publishedAt).toLocaleDateString("fr-FR")
+            : "Date inconnue",
+          views: item.views || 0,
+          slug: item.slug,
+          category: item.category?.name || item.category || null,
+          moduleName: item.moduleName,
+          publishedAt: item.publishedAt,
+        };
+      }
+
+      // Gérer les produits marketplace (contentType: "product")
+      if (contentType === 'product') {
+        return {
+          id: item.id,
+          type: 'product',
+          contentType: 'product',
+          title: item.title || "Produit",
+          image: item.mainImage || item.imageUrl || "/images/poster/ecole.png",
+          excerpt: item.summary || item.description || "",
+          date: item.publishedAt
+            ? new Date(item.publishedAt).toLocaleDateString("fr-FR")
+            : "Date inconnue",
+          views: item.views || 0,
+          slug: item.slug,
+          category: item.category?.name || item.category || null,
+          moduleName: item.moduleName,
+          publishedAt: item.publishedAt,
+        };
+      }
+
+      // Gérer les permutations (contentType: "permutation")
+      if (contentType === 'permutation') {
+        return {
+          id: item.id,
+          type: 'permutation',
+          contentType: 'permutation',
+          title: item.title || "Permutation",
+          image: item.mainImage || item.imageUrl || "/images/poster/ecole.png",
+          excerpt: item.summary || item.description || "",
+          date: item.publishedAt || item.createdAt
+            ? new Date(item.publishedAt || item.createdAt).toLocaleDateString("fr-FR")
+            : "Date inconnue",
+          views: item.views || item.viewCount || 0,
+          slug: item.slug,
+          category: item.category?.name || item.category || null,
+          moduleName: item.moduleName,
+          publishedAt: item.publishedAt,
+          createdAt: item.createdAt,
+          // Préserver les données spécifiques aux permutations si disponibles
+          user: item.user || null,
+          niveau: item.niveau || null,
+          filiere: item.filiere || null,
+          origine: item.origine || item.sourceSchool || null,
+          souhait: item.souhait || item.targetSchool || null,
+          villeOrigine: item.villeOrigine || item.sourceCity || null,
+          villeSouhaitee: item.villeSouhaitee || item.targetCity || null,
+          annee: item.annee || item.year || null,
+          status: item.status || null,
+          correspondances: item.correspondances || item.matches || 0,
+          vues: item.views || item.viewCount || 0,
+        };
+      }
+
+      // Fallback pour les autres types (orientation, revision, document_request, play, emission, job_sheet)
       return {
         id: item.id,
-        type: item.type || 'unknown',
-        contentType: item.contentType || 'unknown',
-        title: item.title || "Contenu sans titre",
+        type: contentType,
+        contentType: contentType,
+        title: item.title || "Contenu",
         image: item.mainImage || item.imageUrl || "/images/poster/ecole.png",
         excerpt: item.summary || item.description || "",
         date: item.publishedAt || item.createdAt
           ? new Date(item.publishedAt || item.createdAt).toLocaleDateString("fr-FR")
           : "Date inconnue",
         views: item.views || item.viewCount || 0,
+        slug: item.slug,
+        category: item.category?.name || item.category || null,
+        moduleName: item.moduleName,
+        publishedAt: item.publishedAt,
         createdAt: item.createdAt,
       };
     });
@@ -278,8 +501,17 @@ const AlloEcoleNewsFeed = () => {
     return () => window.removeEventListener('scroll', scrollHandler);
   }, []); // Tableau de dépendances vide pour ne s'exécuter qu'une fois
 
-  // Aplatir toutes les données des pages
-  const allFeedData = data?.pages.flatMap(page => page.data) || [];
+  // Aplatir toutes les données des pages et dédupliquer par ID
+  const allFeedDataRaw = data?.pages.flatMap(page => page.data) || [];
+  // Dédupliquer les données en utilisant un Map pour garder la première occurrence de chaque ID
+  const allFeedDataMap = new Map();
+  allFeedDataRaw.forEach((item, index) => {
+    const key = `${item.contentType || item.type || 'unknown'}-${item.id || `no-id-${index}`}`;
+    if (!allFeedDataMap.has(key)) {
+      allFeedDataMap.set(key, item);
+    }
+  });
+  const allFeedData = Array.from(allFeedDataMap.values());
 
   // Données statiques pour les quiz uniquement
   const quizCardsForFeed = [
@@ -357,6 +589,50 @@ const AlloEcoleNewsFeed = () => {
       profileLoadedRef.current = false; // Réinitialiser pour permettre un nouveau chargement si l'utilisateur se reconnecte
     }
   }, [isUserConnected, user, loadingProfile]);
+
+  // Fonction principale pour rendre le contenu selon son type
+  const renderContentByType = (item) => {
+    const contentType = item.contentType || item.type || 'unknown';
+    
+    switch (contentType) {
+      case 'news':
+        return renderActualiteCard(item);
+      case 'ad':
+        return renderAdCard(item);
+      case 'scholarship':
+        return renderBourseCard(item);
+      case 'school':
+        return renderEcoleCard(item);
+      case 'video':
+      case 'candidate_video':
+        return renderVideoCard(item);
+      case 'quiz':
+      case 'play':
+        return renderQuizCard(item);
+      case 'questionnaire':
+        return renderQuestionnaireCard(item);
+      case 'magazine':
+        return renderMagazineCard(item);
+      case 'foreign_study':
+        return renderForeignStudyCard(item);
+      case 'product':
+        return renderProductCard(item);
+      case 'permutation':
+        return renderPermutationCard(item);
+      case 'orientation':
+        return renderOrientationCard(item);
+      case 'revision':
+        return renderRevisionCard(item);
+      case 'document_request':
+        return renderDocumentRequestCard(item);
+      case 'emission':
+        return renderEmissionCard(item);
+      case 'job_sheet':
+        return renderJobSheetCard(item);
+      default:
+        return renderGenericCard(item);
+    }
+  };
 
   // Fonctions de rendu
   const renderActualiteCard = (item) => (
@@ -497,116 +773,481 @@ const AlloEcoleNewsFeed = () => {
 
   const renderBourseCard = (item) => (
     <div className="card" key={`bourse-${item.id}`}>
-      <img src={item.image} alt={item.title} className="card-image" />
+      {item.image && <img src={item.image} alt={item.title} className="card-image" />}
       <div className="card-content">
         <div className="card-badges badges-wrap">
           <span className="badge badge-orange">Bourse d'études</span>
-          <span className="badge badge-blue">{item.typeEtude}</span>
-          <span className="badge badge-green">{item.country}</span>
+          {item.category && <span className="badge badge-blue">{item.category}</span>}
+          <div className="date-info">
+            <Calendar className="icon-sm" />
+            {item.date}
+          </div>
         </div>
         <h3 className="card-title">{item.title}</h3>
-        <div className="info-list">
-          <div className="info-item">
-            <Calendar className="icon-md icon-orange" />
-            <span>Publié le: {item.published}</span>
-          </div>
-          <div className="info-item deadline">
-            <Clock className="icon-md" />
-            <span>Date limite: {item.deadline}</span>
-          </div>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        <div className="card-footer">
+          <button 
+            className="button-primary"
+            onClick={() => {
+              if (item.slug) {
+                navigate(`/bourses/${item.slug}`);
+              } else if (item.id) {
+                navigate(`/bourses/${item.id}`);
+              }
+            }}
+          >
+            Voir les détails de la bourse
+          </button>
+          <span className="views">{item.views} vues</span>
         </div>
-        <button className="button-primary">Voir les détails de la bourse</button>
       </div>
     </div>
   );
 
   const renderEcoleCard = (item) => (
     <div className="card" key={`ecole-${item.id}`}>
-      <img src={item.image} alt={item.name} className="card-image" />
+      {item.image && <img src={item.image} alt={item.title} className="card-image" />}
       <div className="card-content">
         <div className="card-badges">
-          <span className="badge badge-orange">{item.typeEcole}</span>
+          <span className="badge badge-orange">École</span>
+          {item.category && <span className="badge badge-blue">{item.category}</span>}
+          <div className="date-info">
+            <Calendar className="icon-sm" />
+            {item.date}
+          </div>
         </div>
-        <h3 className="card-title">{item.name}</h3>
-        <div className="location-info">
-          <MapPin className="icon-md icon-orange" />
-          <span>{item.location}</span>
+        <h3 className="card-title">{item.title}</h3>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        <div className="card-footer">
+          <button 
+            className="button-secondary"
+            onClick={() => {
+              if (item.slug) {
+                navigate(`/ecoles/${item.slug}`);
+              } else if (item.id) {
+                navigate(`/ecoles/${item.id}`);
+              }
+            }}
+          >
+            Découvrir l'établissement
+          </button>
+          <span className="views">{item.views} vues</span>
         </div>
-        <p className="card-excerpt">{item.description}</p>
-        <button className="button-secondary">Découvrir l'établissement</button>
       </div>
     </div>
   );
 
-  const renderPermutationCard = (item) => (
-    <div className="card" key={`permutation-${item.id}`}>
+  const renderPermutationCard = (item) => {
+    // Gérer les données de permutation de la nouvelle API (structure simplifiée)
+    const hasUserData = item.user && item.user.prenom && item.user.nom;
+    const hasDetailedData = item.niveau && item.filiere && item.origine && item.souhait;
+    
+    return (
+      <div className="card" key={`permutation-${item.id}`}>
+        <div className="card-content">
+          <div className="card-badges">
+            <span className="badge badge-orange">Permutation</span>
+            {item.status && <span className="badge badge-purple">{item.status}</span>}
+            {item.category && <span className="badge badge-blue">{item.category}</span>}
+            <div className="date-info">
+              <Calendar className="icon-sm" />
+              {item.date}
+            </div>
+          </div>
+          
+          {hasUserData && (
+            <div className="permutation-user-info">
+              <div className="user-avatar">
+                {item.user.prenom?.[0] || ''}{item.user.nom?.[0] || ''}
+              </div>
+              <div className="user-details">
+                <h4 className="user-name">
+                  {item.user.prenom || ''} {item.user.nom || ''}
+                </h4>
+                {item.user.ville && (
+                  <p className="user-location">
+                    <MapPin className="icon-sm" />
+                    {item.user.ville}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          
+          <h3 className="card-title">
+            {hasDetailedData ? `${item.niveau} - ${item.filiere}` : item.title}
+          </h3>
+          
+          {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+          
+          {hasDetailedData && (
+            <div className="permutation-path">
+              <div className="path-item">
+                <div className="path-dot"></div>
+                <div>
+                  <p className="path-label">École d'origine</p>
+                  <p className="path-value">{item.origine}</p>
+                  {item.villeOrigine && (
+                    <p className="path-location">{item.villeOrigine}</p>
+                  )}
+                </div>
+              </div>
+              <div className="path-arrow">
+                <ChevronRight className="icon-lg" />
+              </div>
+              <div className="path-item">
+                <div className="path-dot"></div>
+                <div>
+                  <p className="path-label">École souhaitée</p>
+                  <p className="path-value">{item.souhait}</p>
+                  {item.villeSouhaitee && (
+                    <p className="path-location">{item.villeSouhaitee}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="permutation-meta">
+            {item.annee && (
+              <div className="year-info">
+                <Calendar className="icon-sm icon-orange" />
+                <span>Année: {item.annee}</span>
+              </div>
+            )}
+            <div className="permutation-stats">
+              <div className="stat-item">
+                <Eye className="icon-sm" />
+                <span>{item.views || item.vues || 0} vues</span>
+              </div>
+              {item.correspondances !== undefined && (
+                <div className="stat-item">
+                  <span className="correspondances-badge">
+                    {item.correspondances} correspondance{item.correspondances > 1 ? 's' : ''}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="permutation-actions">
+            {hasUserData && (
+              <button 
+                className="button-primary"
+                onClick={() => {
+                  setSelectedPermutation(item);
+                  setShowContactModal(true);
+                }}
+              >
+                Contacter
+              </button>
+            )}
+            <button 
+              className="button-secondary"
+              onClick={() => {
+                if (item.slug) {
+                  navigate(`/permutations/${item.slug}`);
+                } else if (item.id) {
+                  navigate(`/permutations/${item.id}`);
+                }
+              }}
+            >
+              Voir détails
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderVideoCard = (item) => (
+    <div className="card" key={`video-${item.id}`}>
+      {item.image && <img src={item.image} alt={item.title} className="card-image" />}
       <div className="card-content">
         <div className="card-badges">
-          <span className="badge badge-orange">Permutation</span>
-          <span className="badge badge-purple">{item.status}</span>
-        </div>
-        <div className="permutation-user-info">
-          <div className="user-avatar">
-            {item.user.prenom[0]}{item.user.nom[0]}
-          </div>
-          <div className="user-details">
-            <h4 className="user-name">{item.user.prenom} {item.user.nom}</h4>
-            <p className="user-location">
-              <MapPin className="icon-sm" />
-              {item.user.ville}
-            </p>
+          <span className="badge badge-purple">Vidéo</span>
+          {item.category && <span className="badge badge-blue">{item.category}</span>}
+          <div className="date-info">
+            <Calendar className="icon-sm" />
+            {item.date}
           </div>
         </div>
-        <h3 className="card-title">{item.niveau} - {item.filiere}</h3>
-        <div className="permutation-path">
-          <div className="path-item">
-            <div className="path-dot"></div>
-            <div>
-              <p className="path-label">École d'origine</p>
-              <p className="path-value">{item.origine}</p>
-              <p className="path-location">{item.villeOrigine}</p>
-            </div>
-          </div>
-          <div className="path-arrow">
-            <ChevronRight className="icon-lg" />
-          </div>
-          <div className="path-item">
-            <div className="path-dot"></div>
-            <div>
-              <p className="path-label">École souhaitée</p>
-              <p className="path-value">{item.souhait}</p>
-              <p className="path-location">{item.villeSouhaitee}</p>
-            </div>
-          </div>
-        </div>
-        <div className="permutation-meta">
-          <div className="year-info">
-            <Calendar className="icon-sm icon-orange" />
-            <span>Année: {item.annee}</span>
-          </div>
-          <div className="permutation-stats">
-            <div className="stat-item">
-              <Eye className="icon-sm" />
-              <span>{item.vues} vues</span>
-            </div>
-            <div className="stat-item">
-              <span className="correspondances-badge">
-                {item.correspondances} correspondance{item.correspondances > 1 ? 's' : ''}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="permutation-actions">
+        <h3 className="card-title">{item.title}</h3>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        <div className="card-footer">
           <button 
             className="button-primary"
             onClick={() => {
-              setSelectedPermutation(item);
-              setShowContactModal(true);
+              if (item.slug) {
+                navigate(`/videos/${item.slug}`);
+              } else if (item.id) {
+                navigate(`/videos/${item.id}`);
+              }
             }}
           >
-            Contacter
+            <Play className="icon-sm" />
+            Regarder
           </button>
-          <button className="button-secondary">Voir détails</button>
+          <span className="views">{item.views} vues</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderQuestionnaireCard = (item) => (
+    <div className="card" key={`questionnaire-${item.id}`}>
+      {item.image && <img src={item.image} alt={item.title} className="card-image" />}
+      <div className="card-content">
+        <div className="card-badges">
+          <span className="badge badge-purple">Questionnaire</span>
+          {item.category && <span className="badge badge-blue">{item.category}</span>}
+          <div className="date-info">
+            <Calendar className="icon-sm" />
+            {item.date}
+          </div>
+        </div>
+        <h3 className="card-title">{item.title}</h3>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        <div className="card-footer">
+          <button 
+            className="button-primary"
+            onClick={() => {
+              if (item.slug) {
+                navigate(`/questionnaires/${item.slug}`);
+              } else if (item.id) {
+                navigate(`/questionnaires/${item.id}`);
+              }
+            }}
+          >
+            Commencer le questionnaire
+          </button>
+          <span className="views">{item.views} vues</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderMagazineCard = (item) => (
+    <div className="card" key={`magazine-${item.id}`}>
+      {item.image && <img src={item.image} alt={item.title} className="card-image" />}
+      <div className="card-content">
+        <div className="card-badges">
+          <span className="badge badge-orange">Magazine</span>
+          {item.category && <span className="badge badge-blue">{item.category}</span>}
+          <div className="date-info">
+            <Calendar className="icon-sm" />
+            {item.date}
+          </div>
+        </div>
+        <h3 className="card-title">{item.title}</h3>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        <div className="card-footer">
+          <button 
+            className="button-primary"
+            onClick={() => {
+              if (item.slug) {
+                navigate(`/magazines/${item.slug}`);
+              } else if (item.id) {
+                navigate(`/magazines/${item.id}`);
+              }
+            }}
+          >
+            Lire le magazine
+          </button>
+          <span className="views">{item.views} vues</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderForeignStudyCard = (item) => (
+    <div className="card" key={`foreign-study-${item.id}`}>
+      {item.image && <img src={item.image} alt={item.title} className="card-image" />}
+      <div className="card-content">
+        <div className="card-badges">
+          <span className="badge badge-green">Étude à l'étranger</span>
+          {item.category && <span className="badge badge-blue">{item.category}</span>}
+          <div className="date-info">
+            <Calendar className="icon-sm" />
+            {item.date}
+          </div>
+        </div>
+        <h3 className="card-title">{item.title}</h3>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        <div className="card-footer">
+          <button 
+            className="button-primary"
+            onClick={() => {
+              if (item.slug) {
+                navigate(`/etudes-etranger/${item.slug}`);
+              } else if (item.id) {
+                navigate(`/etudes-etranger/${item.id}`);
+              }
+            }}
+          >
+            En savoir plus
+          </button>
+          <span className="views">{item.views} vues</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderProductCard = (item) => (
+    <div className="card" key={`product-${item.id}`}>
+      {item.image && <img src={item.image} alt={item.title} className="card-image" />}
+      <div className="card-content">
+        <div className="card-badges">
+          <span className="badge badge-orange">Marketplace</span>
+          {item.category && <span className="badge badge-blue">{item.category}</span>}
+          <div className="date-info">
+            <Calendar className="icon-sm" />
+            {item.date}
+          </div>
+        </div>
+        <h3 className="card-title">{item.title}</h3>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        <div className="card-footer">
+          <button 
+            className="button-primary"
+            onClick={() => {
+              if (item.slug) {
+                navigate(`/marketplace/${item.slug}`);
+              } else if (item.id) {
+                navigate(`/marketplace/${item.id}`);
+              }
+            }}
+          >
+            Voir le produit
+          </button>
+          <span className="views">{item.views} vues</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderOrientationCard = (item) => (
+    <div className="card card-compact" key={`orientation-${item.id}`}>
+      <div className="card-content card-content-compact">
+        <div className="card-compact-header">
+          <div className="card-badges">
+            <span className="badge badge-purple">Orientation</span>
+            <div className="date-info">
+              <Calendar className="icon-sm" />
+              {item.date}
+            </div>
+          </div>
+          <h3 className="card-title card-title-compact">{item.title}</h3>
+        </div>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        <div className="permutation-actions permutation-actions-compact">
+          <button className="button-primary button-compact">Voir détails</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderRevisionCard = (item) => (
+    <div className="card card-compact" key={`revision-${item.id}`}>
+      <div className="card-content card-content-compact">
+        <div className="card-compact-header">
+          <div className="card-badges">
+            <span className="badge badge-blue">Révision</span>
+            <div className="date-info">
+              <Calendar className="icon-sm" />
+              {item.date}
+            </div>
+          </div>
+          <h3 className="card-title card-title-compact">{item.title}</h3>
+        </div>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        <div className="permutation-actions permutation-actions-compact">
+          <button className="button-primary button-compact">Commencer</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderDocumentRequestCard = (item) => (
+    <div className="card card-compact" key={`document-request-${item.id}`}>
+      <div className="card-content card-content-compact">
+        <div className="card-compact-header">
+          <div className="card-badges">
+            <span className="badge badge-orange">Demande de document</span>
+            <div className="date-info">
+              <Calendar className="icon-sm" />
+              {item.date}
+            </div>
+          </div>
+          <h3 className="card-title card-title-compact">{item.title}</h3>
+        </div>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        <div className="permutation-actions permutation-actions-compact">
+          <button className="button-primary button-compact">Voir détails</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderEmissionCard = (item) => (
+    <div className="card" key={`emission-${item.id}`}>
+      {item.image && <img src={item.image} alt={item.title} className="card-image" />}
+      <div className="card-content">
+        <div className="card-badges">
+          <span className="badge badge-purple">Émission</span>
+          {item.category && <span className="badge badge-blue">{item.category}</span>}
+          <div className="date-info">
+            <Calendar className="icon-sm" />
+            {item.date}
+          </div>
+        </div>
+        <h3 className="card-title">{item.title}</h3>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        <div className="card-footer">
+          <button className="button-primary">Voir l'émission</button>
+          <span className="views">{item.views} vues</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderJobSheetCard = (item) => (
+    <div className="card" key={`job-sheet-${item.id}`}>
+      {item.image && <img src={item.image} alt={item.title} className="card-image" />}
+      <div className="card-content">
+        <div className="card-badges">
+          <span className="badge badge-green">Fiche métier</span>
+          {item.category && <span className="badge badge-blue">{item.category}</span>}
+          <div className="date-info">
+            <Calendar className="icon-sm" />
+            {item.date}
+          </div>
+        </div>
+        <h3 className="card-title">{item.title}</h3>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        <div className="card-footer">
+          <button className="button-primary">Voir la fiche</button>
+          <span className="views">{item.views} vues</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderGenericCard = (item) => (
+    <div className="card" key={`generic-${item.id}`}>
+      {item.image && <img src={item.image} alt={item.title} className="card-image" />}
+      <div className="card-content">
+        <div className="card-badges">
+          {item.category && <span className="badge badge-blue">{item.category}</span>}
+          <div className="date-info">
+            <Calendar className="icon-sm" />
+            {item.date}
+          </div>
+        </div>
+        <h3 className="card-title">{item.title}</h3>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        <div className="card-footer">
+          <span className="views">{item.views} vues</span>
         </div>
       </div>
     </div>
@@ -616,51 +1257,80 @@ const AlloEcoleNewsFeed = () => {
     <div 
       className="card quiz-card" 
       key={`quiz-${item.id}`}
-      onClick={() => navigate('/quiz')}
+      onClick={() => {
+        if (item.slug) {
+          navigate(`/quiz/${item.slug}`);
+        } else if (item.id) {
+          navigate(`/quiz/${item.id}`);
+        } else {
+          navigate('/quiz');
+        }
+      }}
       style={{ cursor: 'pointer' }}
     >
-      <div className="quiz-card-image-wrapper">
-        <img src={item.image} alt={item.title} className="card-image quiz-card-image" />
-        <div className="quiz-card-overlay">
-          <Play className="quiz-play-icon" />
+      {item.image && (
+        <div className="quiz-card-image-wrapper">
+          <img src={item.image} alt={item.title} className="card-image quiz-card-image" />
+          <div className="quiz-card-overlay">
+            <Play className="quiz-play-icon" />
+          </div>
+          <div className="quiz-card-badge">
+            <span className="badge badge-purple">Quiz</span>
+          </div>
         </div>
-        <div className="quiz-card-badge">
-          <span className="badge badge-purple">Quiz</span>
-        </div>
-      </div>
+      )}
       <div className="card-content">
         <div className="card-badges">
-          <span className="badge badge-orange">{item.difficulty}</span>
+          {item.difficulty && <span className="badge badge-orange">{item.difficulty}</span>}
+          {item.category && <span className="badge badge-blue">{item.category}</span>}
           <div className="date-info">
             <Calendar className="icon-sm" />
             {item.date}
           </div>
         </div>
         <h3 className="card-title">{item.title}</h3>
-        <div className="quiz-card-stats">
-          <div className="quiz-stat">
-            <BookOpen className="icon-sm icon-purple" />
-            <span>{item.questions} questions</span>
+        {item.excerpt && <p className="card-excerpt">{item.excerpt}</p>}
+        {(item.questions || item.players) && (
+          <div className="quiz-card-stats">
+            {item.questions && (
+              <div className="quiz-stat">
+                <BookOpen className="icon-sm icon-purple" />
+                <span>{item.questions} questions</span>
+              </div>
+            )}
+            {item.players && (
+              <div className="quiz-stat">
+                <User className="icon-sm icon-purple" />
+                <span>{typeof item.players === 'number' ? item.players.toLocaleString() : item.players} joueurs</span>
+              </div>
+            )}
           </div>
-          <div className="quiz-stat">
-            <User className="icon-sm icon-purple" />
-            <span>{item.players.toLocaleString()} joueurs</span>
+        )}
+        {item.topPrize && (
+          <div className="quiz-card-prize">
+            <span className="prize-label">Lot principal :</span>
+            <span className="prize-amount">{item.topPrize}</span>
           </div>
+        )}
+        <div className="card-footer">
+          <button 
+            className="button-primary quiz-play-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (item.slug) {
+                navigate(`/quiz/${item.slug}`);
+              } else if (item.id) {
+                navigate(`/quiz/${item.id}`);
+              } else {
+                navigate('/quiz');
+              }
+            }}
+          >
+            <Play className="icon-sm" />
+            Jouer maintenant
+          </button>
+          <span className="views">{item.views || 0} vues</span>
         </div>
-        <div className="quiz-card-prize">
-          <span className="prize-label">Lot principal :</span>
-          <span className="prize-amount">{item.topPrize}</span>
-        </div>
-        <button 
-          className="button-primary quiz-play-button"
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate('/quiz');
-          }}
-        >
-          <Play className="icon-sm" />
-          Jouer maintenant
-        </button>
       </div>
     </div>
   );
@@ -874,6 +1544,30 @@ const AlloEcoleNewsFeed = () => {
 
               {/* Content Area - Actualités */}
               <div className="content-area">
+                {/* Barre de recherche */}
+                <div className="home-search-section">
+                  <form className="home-search-form" onSubmit={(e) => {
+                    e.preventDefault();
+                    if (searchQuery.trim().length >= 2) {
+                      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                    }
+                  }}>
+                    <div className="home-search-input-wrapper">
+                      <Search className="home-search-icon" />
+                      <input
+                        type="text"
+                        className="home-search-input"
+                        placeholder="Rechercher dans toute l'application..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                    <button type="submit" className="home-search-button">
+                      Rechercher
+                    </button>
+                  </form>
+                </div>
+
                 <div className="grid">
                   {/* Chargement initial */}
                   {isLoading && (
@@ -905,10 +1599,13 @@ const AlloEcoleNewsFeed = () => {
 
                   {/* Données de l'API avec pagination infinie */}
                   {allFeedData.map((item, index) => {
+                    // Générer une clé unique en combinant contentType, id et index
+                    const uniqueKey = `${item.contentType || item.type || 'unknown'}-${item.id || 'no-id'}-${index}`;
+                    
                     // Ajouter une bannière après les 2 premiers éléments de l'API
                     if (index === 2) {
                       return (
-                        <React.Fragment key={`banner-${index}`}>
+                        <React.Fragment key={`banner-${index}-${uniqueKey}`}>
                           <Banner
                             imageSrc="/images/pub/banniere1.jpg"
                             altText="Alertes SMS - Permutations"
@@ -916,19 +1613,14 @@ const AlloEcoleNewsFeed = () => {
                             className="content-banner"
                             linkUrl="#"
                           />
-                          {item.contentType === 'news' && renderActualiteCard(item)}
-                          {item.contentType === 'ad' && renderAdCard(item)}
-                          {item.type === 'transfer' && renderTransferCard(item)}
+                          {renderContentByType(item)}
                         </React.Fragment>
                       );
                     }
 
                     return (
-                      <React.Fragment key={`item-${item.id || index}`}>
-                        {item.contentType === 'news' && renderActualiteCard(item)}
-                        {item.contentType === 'ad' && renderAdCard(item)}
-                        {item.type === 'transfer' && renderTransferCard(item)}
-                        {item.type === 'quiz' && renderQuizCard(item)}
+                      <React.Fragment key={uniqueKey}>
+                        {renderContentByType(item)}
                       </React.Fragment>
                     );
                   })}

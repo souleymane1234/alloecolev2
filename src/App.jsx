@@ -34,6 +34,7 @@ import RevisionDetail from './pages/RevisionDetail.jsx'
 import RevisionPublish from './pages/RevisionPublish.jsx'
 import AssistanceDemande from './pages/AssistanceDemande.jsx'
 import Paiement from './pages/Paiement.jsx'
+import SearchResults from './pages/SearchResults.jsx'
 
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
@@ -56,6 +57,7 @@ function App() {
           >
             <Route index element={<Home />} />
             <Route path="login" element={<LoginPage />} />
+            <Route path="search" element={<SearchResults />} />
             <Route path="bourses" element={<Bourse />} />
             <Route path="bourses/details/:id" element={<BourseDetails />} />
             {/* <Route path="bourses/details" element={<BourseDetails />} /> */}

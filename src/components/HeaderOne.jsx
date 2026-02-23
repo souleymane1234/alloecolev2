@@ -15,7 +15,6 @@ import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
 import CloseIcon from '@mui/icons-material/Close';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
-
 const HeaderOne = () => {
   const location = useLocation();
   const [scroll, setScroll] = useState(false);
@@ -164,42 +163,6 @@ const HeaderOne = () => {
           width: auto;
         }
 
-        .header-search {
-          position: relative;
-          max-width: 280px;
-          flex: 1;
-        }
-
-        .header-search input {
-          width: 100%;
-          height: 34px;
-          padding: 0 8px 0 38px;
-          border: none;
-          background: #eef3f8;
-          border-radius: 4px;
-          font-size: 14px;
-          color: rgba(0, 0, 0, 0.9);
-          transition: background 0.2s ease;
-        }
-
-        .header-search input:focus {
-          background: #e0e7ed;
-          outline: none;
-        }
-
-        .header-search input::placeholder {
-          color: rgba(0, 0, 0, 0.6);
-        }
-
-        .search-icon {
-          position: absolute;
-          left: 8px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: rgba(0, 0, 0, 0.6);
-          font-size: 20px;
-          pointer-events: none;
-        }
 
         .header-nav {
           display: flex;
@@ -401,10 +364,6 @@ const HeaderOne = () => {
 
         /* Responsive */
         @media (max-width: 1024px) {
-          .header-search {
-            max-width: 200px;
-          }
-
           .nav-link {
             min-width: 70px;
             padding: 0 8px;
@@ -418,10 +377,6 @@ const HeaderOne = () => {
         @media (max-width: 768px) {
           .header-container {
             padding: 0 16px;
-          }
-
-          .header-search {
-            display: none;
           }
 
           .header-nav {
@@ -451,14 +406,6 @@ const HeaderOne = () => {
               <Link to='/' className='header-logo'>
                 <img src='images/logo/logo-black.png' alt='AlloEcole' />
               </Link>
-
-              {/* <div className='header-search'>
-                <SearchIcon className='search-icon' />
-                <input 
-                  type='text' 
-                  placeholder='Rechercher' 
-                />
-              </div> */}
             </div>
 
             {/* Navigation Desktop */}

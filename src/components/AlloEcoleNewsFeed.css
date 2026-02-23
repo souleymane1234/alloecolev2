@@ -794,6 +794,85 @@
           margin: 0;
         }
 
+        /* Barre de recherche sur la page d'accueil */
+        .home-search-section {
+          margin-bottom: 2rem;
+          padding: 1.5rem;
+          background: white;
+          border-radius: 0.5rem;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .home-search-form {
+          display: flex;
+          gap: 1rem;
+          max-width: 800px;
+          margin: 0 auto;
+        }
+
+        .home-search-input-wrapper {
+          flex: 1;
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .home-search-icon {
+          position: absolute;
+          left: 1rem;
+          color: #6b7280;
+          width: 20px;
+          height: 20px;
+          pointer-events: none;
+        }
+
+        .home-search-input {
+          width: 100%;
+          padding: 0.875rem 1rem 0.875rem 3rem;
+          border: 2px solid #e5e7eb;
+          border-radius: 0.5rem;
+          font-size: 1rem;
+          transition: all 0.2s;
+          background: white;
+          color: #1f2937;
+        }
+
+        .home-search-input:focus {
+          outline: none;
+          border-color: #f97316;
+          box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+        }
+
+        .home-search-input::placeholder {
+          color: #9ca3af;
+        }
+
+        .home-search-button {
+          padding: 0.875rem 2rem;
+          background: #f97316;
+          color: white;
+          border: none;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.2s;
+          white-space: nowrap;
+        }
+
+        .home-search-button:hover {
+          background: #ea580c;
+        }
+
+        @media (max-width: 768px) {
+          .home-search-form {
+            flex-direction: column;
+          }
+
+          .home-search-button {
+            width: 100%;
+          }
+        }
+
         /* Styles des cartes d'actualités */
         .grid {
           display: grid;
