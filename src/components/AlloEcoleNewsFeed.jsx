@@ -668,7 +668,12 @@ const AlloEcoleNewsFeed = () => {
           >
             Lire la suite <ArrowRight className="icon-sm" />
           </button>
-          <span className="views">{item.views} vues</span>
+          <div className="card-footer-right">
+            <span className="views">
+              {item.views} vues
+              <span className="date-inline-mobile"> • {item.date}</span>
+            </span>
+          </div>
         </div>
       </div>
     </div>

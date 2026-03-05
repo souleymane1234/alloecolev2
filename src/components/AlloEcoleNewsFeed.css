@@ -911,6 +911,25 @@
           .home-refresh-button {
             width: 100%;
           }
+
+          /* Sur mobile : on place la date plus bas dans la carte */
+          .card-footer {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+          }
+
+          .card-footer-right {
+            align-items: flex-start;
+          }
+
+          .card-badges .date-info {
+            display: none;
+          }
+
+          .date-inline-mobile {
+            display: inline;
+          }
         }
 
         /* Styles des cartes d'actualités */
@@ -987,6 +1006,20 @@
           align-items: center;
           color: #6b7280;
           font-size: 0.875rem;
+        }
+
+        .card-footer-right {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 0.25rem;
+        }
+
+        .date-inline-mobile {
+          display: none;
+          font-size: 0.8rem;
+          color: #6b7280;
+          margin-left: 0.25rem;
         }
 
         .card-title {
