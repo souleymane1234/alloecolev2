@@ -877,12 +877,38 @@
           background: #ea580c;
         }
 
+        .home-refresh-button {
+          padding: 0.875rem 1.25rem;
+          background: white;
+          color: #111827;
+          border: 2px solid #e5e7eb;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.2s, border-color 0.2s, color 0.2s;
+          white-space: nowrap;
+        }
+
+        .home-refresh-button:hover {
+          background: #f9fafb;
+          border-color: #d1d5db;
+        }
+
+        .home-refresh-button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
         @media (max-width: 768px) {
           .home-search-form {
             flex-direction: column;
           }
 
           .home-search-button {
+            width: 100%;
+          }
+
+          .home-refresh-button {
             width: 100%;
           }
         }

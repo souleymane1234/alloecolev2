@@ -34,6 +34,7 @@ import RevisionDetail from './pages/RevisionDetail.jsx'
 import RevisionPublish from './pages/RevisionPublish.jsx'
 import AssistanceDemande from './pages/AssistanceDemande.jsx'
 import Paiement from './pages/Paiement.jsx'
+import NewsDetail from './pages/NewsDetail.jsx'
 import SearchResults from './pages/SearchResults.jsx'
 
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
@@ -89,6 +90,7 @@ function App() {
             <Route path="revision" element={<Revision />} />
             <Route path="revision/publier" element={<RevisionPublish />} />
             <Route path="revision/:id" element={<RevisionDetail />} />
+            <Route path="actualites/:slug" element={<NewsDetail />} />
             <Route path="assistance-demande" element={<AssistanceDemande />} />
             <Route path="paiement" element={<Paiement />} />
             {/* Ajoute d'autres routes ici si nécessaire */}

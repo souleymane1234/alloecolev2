@@ -117,9 +117,13 @@ const AlloEcoleNewsFeed = () => {
     console.log(`📥 Chargement page ${pageParam}...`);
     
     // Utiliser la nouvelle API /api/v1/news avec pagination
-    const response = await fetch(
-      `https://alloecoleapi-dev.up.railway.app/api/v1/news?page=${pageParam}&limit=10`
-    );
+    const url = new URL('https://alloecoleapi-dev.up.railway.app/api/v1/news');
+    // ✅ Filtrer le module "Actualités" uniquement (contentType = news)
+    url.searchParams.set('module', 'news');
+    url.searchParams.set('page', String(pageParam));
+    url.searchParams.set('limit', '10');
+
+    const response = await fetch(url.toString());
     
     if (!response.ok) throw new Error(`Erreur ${response.status}`);
     
@@ -431,8 +435,9 @@ const AlloEcoleNewsFeed = () => {
     isError,
     error,
     isFetching,
+    refetch,
   } = useInfiniteQuery({
-    queryKey: ['news-feed-infinite'], // Nouvelle clé pour forcer le rechargement avec la nouvelle API
+    queryKey: ['news-feed-infinite', { module: 'news', limit: 10 }], // Sépare du feed agrégé
     queryFn: fetchFeedPage,
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 1,
@@ -653,11 +658,12 @@ const AlloEcoleNewsFeed = () => {
           <button 
             className="link-button"
             onClick={() => {
-              if (item.slug) {
-                navigate(`/actualites/${item.slug}`);
-              } else if (item.id) {
-                navigate(`/actualites/${item.id}`);
-              }
+              const targetSlug = item.slug || item.id;
+              if (!targetSlug) return;
+
+              navigate(`/actualites/${targetSlug}`, {
+                state: { item },
+              });
             }}
           >
             Lire la suite <ArrowRight className="icon-sm" />
@@ -1564,6 +1570,16 @@ const AlloEcoleNewsFeed = () => {
                     </div>
                     <button type="submit" className="home-search-button">
                       Rechercher
+                    </button>
+                    <button
+                      type="button"
+                      className="home-refresh-button"
+                      onClick={() => refetch()}
+                      disabled={isFetching}
+                      aria-busy={isFetching ? 'true' : 'false'}
+                      title="Recharger les actualités"
+                    >
+                      {isFetching ? 'Actualisation…' : 'Actualiser'}
                     </button>
                   </form>
                 </div>
