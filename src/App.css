@@ -7,6 +7,44 @@
   /* padding: 2rem; */
 }
 
+/* Scroll global : permettre le défilement sur mobile (sidebar left → main → sidebar right) */
+html {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 100%;
+}
+body {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 100%;
+  position: relative;
+}
+/* Bloquer le scroll du body uniquement quand le menu mobile est ouvert */
+body.scroll-hide-sm {
+  overflow: hidden;
+  touch-action: none;
+}
+.app {
+  min-height: 100%;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+.main-content {
+  flex: 1;
+  min-height: 0;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+.app .content {
+  flex: 1;
+  min-height: 0;
+  overflow: visible;
+}
+
 /* Fix global pour tous les inputs et placeholders */
 input[type="text"],
 input[type="email"],

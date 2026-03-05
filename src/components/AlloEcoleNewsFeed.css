@@ -57,11 +57,21 @@
           text-align: center;
         }
 
-        /* MOBILE FIRST APPROACH */
+        /* MOBILE FIRST APPROACH - scroll unique : sidebar left → main → sidebar right */
         @media (max-width: 991px) {
+          .section {
+            padding: 1.5rem 1rem;
+            overflow: visible;
+            min-height: auto;
+          }
+          .max-width {
+            overflow: visible;
+          }
           .main-layout {
             flex-direction: column;
             gap: 1.5rem;
+            overflow: visible;
+            min-height: auto;
           }
 
           /* Sur mobile: sidebar prend toute la largeur et vient en premier */
@@ -69,32 +79,36 @@
             width: 100% !important;
             left: 0;
             right: 0;
-            margin:0;
+            margin: 0;
             position: relative;
             top: 0;
-            order: 1; /* Premier élément */
-            /* RETIRER le background-color: red; */
+            order: 1;
+            overflow: visible;
           }
 
           .sidebar-right {
             width: 100% !important;
             left: 0;
             right: 0;
-            margin:0;
+            margin: 0;
             position: relative;
             top: 0;
-            order: 3; /* Premier élément */ 
-            /* RETIRER le background-color: red; */
+            order: 3;
+            overflow: visible;
           }
 
           .content-area {
-            order: 2; /* Deuxième élément */
+            order: 2;
             width: 100%;
+            overflow: visible;
           }
 
-
-          .section {
-            padding: 1.5rem 1rem;
+          /* Sur mobile : pas de hauteur fixe sur la sidebar droite, tout défile avec la page */
+          .sidebar-right-content {
+            max-height: none;
+            overflow-y: visible;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
           }
         }
 
