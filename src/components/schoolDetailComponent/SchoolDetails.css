@@ -288,6 +288,35 @@
           margin-bottom: 1.5rem;
         }
 
+        .school-top-tabs {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.4rem;
+          background: #f3f4f6;
+          border-radius: 999px;
+          margin-bottom: 1.5rem;
+          margin-top: 0.5rem;
+          width: fit-content;
+        }
+
+        .school-top-tab {
+          border: none;
+          background: transparent;
+          padding: 0.35rem 0.9rem;
+          border-radius: 999px;
+          font-size: 0.9rem;
+          font-weight: 500;
+          color: #4b5563;
+          cursor: pointer;
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .school-top-tab.active {
+          background: #ea580c;
+          color: white;
+        }
+
         .school-quick-info {
           display: flex;
           gap: 1.5rem;

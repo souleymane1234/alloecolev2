@@ -26,7 +26,7 @@ const transformNewsItem = (item) => {
 };
 
 const NewsDetail = () => {
-  const { slug } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -35,7 +35,8 @@ const NewsDetail = () => {
   const [news, setNews] = useState(() =>
     initialItem ? transformNewsItem(initialItem) : null
   );
-  const [loading, setLoading] = useState(!initialItem);
+  // Toujours charger les données complètes depuis l'API détail
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const pageTitle = useMemo(
@@ -47,14 +48,21 @@ const NewsDetail = () => {
     document.title = pageTitle;
   }, [pageTitle]);
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
+
   useEffect(() => {
+    // Pré-remplir avec les données de la liste si disponibles (affichage instantané)
     if (initialItem) {
-      // Données déjà fournies par la liste
-      setLoading(false);
-      return;
+      setNews((current) => current || transformNewsItem(initialItem));
     }
 
-    if (!slug) return;
+    if (!id) return;
 
     const controller = new AbortController();
 
@@ -63,16 +71,7 @@ const NewsDetail = () => {
         setLoading(true);
         setError(null);
 
-        const url = new URL(
-          'https://alloecoleapi-dev.up.railway.app/api/v1/news'
-        );
-        url.searchParams.set('module', 'news');
-        url.searchParams.set('page', '1');
-        url.searchParams.set('limit', '1');
-        // On utilise la recherche texte sur le slug (ou id)
-        url.searchParams.set('search', slug);
-
-        const response = await fetch(url.toString(), {
+        const response = await fetch(`https://alloecoleapi-dev.up.railway.app/api/v1/news/${id}`, {
           signal: controller.signal,
         });
 
@@ -82,11 +81,11 @@ const NewsDetail = () => {
 
         const result = await response.json();
 
-        if (!result.success) {
+        if (!result.success || !result.data) {
           throw new Error('Erreur API lors du chargement de l’actualité');
         }
 
-        const item = Array.isArray(result.data) ? result.data[0] : null;
+        const item = result.data;
         const transformed = transformNewsItem(item);
 
         if (!transformed) {
@@ -108,7 +107,7 @@ const NewsDetail = () => {
     return () => {
       controller.abort();
     };
-  }, [slug, initialItem]);
+  }, [id, initialItem]);
 
   if (loading) {
     return (
@@ -118,7 +117,7 @@ const NewsDetail = () => {
             <button
               type="button"
               className="back-button"
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
             >
               <ArrowLeft className="icon-sm" />
               <span>Retour</span>
@@ -169,7 +168,7 @@ const NewsDetail = () => {
           <button
             type="button"
             className="back-button"
-            onClick={() => navigate(-1)}
+            onClick={handleBack}
           >
             <ArrowLeft className="icon-sm" />
             <span>Retour</span>
@@ -178,13 +177,14 @@ const NewsDetail = () => {
 
         <div className="news-detail-layout">
           <article className="news-main">
-            {news.category && (
-              <div className="news-category">{news.category}</div>
-            )}
-
             <h1 className="news-title">{news.title}</h1>
 
             <div className="news-meta">
+              {news.category && (
+                <div className="meta-item meta-category">
+                  <span className="meta-pill">{news.category}</span>
+                </div>
+              )}
               <div className="meta-item">
                 <Calendar className="icon-sm" />
                 <span>{news.date}</span>
@@ -193,9 +193,9 @@ const NewsDetail = () => {
                 <User className="icon-sm" />
                 <span>{news.author}</span>
               </div>
-              <div className="meta-item">
+              <div className="meta-item meta-views">
                 <Eye className="icon-sm" />
-                <span>{news.views} vues</span>
+                <span className="meta-pill meta-pill-views">{news.views} vues</span>
               </div>
             </div>
 
@@ -210,11 +210,10 @@ const NewsDetail = () => {
             )}
 
             {news.content && (
-              <div className="news-content">
-                {news.content.split('\n').map((paragraph, index) => (
-                  <p key={index}>{paragraph.trim()}</p>
-                ))}
-              </div>
+              <div
+                className="news-content"
+                dangerouslySetInnerHTML={{ __html: news.content }}
+              />
             )}
 
             {news.sourceUrl && (
@@ -228,23 +227,6 @@ const NewsDetail = () => {
               </a>
             )}
           </article>
-
-          <aside className="news-aside">
-            <div className="news-aside-card">
-              <h2>Continuer votre exploration</h2>
-              <ul>
-                <li>
-                  <Link to="/bourses">Voir les bourses d’études</Link>
-                </li>
-                <li>
-                  <Link to="/schools">Découvrir les écoles</Link>
-                </li>
-                <li>
-                  <Link to="/webtv">Regarder la WebTV</Link>
-                </li>
-              </ul>
-            </div>
-          </aside>
         </div>
       </div>
     </div>

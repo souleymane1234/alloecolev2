@@ -7,6 +7,7 @@ const SchoolDetail = () => {
   const [school, setSchool] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [headerTab, setHeaderTab] = useState('all');
 
   const fetchSchoolDetails = async () => {
     setLoading(true);
@@ -107,17 +108,23 @@ const SchoolDetail = () => {
     );
   }
 
+  const mediaItems = Array.isArray(school.media) ? school.media : [];
+  const imageItems = mediaItems.filter((m) => m?.type === 'IMAGE' && m?.url);
+  const videoItems = mediaItems.filter((m) => m?.type === 'VIDEO' && m?.url);
+
   return (
     <>
       <style>{`
         @import url('https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css');
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        .page { min-height: 100vh; background: #fefaf8; padding: 2rem 0; width: 100%; }
-        .container { max-width: 100%; width: 100%; margin: 0 auto; padding: 0 2rem; }
-        .header { background: white; border-radius: 1rem; margin-bottom: 2rem; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .page { min-height: 100vh; background: #fefaf8; padding: 0; width: 100%; }
+        .container { max-width: 100%; width: 100%; margin: 0; padding: 0; }
+        .header { background: white; border-radius: 0; margin-bottom: 0; overflow: hidden; box-shadow: none; }
         .banner { height: 400px; background: linear-gradient(45deg, #ea580c, #f97316); overflow: hidden; }
         .banner video { width: 100%; height: 100%; object-fit: cover; }
-        .info { padding: 2rem; }
+        .info { padding: 1.25rem 1rem; display: flex; flex-direction: column; gap: 1rem; }
+        .block { background: #fff; }
+        .block-tabs { display: flex; justify-content: flex-start; }
         .name-container { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem; }
         .logo { width: 120px; height: 120px; object-fit: contain; background: white; border-radius: 1rem; padding: 0.75rem; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
         .name { font-size: 2rem; font-weight: 700; color: #1f2937; }
@@ -125,8 +132,15 @@ const SchoolDetail = () => {
         .badge { padding: 0.4rem 1rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 600; }
         .level { background: #ea580c; color: white; }
         .verified { display: inline-flex; align-items: center; gap: 0.35rem; background: #10b981; color: white; }
-        .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
-        .section { background: #e8e8e8; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .top-tabs { display: inline-flex; gap: 0.5rem; padding: 0.35rem; background: #f3f4f6; border-radius: 999px; margin: 0; }
+        .top-tab { border: none; background: transparent; padding: 0.35rem 0.9rem; border-radius: 999px; font-size: 0.9rem; font-weight: 600; color: #4b5563; cursor: pointer; }
+        .top-tab.active { background: #ea580c; color: #fff; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+        .gallery-item { background: #fff; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .gallery-item img, .gallery-item video { width: 100%; height: 160px; object-fit: cover; display: block; }
+        .gallery-empty { background: #fff; border-radius: 0.75rem; padding: 1.5rem; text-align: center; color: #6b7280; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .grid { display: grid; grid-template-columns: 3fr 1.2fr; gap: 1.5rem; padding: 1rem; }
+        .section { background: #fff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
         .section-title { display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem; font-weight: 700; color: #4a5568; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 3px solid #ea580c; }
         .section-title::before { content: '||'; color: #ea580c; font-weight: 900; font-size: 1.2rem; }
         .info-list { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -156,7 +170,8 @@ const SchoolDetail = () => {
         .card-title { font-size: 1.1rem; font-weight: 700; color: #1f2937; margin-bottom: 0.75rem; }
         .card-text { color: #6b7280; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem; }
         @media (max-width: 1200px) { .grid { grid-template-columns: 1fr; } }
-        @media (max-width: 768px) { .container { padding: 0 1rem; } .grid { grid-template-columns: 1fr; } .name-container { flex-direction: column; text-align: center; } .dir-wrap { flex-direction: column; } .dir-img { width: 100%; height: 200px; } .right { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) { .gallery-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; padding: 0.75rem; } .name-container { flex-direction: column; text-align: center; margin-bottom: 0.75rem; } .block-tabs { justify-content: center; } .dir-wrap { flex-direction: column; } .dir-img { width: 100%; height: 200px; } .right { grid-template-columns: 1fr; } .gallery-grid { grid-template-columns: repeat(2, 1fr); } }
       `}</style>
 
       <div className="page">
@@ -168,20 +183,123 @@ const SchoolDetail = () => {
               </video>
             </div>
             <div className="info">
-              <div className="name-container">
-                <img src={school.logo} alt={school.name} className="logo" />
-                <div>
-                  <h1 className="name">{school.name}</h1>
-                  <div className="badges">
-                    <span className="badge level">{school.level.charAt(0).toUpperCase() + school.level.slice(1)}</span>
-                    {school.isVerified && <span className="badge verified"><i className="ph-check-circle-fill"></i> Vérifié</span>}
+              {/* Bloc 1: nom + logo */}
+              <div className="block block-name">
+                <div className="name-container">
+                  <img src={school.logo} alt={school.name} className="logo" />
+                  <div>
+                    <h1 className="name">{school.name}</h1>
+                    <div className="badges">
+                      <span className="badge level">{school.level.charAt(0).toUpperCase() + school.level.slice(1)}</span>
+                      {school.isVerified && <span className="badge verified"><i className="ph-check-circle-fill"></i> Vérifié</span>}
+                    </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Bloc 2: boutons */}
+              <div className="block block-tabs">
+                <div className="top-tabs">
+                  <button
+                    type="button"
+                    className={`top-tab ${headerTab === 'all' ? 'active' : ''}`}
+                    onClick={() => setHeaderTab('all')}
+                  >
+                    Tout
+                  </button>
+                  <button
+                    type="button"
+                    className={`top-tab ${headerTab === 'gallery' ? 'active' : ''}`}
+                    onClick={() => setHeaderTab('gallery')}
+                  >
+                    Galerie
+                  </button>
+                  <button
+                    type="button"
+                    className={`top-tab ${headerTab === 'other' ? 'active' : ''}`}
+                    onClick={() => setHeaderTab('other')}
+                  >
+                    Autre
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid">
+          {/* Bloc 3: contenu */}
+          {headerTab === 'gallery' ? (
+            mediaItems.length > 0 ? (
+              <div className="gallery-grid">
+                {imageItems.map((item, idx) => (
+                  <div key={`img-${idx}-${item.url}`} className="gallery-item">
+                    <img src={item.url} alt={`Image ${idx + 1}`} loading="lazy" />
+                  </div>
+                ))}
+                {videoItems.map((item, idx) => (
+                  <div key={`vid-${idx}-${item.url}`} className="gallery-item">
+                    <video src={item.url} controls preload="metadata" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="gallery-empty">
+                <p>Aucun média disponible (photos/vidéos).</p>
+              </div>
+            )
+          ) : headerTab === 'other' ? (
+            <div className="right">
+              {school.directorWords && (
+                <div className="section">
+                  <h2 className="section-title">Mot du Directeurss</h2>
+                  <div className="dir-wrap">
+                    <div className="dir-img"><img src={school.logo} alt="Directeur" /></div>
+                    <div className="dir-text">
+                      <p>{school.directorWords.content?.substring(0, 200)}... <span className="read-more">Voir Plus ⊙</span></p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="section">
+                <h2 className="section-title">Services de l'école</h2>
+                <p style={{color: '#6b7280', fontStyle: 'italic'}}>{school.services?.length > 0 ? school.services.map(s => s.name).join(', ') : 'Aucune donnée'}</p>
+              </div>
+
+              <div className="section">
+                <h2 className="section-title">Atouts de l'école</h2>
+                {school.strengths?.length > 0 ? (
+                  <ul className="list">
+                    {school.strengths.map(s => <li key={s.id}>{s.name}</li>)}
+                  </ul>
+                ) : <p style={{color: '#6b7280', fontStyle: 'italic'}}>Aucune donnée</p>}
+              </div>
+
+              <div className="section">
+                <h2 className="section-title">Commodités de l'école</h2>
+                {school.amenities?.length > 0 ? (
+                  <ul className="list">
+                    {school.amenities.map(a => <li key={a.id}>{a.name}</li>)}
+                  </ul>
+                ) : <p style={{color: '#6b7280', fontStyle: 'italic'}}>Aucune donnée</p>}
+              </div>
+
+              <div className="echo">
+                <h2 className="section-title">Echo école</h2>
+                <div className="card">
+                  <div className="card-img">
+                    <img src={school.media?.[0]?.url || school.banner} alt="Article" />
+                    <div className="date-badge"><span className="day">01</span><span className="month">Juillet</span></div>
+                  </div>
+                  <div className="card-content">
+                    <h3 className="card-title">552 115 Candidats Au CEPE Cette Année</h3>
+                    <p className="card-text">Les épreuves écrites de la session 2019 du CEPE qui enregistrent 552 115 candidats...</p>
+                    <span className="read-more">Voir Plus ⊙</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid">
             <div className="section">
               <h2 className="section-title">Info école</h2>
               <div className="info-list">
@@ -317,6 +435,7 @@ const SchoolDetail = () => {
               </div>
             </div>
           </div>
+          )}
 
           <div style={{textAlign: 'center', marginTop: '2rem'}}>
             <button onClick={() => navigate('/schools')} style={{background: '#ea580c', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', cursor: 'pointer', fontWeight: 600}}>

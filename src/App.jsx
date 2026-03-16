@@ -90,7 +90,7 @@ function App() {
             <Route path="revision" element={<Revision />} />
             <Route path="revision/publier" element={<RevisionPublish />} />
             <Route path="revision/:id" element={<RevisionDetail />} />
-            <Route path="actualites/:slug" element={<NewsDetail />} />
+            <Route path="actualites/:id" element={<NewsDetail />} />
             <Route path="assistance-demande" element={<AssistanceDemande />} />
             <Route path="paiement" element={<Paiement />} />
             {/* Ajoute d'autres routes ici si nécessaire */}

@@ -221,7 +221,7 @@ const SchoolDetails = () => {
                   )}
                   
                   <p className="school-description">{school.description}</p>
-                  
+
                   <div className="school-quick-info">
                     {school.city && school.region && (
                       <div className="quick-info-item">
@@ -323,6 +323,29 @@ const SchoolDetails = () => {
           )}
 
           <div className="school-details">
+            {/* Onglets haut de page : Tout / Galerie / Autre */}
+            <div className="school-top-tabs">
+              <button
+                type="button"
+                className="school-top-tab active"
+              >
+                Tout
+              </button>
+              <button
+                type="button"
+                className="school-top-tab"
+                onClick={() => setActiveTab('gallery')}
+              >
+                Galerie
+              </button>
+              <button
+                type="button"
+                className="school-top-tab"
+              >
+                Autre
+              </button>
+            </div>
+
             <div className="details-section">
               <h3 className="section-title">
                 <i className="ph-info"></i>

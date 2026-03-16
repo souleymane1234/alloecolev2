@@ -74,16 +74,9 @@
             min-height: auto;
           }
 
-          /* Sur mobile: sidebar prend toute la largeur et vient en premier */
+          /* Sur mobile: masquer la sidebar gauche (profil) */
           .sidebar-left {
-            width: 100% !important;
-            left: 0;
-            right: 0;
-            margin: 0;
-            position: relative;
-            top: 0;
-            order: 1;
-            overflow: visible;
+            display: none;
           }
 
           .sidebar-right {
@@ -900,16 +893,31 @@
         }
 
         @media (max-width: 768px) {
+          .home-search-section {
+            padding: 1rem 0.75rem;
+          }
+
           .home-search-form {
-            flex-direction: column;
+            flex-direction: row;
+            align-items: stretch;
+            gap: 0.35rem;
           }
 
-          .home-search-button {
-            width: 100%;
+          .home-search-input-wrapper {
+            flex: 1 1 auto;
           }
 
+          .home-search-input {
+            padding: 0.55rem 0.6rem 0.55rem 2.2rem;
+            font-size: 0.85rem;
+          }
+
+          .home-search-button,
           .home-refresh-button {
-            width: 100%;
+            width: auto;
+            padding: 0.5rem 0.7rem;
+            font-size: 0.8rem;
+            flex: 0 0 auto;
           }
 
           /* Sur mobile : on place la date plus bas dans la carte */
@@ -937,6 +945,8 @@
           display: grid;
           grid-template-columns: 1fr;
           gap: 2rem;
+          max-width: 800px;
+          margin: 0 auto;
         }
 
         .card {

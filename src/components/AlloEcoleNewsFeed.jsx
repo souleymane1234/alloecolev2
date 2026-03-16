@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Calendar, Clock, MapPin, ArrowRight, ChevronLeft, ChevronRight, Eye, User, BookOpen, GraduationCap, Settings, Play, Search } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowRight, ChevronLeft, ChevronRight, Eye, User, BookOpen, GraduationCap, Settings, Play, Search, RefreshCcw } from 'lucide-react';
 import ContactAlloEcoleService from './ContactAlloEcoleService';
 import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import axios from 'axios';
@@ -8,6 +8,13 @@ import './AlloEcoleNewsFeed.css';
 import UserProfileSidebar from './userComponent/UserProfileSidebar';
 import Banner from './banner/Banner';
 import './banner/Banner.css';
+import Card from '@mui/material/Card';
+import CardActions from '@mui/material/CardActions';
+import CardContent from '@mui/material/CardContent';
+import CardMedia from '@mui/material/CardMedia';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Stories from "./Stories";
 
 const AlloEcoleNewsFeed = () => {
   const navigate = useNavigate();
@@ -641,41 +648,80 @@ const AlloEcoleNewsFeed = () => {
 
   // Fonctions de rendu
   const renderActualiteCard = (item) => (
-    <div className="card" key={`news-${item.id}`}>
-      <img src={item.image} alt={item.title} className="card-image" />
-      <div className="card-content">
-        <div className="card-badges">
-          <span className="badge badge-orange">Actualité</span>
-          {item.category && <span className="badge badge-blue">{item.category}</span>}
-          <div className="date-info">
-            <Calendar className="icon-sm" />
-            {item.date}
-          </div>
-        </div>
-        <h3 className="card-title">{item.title}</h3>
-        <p className="card-excerpt">{item.excerpt}</p>
-        <div className="card-footer">
-          <button 
-            className="link-button"
+    <div key={`news-${item.id}`}>
+      <Card
+        sx={{
+          width: '100%',
+          maxWidth: '100%',
+        }}
+      >
+        <CardMedia
+          component="img"
+          alt={item.title}
+          height="160"
+          image={item.image}
+        />
+        <CardContent>
+          <Typography gutterBottom variant="h6" component="div">
+            {item.title}
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 0.5,
+              mb: 0.75,
+              color: 'text.secondary',
+              alignItems: 'center',
+            }}
+          >
+            {item.category && (
+              <span
+                style={{
+                  backgroundColor: '#fef3c7',
+                  color: '#92400e',
+                  padding: '2px 8px',
+                  borderRadius: 999,
+                  fontWeight: 600,
+                }}
+              >
+                {item.category}
+              </span>
+            )}
+            <span
+              style={{
+                backgroundColor: '#e0f2fe',
+                color: '#0369a1',
+                padding: '2px 8px',
+                borderRadius: 999,
+                fontWeight: 600,
+              }}
+            >
+              {item.views} vues
+            </span>
+            <span>· {item.date}</span>
+            {item.author && <span>· {item.author}</span>}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            {item.excerpt}
+          </Typography>
+        </CardContent>
+        <CardActions>
+          <Button
+            size="small"
             onClick={() => {
-              const targetSlug = item.slug || item.id;
-              if (!targetSlug) return;
+              if (!item.id) return;
 
-              navigate(`/actualites/${targetSlug}`, {
+              navigate(`/actualites/${item.id}`, {
                 state: { item },
               });
             }}
           >
-            Lire la suite <ArrowRight className="icon-sm" />
-          </button>
-          <div className="card-footer-right">
-            <span className="views">
-              {item.views} vues
-              <span className="date-inline-mobile"> • {item.date}</span>
-            </span>
-          </div>
-        </div>
-      </div>
+            Lire la suite
+          </Button>
+        </CardActions>
+      </Card>
     </div>
   );
 
@@ -1584,11 +1630,15 @@ const AlloEcoleNewsFeed = () => {
                       aria-busy={isFetching ? 'true' : 'false'}
                       title="Recharger les actualités"
                     >
-                      {isFetching ? 'Actualisation…' : 'Actualiser'}
+                      {isMobile ? (
+                        <RefreshCcw size={16} />
+                      ) : (
+                        isFetching ? 'Actualisation…' : 'Actualiser'
+                      )}
                     </button>
                   </form>
                 </div>
-
+                <Stories />
                 <div className="grid">
                   {/* Chargement initial */}
                   {isLoading && (
